@@ -10,6 +10,13 @@ The app includes:
 - player-specific gear and world-progress tracking;
 - level, weapon-upgrade and Scadutree Blessing targets;
 - local autosave and JSON export/import.
+- a controller/follower LAN mode with live read-only progress for other devices.
+
+## Run for your local co-op group
+
+Double-click `Start-LAN.cmd`. The launcher builds the current guide, opens the controller on this PC, and prints one or more follower links. Send the link matching your home-network address to the other players. They do not need a ChatGPT account and cannot change route progress.
+
+Keep the launcher window open while playing. If Windows Firewall asks for access, allow Node.js on Private networks only. The shared expedition state is saved in the ignored `work` directory and is restored the next time the LAN host starts.
 
 ## Run locally
 

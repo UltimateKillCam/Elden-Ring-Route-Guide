@@ -5,6 +5,7 @@ import { builds, chapters, itemGuides, sources, stageLoadout, type Build, type C
 
 type Mode = "standard" | "seamless";
 type View = "route" | "codex" | "party";
+type LanMode = "none" | "controller" | "follower";
 type Player = { id: string; name: string; buildId: string; color: string };
 type Expedition = {
   schema: 1;
@@ -45,6 +46,27 @@ const makePlayers = (count: number): Player[] =>
 
 const wikiUrl = (item: string) =>
   `https://eldenring.wiki.fextralife.com/${encodeURIComponent(item.replace(/ \+.*/, "").replace(/ \/.*/, ""))}`;
+
+const ATTRIBUTE_FILTERS = ["All builds", "Strength", "Dexterity", "Intelligence", "Faith", "Arcane", "Ranged"];
+
+function buildClassification(build: Build) {
+  const attributes = ["Strength", "Dexterity", "Intelligence", "Faith", "Arcane"].filter((attribute) =>
+    build.stats.toLowerCase().includes(attribute.toLowerCase()),
+  );
+  const text = `${build.name} ${build.stats} ${build.tags.join(" ")} ${build.playstyle} ${Object.values(build.phases).join(" ")}`.toLowerCase();
+  const ranged = /bow|crossbow|ranged|sorcer|spell|incant|caster|projectile|throw|cannon/.test(text);
+  return {
+    attributes: attributes.length ? attributes.join(" / ") : "Quality",
+    range: ranged ? "Ranged" : "Melee",
+  };
+}
+
+function matchesBuildFilter(build: Build, filter: string) {
+  const classification = buildClassification(build);
+  if (filter === "All builds") return true;
+  if (filter === "Ranged") return classification.range === "Ranged";
+  return classification.attributes.includes(filter);
+}
 
 const inferGuide = (item: string, chapter: Chapter) => {
   const exact = Object.entries(itemGuides).find(([key]) => item.includes(key));
@@ -121,14 +143,23 @@ const taskKeys = (task: Task, expedition: Expedition) =>
 const taskDone = (task: Task, expedition: Expedition) =>
   taskKeys(task, expedition).every((key) => expedition.completed[key]);
 
+function nextIncompleteTask(expedition: Expedition) {
+  for (const chapter of chapters) {
+    const task = tasksForChapter(chapter, expedition).find((candidate) => !taskDone(candidate, expedition));
+    if (task) return { chapter, task };
+  }
+  return null;
+}
+
 function FullBuildDetails({ build, onClose, assignLabel, onAssign }: { build: Build; onClose: () => void; assignLabel?: string; onAssign?: () => void }) {
+  const classification = buildClassification(build);
   return (
     <div className="drawer-backdrop" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
       <section className="loadout-dialog" role="dialog" aria-modal="true" aria-label={`${build.name} full build`}>
         <button className="drawer-close" onClick={onClose} aria-label="Close build detail">×</button>
         <div className="loadout-title">
           <div><p className="eyebrow">Build {builds.indexOf(build) + 1} of 75</p><h2>{build.name}</h2><p>{build.playstyle}</p></div>
-          <div className="drawer-meta"><span>{build.stats}</span><span>{build.role}</span><span>{build.complexity}</span></div>
+          <div className="drawer-meta"><span>{classification.attributes}</span><span>{classification.range}</span><span>{build.complexity}</span></div>
         </div>
         {build.quest && <div className="quest-callout"><strong>Quest dependency</strong><span>{build.quest}</span></div>}
         <div className="loadout-stages">
@@ -165,13 +196,13 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
   const [players, setPlayers] = useState<Player[]>(makePlayers(2));
   const [activePlayer, setActivePlayer] = useState(0);
   const [query, setQuery] = useState("");
-  const [role, setRole] = useState("All roles");
+  const [filter, setFilter] = useState("All builds");
   const [detail, setDetail] = useState<Build | null>(null);
 
-  const roles = ["All roles", ...Array.from(new Set(builds.map((candidate) => candidate.role))).sort()];
   const visibleBuilds = builds.filter((candidate) => {
-    const text = `${candidate.name} ${candidate.stats} ${candidate.role} ${candidate.tags.join(" ")} ${candidate.playstyle}`.toLowerCase();
-    return text.includes(query.toLowerCase()) && (role === "All roles" || candidate.role === role);
+    const classification = buildClassification(candidate);
+    const text = `${candidate.name} ${candidate.stats} ${classification.range} ${candidate.tags.join(" ")} ${candidate.playstyle}`.toLowerCase();
+    return text.includes(query.toLowerCase()) && matchesBuildFilter(candidate, filter);
   });
 
   const changeCount = (value: number) => {
@@ -216,12 +247,13 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
 
       <section className="build-picker">
         <div className="picker-heading"><div className="settings-title"><span>2</span><div><h2>Choose a build for {players[activePlayer].name}</h2><p>Open any build to see the complete equipment plan before assigning it.</p></div></div><div className="selected-build-summary"><small>Currently selected</small><strong>{builds.find((candidate) => candidate.id === players[activePlayer].buildId)?.name}</strong></div></div>
-        <div className="picker-tools"><label><span>Search builds</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Weapon, damage type or playstyle" /></label><label><span>Role</span><select value={role} onChange={(event) => setRole(event.target.value)}>{roles.map((option) => <option key={option}>{option}</option>)}</select></label><p>{visibleBuilds.length} of 75 builds</p></div>
+        <div className="picker-tools"><label><span>Search builds</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Weapon, damage type or playstyle" /></label><label><span>Attribute or range</span><select value={filter} onChange={(event) => setFilter(event.target.value)}>{ATTRIBUTE_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><p>{visibleBuilds.length} of 75 builds</p></div>
         <div className="setup-build-grid">
           {visibleBuilds.map((candidate) => {
             const selected = candidate.id === players[activePlayer].buildId;
+            const classification = buildClassification(candidate);
             return <article className={selected ? "selected" : ""} key={candidate.id}>
-              <header><div><span>{String(builds.indexOf(candidate) + 1).padStart(2, "0")}</span><small>{candidate.complexity}</small></div><h3>{candidate.name}</h3><p>{candidate.stats} · {candidate.role}</p></header>
+              <header><div><span>{String(builds.indexOf(candidate) + 1).padStart(2, "0")}</span><small>{candidate.complexity}</small></div><h3>{candidate.name}</h3><p>{classification.attributes} · {classification.range}</p></header>
               <p className="setup-playstyle">{candidate.playstyle}</p>
               <div className="weapon-timeline">{(["early", "mid", "late", "dlc"] as PhaseKey[]).map((phase) => <div key={phase}><small>{phase}</small><span>{candidate.phases[phase]}</span></div>)}</div>
               <footer><button type="button" onClick={() => setDetail(candidate)}>Full loadout</button><button type="button" className={selected ? "assigned" : ""} onClick={() => chooseBuild(candidate)}>{selected ? "Assigned" : `Assign to ${players[activePlayer].name}`}</button></footer>
@@ -264,14 +296,30 @@ function MapPanel({ chapter, expedition, onSelect }: { chapter: Chapter; expedit
   );
 }
 
-function RouteView({ expedition, setExpedition, activeId, setActiveId }: { expedition: Expedition; setExpedition: React.Dispatch<React.SetStateAction<Expedition | null>>; activeId: string; setActiveId: (id: string) => void }) {
+function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly = false }: { expedition: Expedition; setExpedition: React.Dispatch<React.SetStateAction<Expedition | null>>; activeId: string; setActiveId: (id: string) => void; readOnly?: boolean }) {
   const chapter = chapters.find((candidate) => candidate.id === activeId) || chapters[0];
   const tasks = tasksForChapter(chapter, expedition);
   const completedTasks = tasks.filter((task) => taskDone(task, expedition)).length;
   const chapterIndex = chapters.indexOf(chapter);
+  const nextStep = nextIncompleteTask(expedition);
+
+  useEffect(() => {
+    if (readOnly && nextStep && activeId !== nextStep.chapter.id) setActiveId(nextStep.chapter.id);
+  }, [activeId, nextStep, readOnly, setActiveId]);
 
   const toggle = (key: string) => {
+    if (readOnly) return;
     setExpedition((current) => current ? { ...current, completed: { ...current.completed, [key]: !current.completed[key] } } : current);
+  };
+
+  const completeAndContinue = () => {
+    if (!nextStep || readOnly) return;
+    const completed = { ...expedition.completed };
+    taskKeys(nextStep.task, expedition).forEach((key) => { completed[key] = true; });
+    const updated = { ...expedition, completed };
+    setExpedition(updated);
+    const following = nextIncompleteTask(updated);
+    if (following) setActiveId(following.chapter.id);
   };
 
   const goNextIncomplete = () => {
@@ -306,6 +354,23 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId }: { exped
           <div className="readiness-seal"><span>{completedTasks}/{tasks.length}</span><small>objectives</small></div>
         </div>
 
+        {nextStep ? (
+          <section className="next-step-panel" aria-label="Current objective">
+            <div className="next-step-number"><span>Next</span><strong>{String(chapters.indexOf(nextStep.chapter) + 1).padStart(2, "0")}</strong></div>
+            <div className="next-step-copy">
+              <p>{nextStep.chapter.region} · from {nextStep.chapter.grace}</p>
+              <h3>{nextStep.task.label}</h3>
+              <span>{nextStep.task.detail}</span>
+              <small>Target {nextStep.chapter.level} · {nextStep.chapter.upgrade}{nextStep.task.scope ? ` · ${nextStep.task.scope}` : ""}</small>
+            </div>
+            <div className="next-step-actions">
+              {activeId !== nextStep.chapter.id && <button type="button" onClick={() => setActiveId(nextStep.chapter.id)}>Show area</button>}
+              {!readOnly && <button type="button" className="primary" onClick={completeAndContinue}>Complete and continue</button>}
+              {readOnly && <span>Updates from the host</span>}
+            </div>
+          </section>
+        ) : <section className="next-step-panel route-finished"><div><p>Route complete</p><h3>All objectives have been checked off.</h3></div></section>}
+
         <div className="balance-bar">
           <div><span>Rune level</span><strong>{chapter.level}</strong></div>
           <div><span>Weapon ceiling</span><strong>{chapter.upgrade}</strong></div>
@@ -332,12 +397,12 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId }: { exped
                     <div className="player-checks">
                       {expedition.players.map((player) => {
                         const key = `${task.id}:${player.id}`;
-                        return <button type="button" key={key} className={expedition.completed[key] ? "checked" : ""} onClick={() => toggle(key)} style={{ "--player": player.color } as React.CSSProperties}><i>{expedition.completed[key] ? "✓" : ""}</i>{player.name}</button>;
+                        return <button type="button" disabled={readOnly} key={key} className={expedition.completed[key] ? "checked" : ""} onClick={() => toggle(key)} style={{ "--player": player.color } as React.CSSProperties}><i>{expedition.completed[key] ? "✓" : ""}</i>{player.name}</button>;
                       })}
                     </div>
-                  ) : (
+                  ) : !readOnly ? (
                     <button type="button" className="complete-button" onClick={() => toggle(task.id)}><i>{done ? "✓" : ""}</i>{done ? "Completed" : "Mark complete"}</button>
-                  )}
+                  ) : null}
                 </div>
               </article>
             );
@@ -364,24 +429,25 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId }: { exped
 
 function CodexView({ expedition }: { expedition: Expedition }) {
   const [query, setQuery] = useState("");
-  const [role, setRole] = useState("All roles");
+  const [filter, setFilter] = useState("All builds");
   const [selected, setSelected] = useState<Build | null>(null);
-  const roles = ["All roles", ...Array.from(new Set(builds.map((candidate) => candidate.role))).sort()];
   const filtered = builds.filter((candidate) => {
-    const haystack = `${candidate.name} ${candidate.stats} ${candidate.role} ${candidate.tags.join(" ")}`.toLowerCase();
-    return haystack.includes(query.toLowerCase()) && (role === "All roles" || candidate.role === role);
+    const classification = buildClassification(candidate);
+    const haystack = `${candidate.name} ${candidate.stats} ${classification.range} ${candidate.tags.join(" ")}`.toLowerCase();
+    return haystack.includes(query.toLowerCase()) && matchesBuildFilter(candidate, filter);
   });
 
   return (
     <section className="codex-page">
       <div className="page-heading"><div><p className="eyebrow">75 paths · four stages each</p><h2>Build codex</h2><p>Each build has early, mid, late and DLC gear. The routes avoid long farms and the most overpowering setups.</p></div><div className="codex-count"><strong>{filtered.length}</strong><span>builds shown</span></div></div>
-      <div className="codex-tools"><label><span>Search</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Frost, bow, faith…" /></label><label><span>Party role</span><select value={role} onChange={(event) => setRole(event.target.value)}>{roles.map((option) => <option key={option}>{option}</option>)}</select></label></div>
+      <div className="codex-tools"><label><span>Search</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Frost, bow, faith…" /></label><label><span>Attribute or range</span><select value={filter} onChange={(event) => setFilter(event.target.value)}>{ATTRIBUTE_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label></div>
       <div className="build-grid">
         {filtered.map((candidate) => {
           const owners = expedition.players.filter((player) => player.buildId === candidate.id);
+          const classification = buildClassification(candidate);
           return <article className="build-card" key={candidate.id} onClick={() => setSelected(candidate)} tabIndex={0} onKeyDown={(event) => { if (event.key === "Enter") setSelected(candidate); }}>
             <div className="build-card-top"><span className="build-number">{String(builds.indexOf(candidate) + 1).padStart(2, "0")}</span><div className="difficulty"><i />{candidate.complexity}</div></div>
-            <h3>{candidate.name}</h3><p className="stats">{candidate.stats} · {candidate.role}</p><p>{candidate.playstyle}</p>
+            <h3>{candidate.name}</h3><p className="stats">{classification.attributes} · {classification.range}</p><p>{candidate.playstyle}</p>
             <div className="mini-phases"><span>{candidate.phases.early}</span><i>→</i><span>{candidate.phases.dlc}</span></div>
             <div className="tag-row">{candidate.tags.slice(0, 3).map((tag) => <span key={tag}>{tag}</span>)}</div>
             {owners.length > 0 && <div className="owners">Chosen by {owners.map((owner) => owner.name).join(", ")}</div>}
@@ -400,8 +466,8 @@ function PartyView({ expedition, setExpedition, onExport, onImport, onReset }: {
   const completed = totalKeys.filter((key) => expedition.completed[key]).length;
   const updatePlayer = (id: string, patch: Partial<Player>) => setExpedition((current) => current ? { ...current, players: current.players.map((player) => player.id === id ? { ...player, ...patch } : player) } : current);
   return <section className="party-page"><div className="page-heading"><div><p className="eyebrow">Expedition management</p><h2>{expedition.name}</h2><p>{expedition.mode === "standard" ? "Standard co-op across independent worlds" : "Seamless Co-op with host-led progression"}</p></div><div className="progress-medallion"><strong>{Math.round((completed / Math.max(totalKeys.length, 1)) * 100)}%</strong><span>route complete</span></div></div>
-    <div className="party-cards">{expedition.players.map((player, index) => { const selected = builds.find((candidate) => candidate.id === player.buildId)!; return <article key={player.id} style={{ "--player": player.color } as React.CSSProperties}><div className="portrait">{player.name.slice(0, 1).toUpperCase()}</div><div className="party-card-head"><input value={player.name} onChange={(event) => updatePlayer(player.id, { name: event.target.value })} /><span>Player {index + 1}</span></div><select value={player.buildId} onChange={(event) => updatePlayer(player.id, { buildId: event.target.value })}>{builds.map((candidate) => <option value={candidate.id} key={candidate.id}>{candidate.name}</option>)}</select><p>{selected.playstyle}</p><div className="party-stats"><span><small>Focus</small>{selected.stats}</span><span><small>Role</small>{selected.role}</span></div><label className="host-radio"><input type="radio" name="host" checked={expedition.hostId === player.id} onChange={() => setExpedition((current) => current ? { ...current, hostId: player.id } : current)} /> {expedition.hostId === player.id ? "Current host" : "Make host"}</label></article>; })}</div>
-    <div className="save-panel"><div><p className="eyebrow">Carry the route</p><h3>Save and share</h3><p>Your progress stays on this device. Export a small expedition file to move it to another phone or share it with the company.</p></div><div className="save-actions"><button type="button" className="primary" onClick={onExport}>Export expedition</button><label>Import file<input type="file" accept="application/json" onChange={onImport} /></label><button type="button" className="danger" onClick={onReset}>Start over</button></div></div>
+    <div className="party-cards">{expedition.players.map((player, index) => { const selected = builds.find((candidate) => candidate.id === player.buildId)!; const classification = buildClassification(selected); return <article key={player.id} style={{ "--player": player.color } as React.CSSProperties}><div className="portrait">{player.name.slice(0, 1).toUpperCase()}</div><div className="party-card-head"><input value={player.name} onChange={(event) => updatePlayer(player.id, { name: event.target.value })} /><span>Player {index + 1}</span></div><select value={player.buildId} onChange={(event) => updatePlayer(player.id, { buildId: event.target.value })}>{builds.map((candidate) => <option value={candidate.id} key={candidate.id}>{candidate.name}</option>)}</select><p>{selected.playstyle}</p><div className="party-stats"><span><small>Attributes</small>{classification.attributes}</span><span><small>Range</small>{classification.range}</span></div><label className="host-radio"><input type="radio" name="host" checked={expedition.hostId === player.id} onChange={() => setExpedition((current) => current ? { ...current, hostId: player.id } : current)} /> {expedition.hostId === player.id ? "Current host" : "Make host"}</label></article>; })}</div>
+    <div className="save-panel"><div><p className="eyebrow">Carry the route</p><h3>Save and share</h3><p>Progress is saved automatically. Export an expedition file for backup or to move the route to another computer.</p></div><div className="save-actions"><button type="button" className="primary" onClick={onExport}>Export expedition</button><label>Import file<input type="file" accept="application/json" onChange={onImport} /></label><button type="button" className="danger" onClick={onReset}>Start over</button></div></div>
     <div className="source-panel"><p className="eyebrow">Reference shelf</p><h3>Sources and version</h3><p>Content baseline: App/Regulation 1.16.1, checked 1 August 2026. External references open in a new tab.</p><div>{sources.map(([label, url]) => <a key={url} href={url} target="_blank" rel="noreferrer">{label}<span>↗</span></a>)}</div></div>
   </section>;
 }
@@ -409,31 +475,88 @@ function PartyView({ expedition, setExpedition, onExport, onImport, onReset }: {
 export default function Home() {
   const [expedition, setExpedition] = useState<Expedition | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [lanMode, setLanMode] = useState<LanMode | null>(null);
   const [view, setView] = useState<View>("route");
   const [activeId, setActiveId] = useState(chapters[0].id);
   const [toast, setToast] = useState("");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const controlToken = useRef("");
+  const lanRevision = useRef(-1);
 
   useEffect(() => {
-    const hydrationTimer = window.setTimeout(() => {
+    let cancelled = false;
+    const hydrate = async () => {
+      let localExpedition: Expedition | null = null;
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) setExpedition(JSON.parse(saved));
+        if (saved) localExpedition = JSON.parse(saved);
       } catch { localStorage.removeItem(STORAGE_KEY); }
-      setHydrated(true);
-    }, 0);
-    return () => window.clearTimeout(hydrationTimer);
+
+      try {
+        const response = await fetch("/api/expedition", { cache: "no-store" });
+        const contentType = response.headers.get("content-type") || "";
+        if (response.ok && contentType.includes("application/json")) {
+          const remote = await response.json();
+          if (remote.enabled === true) {
+            const token = new URLSearchParams(window.location.search).get("control") || "";
+            const mode: LanMode = token ? "controller" : "follower";
+            controlToken.current = token;
+            lanRevision.current = Number(remote.revision || 0);
+            if (!cancelled) {
+              setLanMode(mode);
+              setExpedition(remote.expedition || (mode === "controller" ? localExpedition : null));
+              setHydrated(true);
+            }
+            return;
+          }
+        }
+      } catch { /* Hosted and development builds use device-local storage. */ }
+
+      if (!cancelled) {
+        setLanMode("none");
+        setExpedition(localExpedition);
+        setHydrated(true);
+      }
+    };
+    void hydrate();
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || lanMode === null || lanMode === "follower") return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       if (expedition) localStorage.setItem(STORAGE_KEY, JSON.stringify(expedition));
       else localStorage.removeItem(STORAGE_KEY);
+      if (lanMode === "controller") {
+        void fetch("/api/expedition", {
+          method: "PUT",
+          headers: { "content-type": "application/json", "x-control-token": controlToken.current },
+          body: JSON.stringify({ expedition }),
+        });
+      }
     }, 180);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
-  }, [expedition, hydrated]);
+  }, [expedition, hydrated, lanMode]);
+
+  useEffect(() => {
+    if (!hydrated || lanMode !== "follower") return;
+    let active = true;
+    const poll = async () => {
+      try {
+        const response = await fetch("/api/expedition", { cache: "no-store" });
+        if (!response.ok) return;
+        const remote = await response.json();
+        const revision = Number(remote.revision || 0);
+        if (active && revision !== lanRevision.current) {
+          lanRevision.current = revision;
+          setExpedition(remote.expedition || null);
+        }
+      } catch { /* The next poll will retry. */ }
+    };
+    const interval = window.setInterval(() => { void poll(); }, 1200);
+    return () => { active = false; window.clearInterval(interval); };
+  }, [hydrated, lanMode]);
 
   const progress = useMemo(() => {
     if (!expedition) return 0;
@@ -465,18 +588,21 @@ export default function Home() {
   const handleReset = () => { if (window.confirm("Start a new expedition? The current local progress will be removed unless you export it first.")) { setExpedition(null); setView("route"); setActiveId(chapters[0].id); } };
 
   if (!hydrated) return <main className="loading-screen"><span>✦</span><p>Reading the guidance of grace…</p></main>;
+  if (!expedition && lanMode === "follower") return <main className="follower-waiting"><strong>Tarnished Together</strong><h1>Waiting for the host</h1><p>The route will appear here after the host creates or restores an expedition.</p><span>Follower view · refreshes automatically</span></main>;
   if (!expedition) return <Setup onCreate={(created) => { setExpedition(created); notify("Route created"); }} imported={handleImport} />;
 
+  const readOnly = lanMode === "follower";
+
   return (
-    <main className="app-shell">
+    <main className={`app-shell ${readOnly ? "follower-mode" : ""}`}>
       <header className="topbar">
         <button type="button" className="brand" onClick={() => { setView("route"); setActiveId(chapters[0].id); }}><span>✦</span><strong>Tarnished <em>Together</em></strong></button>
-        <nav aria-label="Primary"><button type="button" className={view === "route" ? "active" : ""} onClick={() => setView("route")}>Route</button><button type="button" className={view === "codex" ? "active" : ""} onClick={() => setView("codex")}>Build codex</button><button type="button" className={view === "party" ? "active" : ""} onClick={() => setView("party")}>Company</button></nav>
-        <div className="top-progress"><span><i style={{ width: `${progress}%` }} /></span><strong>{progress}%</strong><button type="button" onClick={handleExport} aria-label="Export expedition">⇩</button></div>
+        <nav aria-label="Primary"><button type="button" className={view === "route" ? "active" : ""} onClick={() => setView("route")}>Route</button>{!readOnly && <><button type="button" className={view === "codex" ? "active" : ""} onClick={() => setView("codex")}>Build codex</button><button type="button" className={view === "party" ? "active" : ""} onClick={() => setView("party")}>Company</button></>}</nav>
+        <div className="top-progress"><span><i style={{ width: `${progress}%` }} /></span><strong>{progress}%</strong>{readOnly ? <b className="lan-badge">Following</b> : <button type="button" onClick={handleExport} aria-label="Export expedition">⇩</button>}</div>
       </header>
-      {view === "route" && <RouteView expedition={expedition} setExpedition={setExpedition} activeId={activeId} setActiveId={setActiveId} />}
-      {view === "codex" && <CodexView expedition={expedition} />}
-      {view === "party" && <PartyView expedition={expedition} setExpedition={setExpedition} onExport={handleExport} onImport={handleImport} onReset={handleReset} />}
+      {(view === "route" || readOnly) && <RouteView expedition={expedition} setExpedition={setExpedition} activeId={activeId} setActiveId={setActiveId} readOnly={readOnly} />}
+      {!readOnly && view === "codex" && <CodexView expedition={expedition} />}
+      {!readOnly && view === "party" && <PartyView expedition={expedition} setExpedition={setExpedition} onExport={handleExport} onImport={handleImport} onReset={handleReset} />}
       {toast && <div className="toast" role="status">{toast}</div>}
     </main>
   );

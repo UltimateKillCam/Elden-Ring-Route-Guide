@@ -81,3 +81,18 @@ test("uses plain product copy and the revised social card", async () => {
   assert.doesNotMatch(layout, /One company\. One balanced path/);
   assert.match(layout, /\/og\.png/);
 });
+
+test("includes a read-only LAN follower and Elden Ring build filters", async () => {
+  const [page, server, packageJson] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../scripts/lan-server.mjs", import.meta.url), "utf8"),
+    readFile(new URL("../package.json", import.meta.url), "utf8"),
+  ]);
+  assert.match(page, /Complete and continue/);
+  assert.match(page, /Updates from the host/);
+  assert.match(page, /Strength.*Dexterity.*Intelligence.*Faith.*Arcane.*Ranged/);
+  assert.doesNotMatch(page, /Party role|All roles/);
+  assert.match(server, /Follower access is read-only/);
+  assert.match(server, /x-control-token/);
+  assert.match(packageJson, /scripts\/lan-server\.mjs/);
+});

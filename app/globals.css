@@ -210,6 +210,23 @@ body::before {
 .act-group button small { margin-top: 3px; color: #53514c; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; }
 .act-group button.active strong { color: var(--ink); }
 .route-main { min-width: 0; padding: 40px clamp(25px, 3.2vw, 58px) 80px; background: radial-gradient(circle at 50% 0, rgba(115,91,48,.06), transparent 25%); }
+.next-step-panel { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; gap: 17px; align-items: center; margin-bottom: 22px; padding: 15px; border: 1px solid rgba(201,164,95,.35); background: #181913; box-shadow: inset 3px 0 #c6a15d; }
+.next-step-number { align-self: stretch; display: grid; place-content: center; border-right: 1px solid var(--line); text-align: center; }
+.next-step-number span, .next-step-number strong { display: block; }
+.next-step-number span { color: #6e6a62; font-size: 7px; letter-spacing: .13em; text-transform: uppercase; }
+.next-step-number strong { margin-top: 3px; color: var(--gold); font-family: Georgia, serif; font-size: 25px; font-weight: 400; }
+.next-step-copy p { margin: 0 0 5px; color: var(--gold); font-size: 8px; letter-spacing: .08em; text-transform: uppercase; }
+.next-step-copy h3 { margin: 0; color: #d1c8b8; font-family: Georgia, serif; font-size: 19px; font-weight: 400; }
+.next-step-copy > span { display: block; max-width: 850px; margin-top: 6px; color: #89847b; font-size: 10px; line-height: 1.5; }
+.next-step-copy small { display: block; margin-top: 8px; color: #656159; font-size: 8px; }
+.next-step-actions { min-width: 165px; display: grid; gap: 7px; }
+.next-step-actions button { min-height: 38px; padding: 0 13px; border: 1px solid var(--line); background: #11120f; color: #9a9488; font-size: 9px; cursor: pointer; }
+.next-step-actions button.primary { border-color: #a68043; background: #c6a15d; color: #17140e; font-weight: 700; }
+.next-step-actions span { color: #7f9d82; font-size: 9px; text-align: center; }
+.route-finished { display: block; box-shadow: inset 3px 0 #668469; }
+.route-finished p, .route-finished h3 { margin: 0; }
+.route-finished p { color: #7f9d82; font-size: 8px; text-transform: uppercase; }
+.route-finished h3 { margin-top: 5px; font-family: Georgia, serif; font-weight: 400; }
 .chapter-hero { display: flex; justify-content: space-between; align-items: center; gap: 30px; margin-bottom: 26px; }
 .chapter-hero h2, .page-heading h2 { margin: 0; font-family: Georgia, serif; font-weight: 400; font-size: clamp(34px, 4vw, 60px); letter-spacing: -.045em; }
 .chapter-hero > div > p:last-child { max-width: 760px; margin: 13px 0 0; color: #8e897f; line-height: 1.6; font-size: 13px; }
@@ -276,6 +293,7 @@ body::before {
 .player-checks { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px; }
 .player-checks button { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border: 1px solid var(--line); background: #11120f; color: #7b776f; font-size: 9px; cursor: pointer; }
 .player-checks button.checked { border-color: color-mix(in srgb, var(--player), transparent 48%); color: var(--player); }
+.player-checks button:disabled { cursor: default; }
 .player-checks button.checked i { border-color: var(--player); }
 .chapter-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 23px; }
 .chapter-nav button, .save-actions button, .save-actions label { min-height: 42px; padding: 0 16px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); background: #171814; color: #8e897f; font-size: 10px; cursor: pointer; }
@@ -362,6 +380,12 @@ body::before {
 .source-panel a { display: flex; justify-content: space-between; padding: 11px; border: 1px solid var(--line); color: #968f83; font-size: 9px; text-decoration: none; }
 .source-panel a:hover { border-color: rgba(201,164,95,.4); color: var(--gold); }
 .toast { position: fixed; left: 50%; bottom: 25px; z-index: 100; transform: translateX(-50%); padding: 11px 18px; border: 1px solid rgba(201,164,95,.45); background: #1d1c17; color: #d1c4aa; box-shadow: 0 12px 45px #000; font-size: 10px; letter-spacing: .06em; }
+.lan-badge { min-width: 72px; padding: 6px 8px; border: 1px solid #536d56; color: #8faf92; font-size: 8px; font-weight: 600; letter-spacing: .08em; text-align: center; text-transform: uppercase; }
+.follower-waiting { min-height: 100vh; display: grid; place-content: center; padding: 25px; background: #11120f; text-align: center; }
+.follower-waiting strong { color: var(--gold); font-family: Georgia, serif; font-size: 18px; font-weight: 400; }
+.follower-waiting h1 { margin: 20px 0 9px; font-family: Georgia, serif; font-size: clamp(34px, 8vw, 58px); font-weight: 400; }
+.follower-waiting p { max-width: 480px; margin: 0; color: #858178; font-size: 12px; line-height: 1.55; }
+.follower-waiting span { margin-top: 18px; color: #5f765f; font-size: 8px; letter-spacing: .1em; text-transform: uppercase; }
 
 @media (max-width: 1200px) {
   .route-layout { grid-template-columns: 225px minmax(500px, 1fr); }
@@ -393,6 +417,8 @@ body::before {
   .act-group > p { min-width: 80px; margin: 0; display: grid; place-content: center; writing-mode: vertical-rl; transform: rotate(180deg); }
   .act-group button { min-width: 145px; }
   .route-main { padding: 30px 24px 60px; }
+  .next-step-panel { grid-template-columns: 58px minmax(0, 1fr); }
+  .next-step-actions { grid-column: 2; min-width: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .chapter-rail, .company-panel { top: 107px; }
   .company-panel { display: grid; grid-template-columns: repeat(2, 1fr); }
   .party-cards { grid-template-columns: repeat(2, 1fr); }
@@ -434,6 +460,9 @@ body::before {
   .brand strong { font-size: 15px; }
   .top-progress { grid-template-columns: 65px 28px 34px; padding: 0 8px; }
   .route-main { padding: 28px 14px 50px; }
+  .next-step-panel { grid-template-columns: 1fr; gap: 11px; }
+  .next-step-number { display: none; }
+  .next-step-actions { grid-column: 1; grid-template-columns: 1fr; }
   .chapter-hero { align-items: start; }
   .chapter-hero h2, .page-heading h2 { font-size: 37px; }
   .readiness-seal { width: 70px; height: 70px; }
