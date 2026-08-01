@@ -128,6 +128,7 @@ const inferGuide = (item: string, chapter: Chapter) => {
 type LoadoutPickup = { item: string; slot: string };
 
 const cleanItemName = (value: string) => value.toLowerCase().replace(/[+＋]\d+/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+const literalItemName = (value: string) => value.toLowerCase().replace(/＋/g, "+").replace(/[^a-z0-9+]+/g, " ").trim();
 
 function loadoutPickups(loadout: ReturnType<typeof stageLoadout>, chapter: Chapter): LoadoutPickup[] {
   const layer = mapLayerForChapter(chapter);
@@ -144,10 +145,12 @@ function loadoutPickups(loadout: ReturnType<typeof stageLoadout>, chapter: Chapt
   for (const field of fields) {
     for (const value of field.values) {
       const matches = findMapItems(value, layer, field.categories);
+      const exactMatches = matches.filter((match) => literalItemName(match.name) === literalItemName(value));
+      const candidateMatches = exactMatches.length ? exactMatches : matches;
       const isChoice = /\bor\b|according to|best available|build-specific|named weapon/i.test(value) && ["off-hand", "skill", "talisman", "armour", "spell"].includes(field.slot);
-      const selectedMatches = isChoice && matches.length > 1
-        ? [...matches].sort((a, b) => cleanItemName(value).indexOf(cleanItemName(a.name)) - cleanItemName(value).indexOf(cleanItemName(b.name))).slice(0, 1)
-        : matches;
+      const selectedMatches = isChoice && candidateMatches.length > 1
+        ? [...candidateMatches].sort((a, b) => cleanItemName(value).indexOf(cleanItemName(a.name)) - cleanItemName(value).indexOf(cleanItemName(b.name))).slice(0, 1)
+        : candidateMatches;
       for (const match of selectedMatches) pickups.push({ item: match.name, slot: field.slot });
       if (!matches.length && /weapon|off-hand/.test(field.slot)) {
         for (const known of Object.keys(itemGuides)) {
@@ -281,7 +284,7 @@ const ITEM_REGION_GATES: Array<[RegExp, string]> = [
   [/Leyndell|Royal Capital|Capital Outskirts/i, "leyndell"],
   [/Ainsel|Nokstella|Lake of Rot|Grand Cloister/i, "ainsel"],
   [/Deeproot/i, "deeproot"],
-  [/Consecrated Snowfield|Ordina|Haligtree|Elphael/i, "haligtree"],
+  [/Consecrated Snowfield|Ordina|Haligtree|Elphael|Drainage Channel/i, "haligtree"],
   [/Forbidden Lands|Mountaintops|Flame Peak|Castle Sol/i, "mountaintops"],
   [/Mohgwyn/i, "mohgwyn"],
   [/Crumbling Farum Azula|Farum Azula/i, "farum"],
@@ -289,7 +292,13 @@ const ITEM_REGION_GATES: Array<[RegExp, string]> = [
 
 function deferredChapterForPickup(item: string, phase: PhaseKey) {
   const marker = findMapItem(item);
-  const coordinateGate = marker?.layer === "surface" && marker.x >= 32 && marker.x <= 35.5 && marker.y >= 68.5 && marker.y <= 71.5 ? "stormveil" : undefined;
+  const coordinateGate = marker?.layer !== "surface"
+    ? undefined
+    : marker.x >= 32 && marker.x <= 35.5 && marker.y >= 68.5 && marker.y <= 71.5
+      ? "stormveil"
+      : marker.x >= 57 && marker.x <= 59.5 && marker.y >= 13 && marker.y <= 20.5
+        ? "haligtree"
+        : undefined;
   const target = DEFERRED_AVATAR_ITEMS[item] || coordinateGate || ITEM_REGION_GATES.find(([pattern]) => pattern.test(`${marker?.name || item} ${marker?.description || ""}`))?.[1];
   if (!target) return undefined;
   if (target === "weeping" || target === "stormveil") return target;

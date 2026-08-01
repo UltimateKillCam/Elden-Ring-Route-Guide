@@ -128,6 +128,8 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /the-shadow-realm/);
   assert.match(packageJson, /scripts\/lan-server\.mjs/);
   assert.match(page, /loadoutPickups/);
+  assert.match(page, /const literalItemName/);
+  assert.match(page, /exactMatches\.length \? exactMatches : matches/);
   assert.match(page, /loadout-item-/);
   assert.match(page, /equip unlocked items/);
   assert.match(page, /Equip only what has been collected/);
@@ -147,6 +149,8 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /slotPriority\(a\) - slotPriority\(b\)/);
   assert.equal((page.match(/slot: pickup\.slot/g) || []).length, 2);
   assert.match(page, /marker\.x >= 32.*marker\.y >= 68\.5/);
+  assert.match(page, /marker\.x >= 57.*marker\.y >= 13/);
+  assert.match(page, /Drainage Channel\/i, "haligtree"/);
   assert.match(page, /target === "weeping" \|\| target === "stormveil"/);
   assert.match(page, /Castle Morne weapon pickups/);
   assert.match(page, /"Stonebarb Cracked Tear": "caelid"/);
