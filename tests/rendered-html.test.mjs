@@ -107,8 +107,9 @@ test("uses plain product copy and the revised social card", async () => {
 });
 
 test("includes a read-only LAN follower and Elden Ring build filters", async () => {
-  const [page, server, packageJson, mapItems] = await Promise.all([
+  const [page, progression, server, packageJson, mapItems] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/progression.ts", import.meta.url), "utf8"),
     readFile(new URL("../scripts/lan-server.mjs", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
     readFile(new URL("../app/map-items.ts", import.meta.url), "utf8"),
@@ -129,8 +130,8 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /the-shadow-realm/);
   assert.match(packageJson, /scripts\/lan-server\.mjs/);
   assert.match(page, /loadoutPickups/);
-  assert.match(page, /const literalItemName/);
-  assert.match(page, /exactMatches\.length \? exactMatches : matches/);
+  assert.match(progression, /export const literalItemName/);
+  assert.match(page, /exactMatches\.length \? exactMatches : embeddedMatches\.length/);
   assert.match(page, /loadout-item-/);
   assert.match(page, /equip unlocked items/);
   assert.match(page, /Equip only what has been collected/);
@@ -141,20 +142,29 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /Golden Seed - 2x Capital Outskirts West/);
   assert.match(page, /Sacred Tear \(First Church of Marika\)/);
   assert.match(page, /Flask upgrade for every player/);
-  assert.match(page, /DEFERRED_AVATAR_ITEMS/);
-  assert.match(page, /ITEM_REGION_GATES/);
-  assert.match(page, /\[\/Stormveil\/i, "stormveil"\]/);
-  assert.match(page, /\[\/\\bAltus\\b\|Lux Ruins\|Windmill Village\/i, "altus"\]/);
-  assert.match(page, /deferredChapterForPickup/);
+  assert.match(progression, /const EXACT_GATES/);
+  assert.match(progression, /const REGION_GATES/);
+  assert.match(progression, /Stormveil\/i, gate\("stormveil"/);
+  assert.match(progression, /Scadu.*Altus/);
+  assert.match(progression, /export function deferredPickupGate/);
+  assert.match(progression, /Sacred Relic Sword.*ashen/);
+  assert.match(progression, /Greatsword of Radahn \(Lord\).*enir/);
+  assert.match(page, /TimingNote/);
+  assert.match(page, /afterObjective/);
+  assert.match(page, /const embeddedMatches = allMatches/);
+  assert.match(page, /OBJECTIVE_MAP_LAYERS/);
+  assert.match(mapItems, /Number\(b\.name === query\) - Number\(a\.name === query\)/);
   assert.match(page, /const slotPriority/);
   assert.match(page, /slotPriority\(a\) - slotPriority\(b\)/);
   assert.equal((page.match(/slot: pickup\.slot/g) || []).length, 2);
-  assert.match(page, /marker\.x >= 32.*marker\.y >= 68\.5/);
-  assert.match(page, /marker\.x >= 57.*marker\.y >= 13/);
-  assert.match(page, /Drainage Channel\/i, "haligtree"/);
-  assert.match(page, /target === "weeping" \|\| target === "stormveil"/);
-  assert.match(page, /"Stonebarb Cracked Tear": "caelid"/);
-  assert.match(page, /"Opaline Hardtear": "caelid"/);
+  assert.match(progression, /marker\.x >= 32.*marker\.y >= 68\.5/);
+  assert.match(progression, /marker\.x >= 57.*marker\.y >= 13/);
+  assert.match(progression, /Drainage Channel\/i, gate\("haligtree"/);
+  assert.match(progression, /"Stonebarb Cracked Tear": "caelid"/);
+  assert.match(progression, /"Opaline Hardtear": "caelid"/);
+  assert.match(progression, /Opaline Hardtear.*Defeat Starscourge Radahn/);
+  assert.match(progression, /Blasphemous Blade.*gate\("rykard"/);
+  assert.match(progression, /Retaliatory Crossed-Tree.*Resolve the Leda and Ansbach Storehouse signs/);
   assert.match(page, /Skip this item/);
   assert.match(page, /Restore item/);
   assert.match(mapItems, /Found in a cellar underneath the Mistwood Ruins/);
@@ -184,5 +194,6 @@ test("every ordered objective resolves to a sourced item or map marker", async (
     const query = aliases[label] || label.replace(/^Defeat\s+/i, "").replace(/^Speak (?:to|with)\s+/i, "").trim().split(":")[0].split(",")[0].trim();
     assert.ok(routePoints.some((point) => matches(query, point.name)), `No sourced map target for: ${label}`);
   }
-  assert.match(page, /const mapLayer = mappedPoint\?\.layer \|\| chapterMapLayer/);
+  assert.match(page, /const mapLayer = mappedPoint\?\.layer \|\| objectiveLayer/);
+  assert.match(page, /OBJECTIVE_MAP_LAYERS/);
 });

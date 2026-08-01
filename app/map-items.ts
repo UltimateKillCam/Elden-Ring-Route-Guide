@@ -24416,7 +24416,7 @@ export function findMapItems(value: string, preferredLayer?: MapItem["layer"], c
     .filter((item) => !categoryPattern || categoryPattern.test(item.category))
     .map((item) => ({ item, name: clean(item.name) }))
     .filter(({ name }) => name.length > 3 && (query.includes(name) || name.includes(query)))
-    .sort((a, b) => Number(b.item.layer === preferredLayer) - Number(a.item.layer === preferredLayer) || b.name.length - a.name.length);
+    .sort((a, b) => Number(b.name === query) - Number(a.name === query) || Number(b.item.layer === preferredLayer) - Number(a.item.layer === preferredLayer) || b.name.length - a.name.length);
   const chosen: MapItem[] = [];
   const occupied: Array<[number, number]> = [];
   const names = new Set<string>();

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { builds, chapters, itemGuides, sources, stageLoadout, type Build, type Chapter, type PhaseKey } from "./data";
 import { findMapItem, findMapItems, findMapRoutePoint, type MapItem } from "./map-items";
+import { deferredPickupGate, literalItemName, PHASE_START, type PickupGate } from "./progression";
 
 type Mode = "standard" | "seamless";
 type View = "route" | "codex" | "party";
@@ -27,16 +28,11 @@ type Task = {
   scope: string;
   item?: string;
   slot?: string;
+  afterObjective?: string;
   optional?: boolean;
 };
 
 const PLAYER_COLORS = ["#d8ad62", "#7db6a8", "#b987aa", "#7698c8", "#c5775e", "#a7a36c"];
-const PHASE_START: Record<PhaseKey, string> = {
-  early: "first-steps",
-  mid: "liurnia-south",
-  late: "gelmir",
-  dlc: "gravesite",
-};
 const STORAGE_KEY = "tarnished-together-expedition-v1";
 
 const makePlayers = (count: number): Player[] =>
@@ -116,20 +112,18 @@ function sortBuilds(candidates: Build[], order: string) {
 
 const inferGuide = (item: string, chapter: Chapter) => {
   const exact = Object.entries(itemGuides).find(([key]) => item.includes(key));
-  if (exact) return exact[1];
+  if (exact) return `Area: ${chapter.region}. ${exact[1]}`;
   const marker = findMapItem(item, mapLayerForChapter(chapter)) || findMapItem(item);
-  if (marker?.description) return marker.description;
+  if (marker?.description) return `Area: ${chapter.region}. ${marker.description}`;
   if (chapter.act === "Shadow of the Erdtree") {
-    return `Acquire this during the ${chapter.region} leg. Start from ${chapter.grace}; use the item name in the linked map search, then return to the party route.`;
+    return `Area: ${chapter.region}. Begin at ${chapter.grace}, follow the active map marker to the named item, collect it, then return to this chapter's ordered steps.`;
   }
-  return `Pick this up during the ${chapter.region} sweep. Begin at ${chapter.grace}, search the exact item name on the linked map, and keep the weapon at this chapter's upgrade cap.`;
+  return `Area: ${chapter.region}. Begin at ${chapter.grace}, follow the active map marker to the named item, collect it, and keep the weapon at this chapter's upgrade cap.`;
 };
 
 type LoadoutPickup = { item: string; slot: string };
 
 const cleanItemName = (value: string) => value.toLowerCase().replace(/[+＋]\d+/g, "").replace(/[^a-z0-9]+/g, " ").trim();
-const literalItemName = (value: string) => value.toLowerCase().replace(/＋/g, "+").replace(/[^a-z0-9+]+/g, " ").trim();
-
 function loadoutPickups(loadout: ReturnType<typeof stageLoadout>, chapter: Chapter): LoadoutPickup[] {
   const layer = mapLayerForChapter(chapter);
   const fields: Array<{ slot: string; values: string[]; categories: RegExp }> = [
@@ -144,15 +138,22 @@ function loadoutPickups(loadout: ReturnType<typeof stageLoadout>, chapter: Chapt
   const pickups: LoadoutPickup[] = [];
   for (const field of fields) {
     for (const value of field.values) {
-      const matches = findMapItems(value, layer, field.categories);
-      const exactMatches = matches.filter((match) => literalItemName(match.name) === literalItemName(value));
-      const candidateMatches = exactMatches.length ? exactMatches : matches;
+      const layerMatches = findMapItems(value, layer, field.categories);
+      const allMatches = findMapItems(value, undefined, field.categories);
+      const exactMatches = allMatches.filter((match) => literalItemName(match.name) === literalItemName(value));
+      const embeddedMatches = allMatches
+        .filter((match) => {
+          const name = literalItemName(match.name);
+          return name.split(" ").length > 1 && literalItemName(value).includes(name);
+        })
+        .filter((match, _, candidates) => !candidates.some((other) => other !== match && literalItemName(other.name).includes(literalItemName(match.name))));
+      const candidateMatches = exactMatches.length ? exactMatches : embeddedMatches.length ? embeddedMatches : layerMatches;
       const isChoice = /\bor\b|according to|best available|build-specific|named weapon/i.test(value) && ["off-hand", "skill", "talisman", "armour", "spell"].includes(field.slot);
       const selectedMatches = isChoice && candidateMatches.length > 1
         ? [...candidateMatches].sort((a, b) => cleanItemName(value).indexOf(cleanItemName(a.name)) - cleanItemName(value).indexOf(cleanItemName(b.name))).slice(0, 1)
         : candidateMatches;
       for (const match of selectedMatches) pickups.push({ item: match.name, slot: field.slot });
-      if (!matches.length && /weapon|off-hand/.test(field.slot)) {
+      if (!candidateMatches.length && /weapon|off-hand/.test(field.slot)) {
         for (const known of Object.keys(itemGuides)) {
           if (cleanItemName(value).includes(cleanItemName(known))) pickups.push({ item: known, slot: field.slot });
         }
@@ -160,6 +161,30 @@ function loadoutPickups(loadout: ReturnType<typeof stageLoadout>, chapter: Chapt
     }
   }
   return pickups.filter((pickup, index) => pickups.findIndex((candidate) => cleanItemName(candidate.item) === cleanItemName(pickup.item)) === index);
+}
+
+function routeTiming(value: string, phase: PhaseKey): PickupGate | undefined {
+  const phaseStart = chapters.findIndex((chapter) => chapter.id === PHASE_START[phase]);
+  const mapMatches = findMapItems(value);
+  const exactMatches = mapMatches.filter((item) => literalItemName(item.name) === literalItemName(value));
+  const embeddedMatches = mapMatches
+    .filter((item) => literalItemName(item.name).split(" ").length > 1 && literalItemName(value).includes(literalItemName(item.name)))
+    .filter((item, _, matches) => !matches.some((other) => other !== item && literalItemName(other.name).includes(literalItemName(item.name))));
+  const candidates = new Set([value, ...(exactMatches.length ? exactMatches : embeddedMatches).map((item) => item.name)]);
+  Object.keys(itemGuides).forEach((item) => {
+    if (literalItemName(value).includes(literalItemName(item))) candidates.add(item);
+  });
+  return [...candidates]
+    .map((item) => deferredPickupGate(item))
+    .filter((timing): timing is PickupGate => Boolean(timing) && chapters.findIndex((chapter) => chapter.id === timing.chapterId) >= phaseStart)
+    .sort((a, b) => chapters.findIndex((chapter) => chapter.id === b!.chapterId) - chapters.findIndex((chapter) => chapter.id === a!.chapterId))[0];
+}
+
+function TimingNote({ value, phase }: { value: string; phase: PhaseKey }) {
+  const timing = routeTiming(value, phase);
+  if (!timing) return null;
+  const chapter = chapters.find((candidate) => candidate.id === timing.chapterId);
+  return <small className="route-timing">Use the previous-stage setup until {chapter?.title || timing.chapterId}{timing.after ? ` — after ${timing.after.replace(/^Defeat\s+/i, "")}` : ""}.</small>;
 }
 
 function orderPickupTasks(tasks: Task[], chapter: Chapter) {
@@ -184,6 +209,21 @@ function orderPickupTasks(tasks: Task[], chapter: Chapter) {
   return ordered;
 }
 
+function insertGatedPickupTasks(tasks: Task[], pickups: Task[], chapter: Chapter) {
+  const beforeBoss = pickups.filter((task) => !task.afterObjective);
+  if (beforeBoss.length) {
+    const finalBossName = chapter.boss?.split(",")[0];
+    const finalBossIndex = finalBossName ? tasks.findIndex((task) => task.label.includes(finalBossName)) : -1;
+    tasks.splice(finalBossIndex >= 0 ? finalBossIndex : tasks.length, 0, ...orderPickupTasks(beforeBoss, chapter));
+  }
+  const gates = Array.from(new Set(pickups.map((task) => task.afterObjective).filter(Boolean))) as string[];
+  gates.forEach((afterObjective) => {
+    const gated = orderPickupTasks(pickups.filter((task) => task.afterObjective === afterObjective), chapter);
+    const objectiveIndex = tasks.findIndex((task) => task.label.includes(afterObjective));
+    tasks.splice(objectiveIndex >= 0 ? objectiveIndex + 1 : tasks.length, 0, ...gated);
+  });
+}
+
 const ESSENTIAL_GUIDES: Record<string, string> = {
   "Church of Elleh: Crafting Kit and Kale": "From The First Step, ride north to the ruined church. Buy the Crafting Kit from Kalé, speak to him until his dialogue repeats, then continue north-east toward Gatefront.",
   "Gatefront: Whetstone Knife and first map": "At Gatefront Ruins, take the West Limgrave map from the roadside pillar. Go down the stairs in the southern camp, open the chest for the Whetstone Knife, then leave east along the main road.",
@@ -192,13 +232,116 @@ const ESSENTIAL_GUIDES: Record<string, string> = {
   "Collect Map: Caelid": "Take Map: Caelid from the roadside pillar beside the nomadic merchant near Caelid Highway South, then continue south toward Redmane Castle.",
   "Sealed Tunnel: Smithing-Stone Miner's Bell Bearing [2]": "Enter Sealed Tunnel outside Leyndell. Strike the illusory wall beside the grace, then open the chest in the first chamber for Smithing-Stone Miner's Bell Bearing [2].",
   "Collect two Scadutree Fragments at Church of Consolation": "Ride south-east from Gravesite Plain to the Church of Consolation and take both Scadutree Fragments from the altar.",
+  "Accept Melina's accord and receive Torrent": "Rest at Gatefront or Agheel Lake North after activating three overworld graces. Accept Melina's accord to receive the Spectral Steed Whistle, then put it in a pouch or quick-item slot.",
+  "Meet Renna at Church of Elleh at night": "After receiving Torrent, pass time until night and fast-travel to Church of Elleh. Tell Renna that you can call the spectral steed; she gives the Spirit Calling Bell and Lone Wolf Ashes. If she no longer appears, both can later be bought from the Twin Maiden Husks.",
+  "Speak to Ensha at Roundtable Hold before taking a secret medallion": "Speak to Ensha beside Gideon's room before collecting Albus's medallion half. This records his pre-invasion dialogue and the missable What Do You Want? gesture; after the medallion triggers his invasion, defeat him and collect the Royal Remains set outside Gideon's room.",
+  "Ask Seluvis about Nokron and take his introduction": "After joining Ranni, descend Seluvis's Rise and ask him about Nokron. Take Seluvis's Introduction; do not give Ranni the Fingerslayer Blade until the route explicitly clears Seluvis's reward.",
+  "Give Seluvis's Introduction to Sellen at Waypoint Ruins": "Defeat the Mad Pumpkin Head below Waypoint Ruins if needed, open Sellen's room and show her Seluvis's Introduction. Ask about General Radahn, then return to Blaidd in Siofra River.",
+  "Finish Seluvis and collect Magic Scorpion Charm before handing over the Fingerslayer Blade": "Give Seluvis's potion to the chosen recipient, find his puppet cellar in the ruins between Ranni's and Renna's rises, buy a puppet, reload and ask for another. Give him the Amber Starlight from north-east Altus and collect Magic Scorpion Charm. Giving Ranni the Fingerslayer Blade first ends this quest and loses the charm.",
+  "Collect Amber Starlight north-east of Altus Highway Junction": "From Altus Highway Junction ride north-east through the narrow shaded ravine toward Sainted Hero's Grave. Take the Amber Starlight from the ground before the statue, then return to Seluvis; do not give his resulting draught to Ranni.",
+  "Use the statue in Carian Study Hall and collect the Cursemark of Death": "Place the Carian Inverted Statue on the pedestal inside Carian Study Hall. Traverse the inverted hall to Liurnia Tower Bridge, defeat the Godskin Noble and climb the Divine Tower of Liurnia for the Cursemark needed by Fia.",
+  "Defeat Commander O'Neil in Aeonia Swamp and take the Unalloyed Gold Needle": "Ride into the eastern Aeonia Swamp and circle O'Neil on Torrent while clearing his summoned soldiers. Take the broken needle to Gowry's Shack south of Sellia; reload at a grace before returning for the repaired needle.",
+  "Collect Valkyrie's Prosthesis from the Shaded Castle": "Enter the Shaded Castle from the north-west poison rampart and follow the inner wall to the room guarded by a Cleanrot Knight. Open the chest for the prosthesis; Elemer does not need to be defeated for this item.",
+  "Find Goldmask at the Forest-Spanning Greatbridge and reunite Corhyn with him": "Use the sending gate beside the Forest-Spanning Greatbridge grace to reach the broken northern span and speak to Goldmask. Tell Corhyn his location near the Altus map pillar, reload, then exhaust both together on the bridge.",
+  "Complete Old Knight Istvan and Rileigh contracts": "Read the red letter in Volcano Manor's drawing room. Defeat Istvan at the red mark north of Warmaster's Shack, report to Tanith, then read the second letter and defeat Rileigh at the Altus red mark south of Bridge of Iniquity before reporting again.",
+  "Do not defeat Rykard before the Mountaintops contract and Rya checks": "Stop before Tanith's audience chamber. Rykard's death makes the manor residents leave and can forfeit contract dialogue and rewards. Continue only after Juno Hoslow is defeated, Rya's choice is settled, and Bernahl and Patches have paid their rewards.",
+  "Collect Bolt of Gransax before Maliketh": "From Erdtree Sanctuary, take the lift west, descend the stairs and drop from the railing onto the giant golden spear. Walk up the spear to the Bolt. It becomes unobtainable after Maliketh turns Leyndell into the Ashen Capital.",
+  "Collect Coded Sword before Maliketh": "From West Capital Rampart, enter the fortified manor that mirrors Roundtable Hold and open the throne-room doors. Take the Coded Sword from the throne before defeating Maliketh.",
+  "Complete Goldmask, Corhyn, Dung Eater and Gideon reward checks before the Forge": "Before using the Forge, finish Corhyn and Goldmask's Mountaintops dialogue, resolve Dung Eater's underground-gaol route and collect Gideon's available shardbearer rewards. Also finish any Melina dialogue you want to hear. The Forge advances several NPC states; Maliketh later removes the original capital.",
+  "Confirm Bolt of Gransax and Coded Sword are collected": "Check both weapons in inventory before approaching Maliketh. If either is missing, return to the original Leyndell now; defeating Maliketh permanently removes their pickup locations.",
+  "Light all four Ordina evergaol statues": "Enter Ordina's evergaol at the imp statue. Light the ground-level western candle, the roof candle reached by the western ladder, the central tower candle and the north-east rooftop candle. Use cover or Sentry's Torch against invisible assassins; all four remain lit after death.",
+  "Choose Millicent's gold summon sign and collect Rotten Winged Sword Insignia": "After killing the Drainage Channel Ulcerated Tree Spirit, reload the area and use the gold summon sign on the ledge above the rot pool. Help Millicent defeat her sisters; the red sign kills her and gives the different Prosthesis reward instead.",
+  "Finish Varre's invasion and maiden-blood steps": "After speaking to the Two Fingers, meet Varre at Rose Church. Use three Festering Bloody Fingers or defeat Magnus at Writheblood Ruins, accept the Lord of Blood's Favor, soak it in maiden blood at the Church of Inhibition or Chapel of Anticipation, then return for the reusable finger and Pureblood Knight's Medal.",
+  "Collect the Purifying Crystal Tear from Eleonora at the Second Church of Marika": "Advance Yura through the Ravenmount Assassin sign at Main Academy Gate, then visit the Second Church of Marika in Altus. Speak to the dying Yura and defeat Eleonora when she invades; she drops the Purifying Crystal Tear.",
+  "Trigger the great-rune break only after the follower check": "After revisiting every named follower, ride north from Highroad Cross toward Shadow Keep until the on-screen message says a great rune and powerful charm have broken. This opens Stone Coffin Fissure but changes Moore, Hornsent, Leda, Freyja, Ansbach and Thiollier dialogue, so do not trigger it early.",
+  "Give Ansbach the Secret Rite Scroll before finishing Freyja's letter exchange": "In Specimen Storehouse, find the Secret Rite Scroll above Storehouse Fourth Floor and give it to Ansbach on the first floor. Speak to Freyja on the seventh floor, ask Ansbach for his letter, then deliver it to Freyja. Exhaust both before Messmer or the sealing tree advances them.",
+  "Choose Moore's answer only after collecting the available Forager Brood cookbooks": "Moore's post-break question is irreversible. 'Put it behind you' sends him to Leda's final battle and lets you recover his gear and bell bearing there; 'remain sad forever' leaves his body and rewards near Church of the Crusade; 'I don't know' postpones the choice. Collect the living Forager Brood cookbooks before choosing.",
+  "Resolve the Leda and Hornsent bridge summon signs before entering Messmer's arena": "At Shadow Keep's burning-boat bridge, choose one sign or deliberately ignore both before entering Messmer. Helping Hornsent awards Swift Slash and keeps his Messmer/Rauh route; helping Leda removes Hornsent and awards Lacerating Crossed-Tree after reporting to her. The signs disappear as soon as Messmer's arena is entered.",
+  "Resolve the Leda and Ansbach Storehouse signs for the party's required reward": "If Leda targets Ansbach, red and gold signs appear in his Storehouse room. Use the gold sign to protect Ansbach, receive Ansbach's Longbow and keep him for Enir-Ilim and Obsidian Lamina. Use the red sign only if a selected build specifically needs Retaliatory Crossed-Tree; this kills Ansbach and ends his finale rewards. In normal co-op the alternate result can be taken in another player's world.",
+  "Choose whether to summon Hornsent inside Messmer before crossing the fog": "If Hornsent survived the bridge choice, his gold sign is inside Messmer's arena. Summoning him and exhausting him afterward continues his Rauh invasion; defeating Messmer without summoning him changes his later placement. Decide now because crossing the fog also closes the bridge-sign event.",
+  "Imbibe St. Trina's nectar four times until she speaks": "At Garden of Deep Purple, choose Imbibe Nectar and accept the death repeatedly. Return after each respawn; on the fourth imbibing St. Trina speaks. Continue until all dialogue repeats before reporting her words to Thiollier.",
+  "Ring the Finger Ruins of Rhia bell": "From Cerulean Coast Cross, ride east into the Finger Ruins of Rhia. Stay around the outer rim to avoid the central enemies, reach the hanging finger at the northern centre and sound the bell while wearing Ymir's Hole-Laden Necklace.",
+  "Open the Hinterland with O Mother and ring the Dheo bell": "At Shadow Keep, Back Gate, enter the side chapel and perform O Mother before Marika's statue to open the hidden wall. Cross Hinterland and Fingerstone Hill to the Dheo hanging finger, then sound it with Ymir's necklace.",
+  "Do not touch the sealing tree until every follower check is complete": "Stop after Romina. Before interacting with the sealing tree, finish Moore, Thiollier, Hornsent, Ansbach, Freyja, Leda, Dane, Igon, Ymir and Jolan, collect their available rewards and confirm Ansbach and Thiollier are eligible for Enir-Ilim. Burning the tree is the DLC's final shared quest cutoff.",
 };
 
 const ESSENTIAL_MAP_QUERIES: Record<string, string> = {
+  "Axe of Godrick": "Godrick the Grafted",
+  "Grafted Dragon": "Godrick the Grafted",
+  "Carian Regal Scepter": "Rennala, Queen of the Full Moon",
+  "Starscourge Greatsword": "Starscourge Radahn",
+  "Lion Greatbow": "Starscourge Radahn",
+  "Blasphemous Blade": "Rykard, Lord of Blasphemy",
+  "Morgott's Cursed Sword": "Morgott, the Omen King",
+  "Bastard's Stars": "Astel, Naturalborn of the Void",
+  "Giant's Red Braid": "Fire Giant",
+  "Hand of Malenia": "Malenia, Goddess of Rot",
+  "Dragon King's Cragblade": "Dragonlord Placidusax",
+  "Maliketh's Black Blade": "Beast Clergyman / Maliketh, The Black Blade",
+  "Axe of Godfrey": "Godfrey, First Elden Lord",
+  "Hoarah Loux's Earthshaker": "Godfrey, First Elden Lord",
+  "Sacred Relic Sword": "Radagon of the Golden Order",
+  "Marika's Hammer": "Radagon of the Golden Order",
+  "Rellana's Twin Blades": "Rellana, Twin Moon Knight",
+  "Putrescence Cleaver": "Putrescent Knight",
+  "Shadow Sunflower Blossom": "Scadutree Avatar",
+  "Staff of the Great Beyond": "Metyr, Mother of Fingers",
+  "Gazing Finger": "Metyr, Mother of Fingers",
+  "Spear of the Impaler": "Messmer the Impaler",
+  "Poleblade of the Bud": "Romina, Saint of the Bud",
+  "Greatsword of Radahn (Lord)": "Radahn, Consort of Miquella - Enir-Ilim",
+  "Greatsword of Radahn (Light)": "Radahn, Consort of Miquella - Enir-Ilim",
+  "Obsidian Lamina": "Radahn, Consort of Miquella - Enir-Ilim",
   "Church of Elleh: Crafting Kit and Kale": "Church of Elleh",
   "Gatefront: Whetstone Knife and first map": "Gatefront Ruins",
   "Third Church: Flask of Wondrous Physick": "Third Church of Marika",
   "Limgrave Tunnels: early Smithing Stones": "Limgrave Tunnels",
+  "Accept Melina's accord and receive Torrent": "Gatefront Ruins",
+  "Speak to Ensha at Roundtable Hold before taking a secret medallion": "Haligtree Secret Medallion (Right)",
+  "Return to Blaidd in Siofra and exhaust his dialogue": "Blaidd (Ranni's Quest - First Location)",
+  "Speak to Jerren in Redmane Plaza to begin the festival": "Redmane Castle Plaza",
+  "Use both Dectus Medallion halves at the Grand Lift": "Grand Lift of Dectus",
+  "Rest at Altus Plateau grace and revisit Roundtable quest NPCs": "Altus Plateau (Site of Grace)",
+  "Complete Old Knight Istvan and Rileigh contracts": "Volcano Manor",
+  "Exhaust Alexander and Blaidd in the Wailing Dunes before leaving": "Starscourge Radahn",
+  "Do not give Ranni the Amber Draught": "Ranni the Witch",
+  "Reload, find Rya in the side room and settle the Tonic of Forgetfulness decision": "Rya (End of Questline Location)",
+  "Do not defeat Rykard before Juno, Bernahl and Rya are complete": "Rykard, Lord of Blasphemy",
+  "Complete Bernahl's Vargram and Wilhelm invasion in Fortified Manor": "Fortified Manor, First Floor",
+  "Learn Law of Regression and cast it before Radagon's statue": "Erdtree Sanctuary",
+  "Visit Dung Eater's projection and unlock his sewer gaol before the Ashen transition": "Dung Eater",
+  "Collect any remaining Ashen Capital rewards": "Leyndell, Capital of Ash",
+  "Assist the friendly Forager Brood before its cookbook opportunities close": "Moore - Belurat Tower Settlement",
+  "Revisit every follower before any rune-break boundary": "Highroad Cross",
+  "Choose Moore's answer only after collecting the available Forager Brood cookbooks": "Moore - Belurat Tower Settlement",
+  "Do not enter Messmer's arena until every faction card is complete": "Messmer's Dark Chamber",
+  "Resolve the Leda and Ansbach Storehouse signs for the party's required reward": "Storehouse, First Floor",
+  "Confirm the Leda, Hornsent and Ansbach invasion choices are resolved": "Church of the Bud",
+  "Confirm Moore's answer and resulting location are known": "Church of the Bud",
+  "Advance Bernahl, Patches, Diallos and Rya dialogue": "Rya (Second Location)",
+  "Do not defeat Rykard before the Mountaintops contract and Rya checks": "Rykard's Great Rune",
+  "Confirm at least two Great Runes are obtained": "Draconic Tree Sentinel",
+  "Finish Rya's dialogue and choice": "Rya (End of Questline Location)",
+  "Collect Bernahl, Patches and Tanith contract rewards": "Tanith",
+  "Light all four Ordina evergaol statues": "Ordina, Liturgical Town",
+  "Defeat Loretta and descend into Elphael": "Loretta, Knight of the Haligtree",
+  "Return the needle to Malenia's bloom for Miquella's Needle": "Malenia, Goddess of Rot",
+  "Finish Varre's invasion and maiden-blood steps": "White-Mask Varre (Second Location)",
+  "Speak to Melina at the Forge and commit to the cardinal sin": "Forge of the Giants",
+  "Confirm Radahn and Mohg are defeated": "Mohg, Lord of Blood",
+  "Touch Miquella's withered arm in Mohg's arena": "Cocoon of the Empyrean",
+  "Speak to Leda at the cocoon and enter the Realm of Shadow": "Cocoon of the Empyrean",
+  "Clear Belurat and defeat Divine Beast Dancing Lion": "Divine Beast Dancing Lion - Belurat Tower Settlement",
+  "Finish Moore, Thiollier, Freyja, Hornsent and Ansbach dialogue": "Three-Path Cross",
+  "Trigger the great-rune break only after the follower check": "Highroad Cross",
+  "Imbibe St. Trina's nectar four times until she speaks": "St. Trina - Stone Coffin Fissure",
+  "Do not defeat Messmer until the faction checks are complete": "Messmer's Dark Chamber",
+  "Return to Ymir and exhaust both characters' dialogue": "Count Ymir",
+  "Inspect Ymir's empty throne and defeat Swordhand of Night Anna": "Finger Ruins of Miyr",
+  "Ring the Miyr bell and defeat Metyr": "Metyr, Mother of Fingers",
+  "Collect Map: Rauh Ruins from the lower ravine route": "Map: Rauh Ruins",
+  "Finish Moore, Thiollier, Hornsent, Ansbach, Freyja, Leda, Dane, Igon and Ymir reward checks": "Church of the Bud",
+  "Do not touch the sealing tree until every follower check is complete": "Church of the Bud",
   "Meet Rogier and Nepheli": "Sorcerer Rogier (First Location)",
   "Reach Iji in north-west Liurnia": "War Counselor Iji",
   "Collect Academy Glintstone Key": "Academy Glintstone Key (A)",
@@ -239,6 +382,18 @@ const ESSENTIAL_MAP_QUERIES: Record<string, string> = {
   "Spend remaining fragments up to the desired difficulty": "Spiral Rise",
 };
 
+const OBJECTIVE_MAP_LAYERS: Record<string, MapItem["layer"]> = {
+  "Meet Blaidd in Siofra": "underground",
+  "Return to Blaidd in Siofra and exhaust his dialogue": "underground",
+  "Collect Dark Moon Ring": "surface",
+  "Collect the Purifying Crystal Tear from Eleonora at the Second Church of Marika": "surface",
+  "Confirm Radahn and Mohg are defeated": "underground",
+  "Touch Miquella's withered arm in Mohg's arena": "underground",
+  "Speak to Leda at the cocoon and enter the Realm of Shadow": "underground",
+};
+
+const mapLayerForObjective = (chapter: Chapter, label: string) => OBJECTIVE_MAP_LAYERS[label] || mapLayerForChapter(chapter);
+
 const FLASK_UPGRADE_STOPS: Record<string, string[]> = {
   "first-steps": ["Sacred Tear (Third Church of Marika)", "Golden Seed - Fort Haight"],
   weeping: ["Golden Seed - Weeping Peninsula", "Sacred Tear (Church of Pilgrimage)", "Sacred Tear (Fourth Church of Marika)", "Sacred Tear (Callu Baptismal Church)"],
@@ -257,59 +412,6 @@ const FLASK_UPGRADE_STOPS: Record<string, string[]> = {
   mohgwyn: ["Golden Seed - Mohgwyn Palace"],
 };
 
-const DEFERRED_AVATAR_ITEMS: Record<string, string> = {
-  "Crimsonburst Crystal Tear": "weeping",
-  "Opaline Bubbletear": "weeping",
-  "Holy-Shrouding Cracked Tear": "liurnia-south",
-  "Lightning-Shrouding Cracked Tear": "liurnia-south",
-  "Magic-Shrouding Cracked Tear": "liurnia-south",
-  "Flame-Shrouding Cracked Tear": "caelid",
-  "Greenburst Crystal Tear": "caelid",
-  "Opaline Hardtear": "caelid",
-  "Stonebarb Cracked Tear": "caelid",
-  "Cerulean Crystal Tear A": "gelmir",
-  "Ruptured Crystal Tear": "gelmir",
-  "Cerulean Crystal Tear B": "mountaintops",
-  "Crimson Bubbletear": "mountaintops",
-  "Thorny Cracked Tear": "haligtree",
-};
-
-const ITEM_REGION_GATES: Array<[RegExp, string]> = [
-  [/Castle Morne|Weeping Peninsula|Morne Tunnel|Tombsward/i, "weeping"],
-  [/Stormveil/i, "stormveil"],
-  [/Caria Manor/i, "caria"],
-  [/Raya Lucaria|Academy of Raya Lucaria/i, "academy"],
-  [/Liurnia|Academy Gate Town|Church of Irith/i, "liurnia-south"],
-  [/Caelid|Dragonbarrow|Sellia|Redmane|Gael Tunnel/i, "caelid"],
-  [/Siofra|Nokron/i, "nokron"],
-  [/\bAltus\b|Lux Ruins|Windmill Village/i, "altus"],
-  [/Volcano Manor|Mt\. Gelmir|Gelmir|Seethewater/i, "gelmir"],
-  [/Leyndell|Royal Capital|Capital Outskirts/i, "leyndell"],
-  [/Ainsel|Nokstella|Lake of Rot|Grand Cloister/i, "ainsel"],
-  [/Deeproot/i, "deeproot"],
-  [/Consecrated Snowfield|Ordina|Haligtree|Elphael|Drainage Channel/i, "haligtree"],
-  [/Forbidden Lands|Mountaintops|Flame Peak|Castle Sol/i, "mountaintops"],
-  [/Mohgwyn/i, "mohgwyn"],
-  [/Crumbling Farum Azula|Farum Azula/i, "farum"],
-];
-
-function deferredChapterForPickup(item: string, phase: PhaseKey) {
-  const marker = findMapItem(item);
-  const coordinateGate = marker?.layer !== "surface"
-    ? undefined
-    : marker.x >= 32 && marker.x <= 35.5 && marker.y >= 68.5 && marker.y <= 71.5
-      ? "stormveil"
-      : marker.x >= 57 && marker.x <= 59.5 && marker.y >= 13 && marker.y <= 20.5
-        ? "haligtree"
-        : undefined;
-  const target = DEFERRED_AVATAR_ITEMS[item] || coordinateGate || ITEM_REGION_GATES.find(([pattern]) => pattern.test(`${marker?.name || item} ${marker?.description || ""}`))?.[1];
-  if (!target) return undefined;
-  if (target === "weeping" || target === "stormveil") return target;
-  const phaseStart = chapters.findIndex((candidate) => candidate.id === PHASE_START[phase]);
-  const targetIndex = chapters.findIndex((candidate) => candidate.id === target);
-  return targetIndex >= phaseStart ? target : undefined;
-}
-
 function objectiveMapQuery(label: string) {
   if (ESSENTIAL_MAP_QUERIES[label]) return ESSENTIAL_MAP_QUERIES[label];
   const withoutAction = label.replace(/^Defeat\s+/i, "").replace(/^Speak (?:to|with)\s+/i, "").trim();
@@ -318,8 +420,13 @@ function objectiveMapQuery(label: string) {
 
 function essentialGuide(chapter: Chapter, label: string, index: number) {
   if (ESSENTIAL_GUIDES[label]) return ESSENTIAL_GUIDES[label];
-  if (index === 0) return `Start from ${chapter.grace} and make this the first stop in the ${chapter.region} route. Complete it, then continue to the next card below.`;
-  return `Continue from “${chapter.essentials[index - 1]}” to this stop. Complete it once, then move directly to the next card below.`;
+  const objectiveLayer = mapLayerForObjective(chapter, label);
+  const mappedItem = findMapItem(label, objectiveLayer);
+  const mappedPoint = findMapRoutePoint(objectiveMapQuery(label), objectiveLayer);
+  const description = mappedItem?.description || mappedPoint?.description;
+  if (description) return `Area: ${chapter.region}. Start from ${chapter.grace}. ${description}`;
+  const previous = index > 0 ? ` after completing “${chapter.essentials[index - 1]}”` : "";
+  return `Area: ${chapter.region}. Start from ${chapter.grace}${previous}. ${chapter.directions} Complete the named objective before checking off this card.`;
 }
 
 function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
@@ -329,7 +436,7 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
     const isQuest = /speak|meet|quest|dialogue|decision|finish|resolve|ranni|fia|millicent|leda|ansbach|thiollier|moore|igon|varre/i.test(label);
     const individualPickup = /Sacred Tear|Golden Seed|collect|pickup|medallion|key/i.test(label);
     const perPlayer = expedition.mode === "standard" || individualPickup;
-    const essentialItem = findMapItem(label, mapLayerForChapter(chapter));
+    const essentialItem = findMapItem(label, mapLayerForObjective(chapter, label));
     tasks.push({
       id: `${chapter.id}-essential-${index}`,
       label,
@@ -367,13 +474,13 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
       const playerPickupTasks: Task[] = [];
       const phaseIndex = PHASE_ORDER.indexOf(chapter.phase!);
       const earlierItems = new Set(PHASE_ORDER.slice(0, phaseIndex).flatMap((phase) => loadoutPickups(stageLoadout(selected, phase), chapter)).map((pickup) => cleanItemName(pickup.item)));
-      const newPickups = loadoutPickups(loadout, chapter).filter((pickup) => !earlierItems.has(cleanItemName(pickup.item)) && !deferredChapterForPickup(pickup.item, chapter.phase!));
+      const newPickups = loadoutPickups(loadout, chapter).filter((pickup) => !earlierItems.has(cleanItemName(pickup.item)) && !deferredPickupGate(pickup.item));
       newPickups.forEach((pickup, pickupIndex) => {
         const itemKey = cleanItemName(pickup.item).replace(/ /g, "-");
         const pickupTask: Task = {
           id: pickup.slot === "weapon" && pickupIndex === 0 ? `${chapter.id}-gear-${player.id}` : `${chapter.id}-loadout-item-${player.id}-${selected.id}-${itemKey}`,
           label: pickup.item,
-          detail: `For ${player.name}'s ${selected.name} ${chapter.phase === "dlc" ? "DLC" : chapter.phase} setup. ${inferGuide(pickup.item, chapter)}${loadout.borrowedFrom ? ` This temporary stage comes from the sourced ${loadout.borrowedFrom.buildName} guide.` : ""}`,
+          detail: `For ${player.name}'s ${selected.name} ${chapter.phase === "dlc" ? "DLC" : chapter.phase} setup. ${inferGuide(pickup.item, chapter)} Once collected, equip it in the ${pickup.slot} slot if this stage uses it.${loadout.borrowedFrom ? ` This temporary stage comes from the sourced ${loadout.borrowedFrom.buildName} guide.` : ""}`,
           kind: "gear",
           playerId: player.id,
           perPlayer: false,
@@ -412,26 +519,26 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
         const itemKey = cleanItemName(pickup.item);
         if (seen.has(itemKey)) return;
         seen.add(itemKey);
-        if (deferredChapterForPickup(pickup.item, phase) !== chapter.id) return;
+        const pickupGate = deferredPickupGate(pickup.item);
+        if (pickupGate?.chapterId !== chapter.id) return;
         deferredTasks.push({
           id: `${chapter.id}-loadout-item-${player.id}-${selected.id}-${itemKey.replace(/ /g, "-")}`,
           label: pickup.item,
-          detail: `Optional item for ${player.name}'s ${selected.name} setup, delayed until its region is open. ${inferGuide(pickup.item, chapter)} Skip it if the fight or detour is not comfortable yet; the route will continue normally.`,
+          detail: `For ${player.name}'s ${selected.name} setup. ${pickupGate.requires ? `Prerequisite: ${pickupGate.requires}. ` : ""}${inferGuide(pickup.item, chapter)} Once collected, equip it in the ${pickup.slot} slot when the build stage calls for it. If this optional fight is not comfortable yet, skip the card and return before leaving this chapter.`,
           kind: "gear",
           playerId: player.id,
           perPlayer: false,
           scope: player.name,
           item: pickup.item,
           slot: pickup.slot,
+          afterObjective: pickupGate.after,
           optional: true,
         });
       });
     });
   });
   if (deferredTasks.length) {
-    const finalBossName = chapter.boss?.split(",")[0];
-    const finalBossIndex = finalBossName ? tasks.findIndex((task) => task.label.includes(finalBossName)) : -1;
-    tasks.splice(finalBossIndex >= 0 ? finalBossIndex : tasks.length, 0, ...orderPickupTasks(deferredTasks, chapter));
+    insertGatedPickupTasks(tasks, deferredTasks, chapter);
   }
 
   if (chapter.boss && !chapter.essentials.some((entry) => entry.includes(chapter.boss!.split(",")[0]))) {
@@ -479,11 +586,11 @@ function FullBuildDetails({ build, onClose, assignLabel, onAssign }: { build: Bu
             return (
               <article key={phase}>
                 <header><span>{phase === "dlc" ? "DLC" : phase}</span><small>{loadout.level}</small></header>
-                <div className="loadout-weapon"><small>Main weapon</small><strong>{loadout.weapon}</strong></div>
+                <div className="loadout-weapon"><small>Main weapon</small><strong>{loadout.weapon}</strong><TimingNote value={loadout.weapon} phase={phase} /></div>
                 <dl>
                   <div><dt>Off hand</dt><dd>{loadout.offhand}</dd></div>
                   <div><dt>Skill plan</dt><dd>{loadout.skill}</dd></div>
-                  <div><dt>Talismans</dt><dd><small>{loadout.talismanSlots}</small>{loadout.talismans.map((talisman) => <span key={talisman}>{talisman}</span>)}</dd></div>
+                  <div><dt>Talismans</dt><dd><small>{loadout.talismanSlots}</small>{loadout.talismans.map((talisman) => <span key={talisman}>{talisman}<TimingNote value={talisman} phase={phase} /></span>)}</dd></div>
                   <div><dt>Armour</dt><dd>{loadout.armour}</dd></div>
                   <div><dt>Spells</dt><dd>{loadout.spells.length ? loadout.spells.map((spell) => <span key={spell}>{spell}</span>) : build.publishedLoadout ? "Not specified by source" : "No required spells; use consumables for ranged utility."}</dd></div>
                   <div><dt>Physick</dt><dd>{loadout.flask}</dd></div>
@@ -610,10 +717,11 @@ function mapLayerForChapter(chapter: Chapter): MapLayer {
 function MapPanel({ chapter, expedition, onSelect }: { chapter: Chapter; expedition: Expedition; onSelect: (id: string) => void }) {
   const chapterMapLayer = mapLayerForChapter(chapter);
   const currentTask = tasksForChapter(chapter, expedition).find((task) => !taskDone(task, expedition));
-  const mappedItem = currentTask?.item ? findMapItem(currentTask.item, chapterMapLayer) : undefined;
-  const mappedObjective = !mappedItem && currentTask ? findMapRoutePoint(objectiveMapQuery(currentTask.label), chapterMapLayer) : undefined;
-  const mappedPoint = mappedItem || mappedObjective || findMapRoutePoint(chapter.grace, chapterMapLayer);
-  const mapLayer = mappedPoint?.layer || chapterMapLayer;
+  const objectiveLayer = currentTask ? mapLayerForObjective(chapter, currentTask.label) : chapterMapLayer;
+  const mappedItem = currentTask?.item ? findMapItem(currentTask.item, objectiveLayer) : undefined;
+  const mappedObjective = !mappedItem && currentTask ? findMapRoutePoint(objectiveMapQuery(currentTask.label), objectiveLayer) : undefined;
+  const mappedPoint = mappedItem || mappedObjective || findMapRoutePoint(chapter.grace, objectiveLayer);
+  const mapLayer = mappedPoint?.layer || objectiveLayer;
   const mapChapters = chapters.filter((candidate) => mapLayerForChapter(candidate) === mapLayer);
   const isDlc = mapLayer === "shadow";
   const fextraMap = isDlc ? "https://eldenring.wiki.fextralife.com/Shadow+of+the+Erdtree+Map" : "https://eldenring.wiki.fextralife.com/Interactive+Map";
@@ -785,7 +893,7 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly 
             const owner = task.playerId ? expedition.players.find((player) => player.id === task.playerId) : undefined;
             const done = taskDone(task, expedition);
             const skipped = Boolean(expedition.completed[`${task.id}:skipped`]);
-            const mapItem = task.item ? findMapItem(task.item, mapLayerForChapter(chapter)) : undefined;
+            const mapItem = task.item ? findMapItem(task.item, mapLayerForObjective(chapter, task.label)) : undefined;
             return (
               <article className={`task-card ${done ? "complete" : ""} ${skipped ? "skipped" : ""}`} key={task.id} style={owner ? { "--player": owner.color } as React.CSSProperties : undefined}>
                 <div className="task-index">{skipped ? "—" : done ? "✓" : String(index + 1).padStart(2, "0")}</div>

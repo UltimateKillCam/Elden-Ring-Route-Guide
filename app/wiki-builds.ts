@@ -105,13 +105,13 @@ export const wikiBuilds: Build[] = [
     "name": "Shadow Sunflower Blossom",
     "stats": "STR / FAI / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published shadow of the erdtree build setup using Shadown Sunflower Blossom with Shadow Sunflower Headbutt.",
+    "playstyle": "Published Shadow of the Erdtree build setup using Shadow Sunflower Blossom with Shadow Sunflower Headbutt.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from Shadow of the Erdtree Build",
       "mid": "Published from Shadow of the Erdtree Build",
       "late": "Published from Shadow of the Erdtree Build",
-      "dlc": "Shadown Sunflower Blossom"
+      "dlc": "Shadow Sunflower Blossom"
     },
     "tags": [
       "fextralife",
@@ -128,7 +128,7 @@ export const wikiBuilds: Build[] = [
     "availableFrom": "dlc",
     "publishedLoadout": {
       "level": "Shadow of the Erdtree Build",
-      "weapon": "Shadown Sunflower Blossom",
+      "weapon": "Shadow Sunflower Blossom",
       "offhand": "N/A; Clawmark Seal, or Erdtree Seal",
       "skill": "Shadow Sunflower Headbutt",
       "talismans": [

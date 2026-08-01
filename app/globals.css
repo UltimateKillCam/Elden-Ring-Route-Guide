@@ -528,3 +528,13 @@ body::before {
 }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; } }
+.route-timing {
+  display: block;
+  margin-top: 0.35rem;
+  color: #c8a45d;
+  font-size: 0.68rem;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
