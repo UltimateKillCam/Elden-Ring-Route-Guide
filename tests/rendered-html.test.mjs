@@ -28,10 +28,10 @@ test("server-renders the finished expedition setup", async () => {
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Your site is taking shape/i);
 });
 
-test("ships all 75 builds and the full remembrance route", async () => {
+test("ships all 100 builds and the full remembrance route", async () => {
   const data = await readFile(new URL("../app/data.ts", import.meta.url), "utf8");
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
-  assert.equal((data.match(/^\s*build\(/gm) ?? []).length, 75);
+  assert.equal((data.match(/^\s*build\(/gm) ?? []).length, 100);
   assert.ok((data.match(/remembrance:\s*true/g) ?? []).length >= 22);
   for (const boss of [
     "Godrick the Grafted",
@@ -69,6 +69,12 @@ test("ships all 75 builds and the full remembrance route", async () => {
   assert.match(data, /stageLoadout/);
   assert.match(data, /talismanSlots/);
   assert.match(data, /Two-Headed Turtle Talisman/);
+  assert.match(data, /startingClass/);
+  assert.match(data, /mechanic/);
+  assert.match(data, /PC Gamer: Courtly Duelist/);
+  assert.match(page, /Combat focus/);
+  assert.match(page, /Starting class/);
+  assert.match(page, /Sort by/);
 });
 
 test("uses plain product copy and the revised social card", async () => {

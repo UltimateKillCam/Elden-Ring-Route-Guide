@@ -48,11 +48,18 @@ const wikiUrl = (item: string) =>
   `https://eldenring.wiki.fextralife.com/${encodeURIComponent(item.replace(/ \+.*/, "").replace(/ \/.*/, ""))}`;
 
 const ATTRIBUTE_FILTERS = ["All builds", "Strength", "Dexterity", "Intelligence", "Faith", "Arcane", "Ranged"];
+const MECHANIC_FILTERS = ["All focuses", ...Array.from(new Set(builds.map((candidate) => candidate.mechanic))).sort()];
+const SORT_OPTIONS = ["Catalogue order", "Attribute", "Combat focus", "Starting class", "Name"];
 
 function buildClassification(build: Build) {
-  const attributes = ["Strength", "Dexterity", "Intelligence", "Faith", "Arcane"].filter((attribute) =>
-    build.stats.toLowerCase().includes(attribute.toLowerCase()),
-  );
+  const stats = build.stats.toUpperCase();
+  const attributes = ([
+    ["Strength", "STR"],
+    ["Dexterity", "DEX"],
+    ["Intelligence", "INT"],
+    ["Faith", "FAI"],
+    ["Arcane", "ARC"],
+  ] as const).filter(([, code]) => stats.includes(code)).map(([attribute]) => attribute);
   const text = `${build.name} ${build.stats} ${build.tags.join(" ")} ${build.playstyle} ${Object.values(build.phases).join(" ")}`.toLowerCase();
   const ranged = /bow|crossbow|ranged|sorcer|spell|incant|caster|projectile|throw|cannon/.test(text);
   return {
@@ -66,6 +73,15 @@ function matchesBuildFilter(build: Build, filter: string) {
   if (filter === "All builds") return true;
   if (filter === "Ranged") return classification.range === "Ranged";
   return classification.attributes.includes(filter);
+}
+
+function sortBuilds(candidates: Build[], order: string) {
+  const sorted = [...candidates];
+  if (order === "Catalogue order") return sorted.sort((a, b) => builds.indexOf(a) - builds.indexOf(b));
+  if (order === "Attribute") return sorted.sort((a, b) => buildClassification(a).attributes.localeCompare(buildClassification(b).attributes) || a.name.localeCompare(b.name));
+  if (order === "Combat focus") return sorted.sort((a, b) => a.mechanic.localeCompare(b.mechanic) || a.name.localeCompare(b.name));
+  if (order === "Starting class") return sorted.sort((a, b) => a.startingClass.localeCompare(b.startingClass) || a.name.localeCompare(b.name));
+  return sorted.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 const inferGuide = (item: string, chapter: Chapter) => {
@@ -158,9 +174,10 @@ function FullBuildDetails({ build, onClose, assignLabel, onAssign }: { build: Bu
       <section className="loadout-dialog" role="dialog" aria-modal="true" aria-label={`${build.name} full build`}>
         <button className="drawer-close" onClick={onClose} aria-label="Close build detail">×</button>
         <div className="loadout-title">
-          <div><p className="eyebrow">Build {builds.indexOf(build) + 1} of 75</p><h2>{build.name}</h2><p>{build.playstyle}</p></div>
-          <div className="drawer-meta"><span>{classification.attributes}</span><span>{classification.range}</span><span>{build.complexity}</span></div>
+          <div><p className="eyebrow">Build {builds.indexOf(build) + 1} of {builds.length}</p><h2>{build.name}</h2><p>{build.playstyle}</p></div>
+          <div className="drawer-meta"><span>{classification.attributes}</span><span>{classification.range}</span><span>{build.mechanic}</span><span>Start: {build.startingClass}</span><span>{build.complexity}</span></div>
         </div>
+        <a className="build-source" href={build.source.url} target="_blank" rel="noreferrer">Source: {build.source.label} ↗</a>
         {build.quest && <div className="quest-callout"><strong>Quest dependency</strong><span>{build.quest}</span></div>}
         <div className="loadout-stages">
           {(["early", "mid", "late", "dlc"] as PhaseKey[]).map((phase) => {
@@ -197,13 +214,15 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
   const [activePlayer, setActivePlayer] = useState(0);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All builds");
+  const [mechanic, setMechanic] = useState("All focuses");
+  const [sort, setSort] = useState("Catalogue order");
   const [detail, setDetail] = useState<Build | null>(null);
 
-  const visibleBuilds = builds.filter((candidate) => {
+  const visibleBuilds = sortBuilds(builds.filter((candidate) => {
     const classification = buildClassification(candidate);
     const text = `${candidate.name} ${candidate.stats} ${classification.range} ${candidate.tags.join(" ")} ${candidate.playstyle}`.toLowerCase();
-    return text.includes(query.toLowerCase()) && matchesBuildFilter(candidate, filter);
-  });
+    return text.includes(query.toLowerCase()) && matchesBuildFilter(candidate, filter) && (mechanic === "All focuses" || candidate.mechanic === mechanic);
+  }), sort);
 
   const changeCount = (value: number) => {
     setCount(value);
@@ -247,7 +266,7 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
 
       <section className="build-picker">
         <div className="picker-heading"><div className="settings-title"><span>2</span><div><h2>Choose a build for {players[activePlayer].name}</h2><p>Open any build to see the complete equipment plan before assigning it.</p></div></div><div className="selected-build-summary"><small>Currently selected</small><strong>{builds.find((candidate) => candidate.id === players[activePlayer].buildId)?.name}</strong></div></div>
-        <div className="picker-tools"><label><span>Search builds</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Weapon, damage type or playstyle" /></label><label><span>Attribute or range</span><select value={filter} onChange={(event) => setFilter(event.target.value)}>{ATTRIBUTE_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><p>{visibleBuilds.length} of 75 builds</p></div>
+        <div className="picker-tools extended"><label><span>Search builds</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Weapon, damage type or playstyle" /></label><label><span>Build type</span><select value={filter} onChange={(event) => setFilter(event.target.value)}>{ATTRIBUTE_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Combat focus</span><select value={mechanic} onChange={(event) => setMechanic(event.target.value)}>{MECHANIC_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Sort by</span><select value={sort} onChange={(event) => setSort(event.target.value)}>{SORT_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select></label><p>{visibleBuilds.length} of {builds.length} builds</p></div>
         <div className="setup-build-grid">
           {visibleBuilds.map((candidate) => {
             const selected = candidate.id === players[activePlayer].buildId;
@@ -255,6 +274,7 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
             return <article className={selected ? "selected" : ""} key={candidate.id}>
               <header><div><span>{String(builds.indexOf(candidate) + 1).padStart(2, "0")}</span><small>{candidate.complexity}</small></div><h3>{candidate.name}</h3><p>{classification.attributes} · {classification.range}</p></header>
               <p className="setup-playstyle">{candidate.playstyle}</p>
+              <div className="build-facts"><span><small>Starting class</small>{candidate.startingClass}</span><span><small>Combat focus</small>{candidate.mechanic}</span></div>
               <div className="weapon-timeline">{(["early", "mid", "late", "dlc"] as PhaseKey[]).map((phase) => <div key={phase}><small>{phase}</small><span>{candidate.phases[phase]}</span></div>)}</div>
               <footer><button type="button" onClick={() => setDetail(candidate)}>Full loadout</button><button type="button" className={selected ? "assigned" : ""} onClick={() => chooseBuild(candidate)}>{selected ? "Assigned" : `Assign to ${players[activePlayer].name}`}</button></footer>
             </article>;
@@ -430,17 +450,19 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly 
 function CodexView({ expedition }: { expedition: Expedition }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All builds");
+  const [mechanic, setMechanic] = useState("All focuses");
+  const [sort, setSort] = useState("Catalogue order");
   const [selected, setSelected] = useState<Build | null>(null);
-  const filtered = builds.filter((candidate) => {
+  const filtered = sortBuilds(builds.filter((candidate) => {
     const classification = buildClassification(candidate);
     const haystack = `${candidate.name} ${candidate.stats} ${classification.range} ${candidate.tags.join(" ")}`.toLowerCase();
-    return haystack.includes(query.toLowerCase()) && matchesBuildFilter(candidate, filter);
-  });
+    return haystack.includes(query.toLowerCase()) && matchesBuildFilter(candidate, filter) && (mechanic === "All focuses" || candidate.mechanic === mechanic);
+  }), sort);
 
   return (
     <section className="codex-page">
-      <div className="page-heading"><div><p className="eyebrow">75 paths · four stages each</p><h2>Build codex</h2><p>Each build has early, mid, late and DLC gear. The routes avoid long farms and the most overpowering setups.</p></div><div className="codex-count"><strong>{filtered.length}</strong><span>builds shown</span></div></div>
-      <div className="codex-tools"><label><span>Search</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Frost, bow, faith…" /></label><label><span>Attribute or range</span><select value={filter} onChange={(event) => setFilter(event.target.value)}>{ATTRIBUTE_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label></div>
+      <div className="page-heading"><div><p className="eyebrow">{builds.length} sourced paths · four stages each</p><h2>Build codex</h2><p>Each build has a recommended origin, a defined combat focus, and early, mid, late and DLC gear.</p></div><div className="codex-count"><strong>{filtered.length}</strong><span>builds shown</span></div></div>
+      <div className="codex-tools extended"><label><span>Search</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Frost, bow, faith…" /></label><label><span>Build type</span><select value={filter} onChange={(event) => setFilter(event.target.value)}>{ATTRIBUTE_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Combat focus</span><select value={mechanic} onChange={(event) => setMechanic(event.target.value)}>{MECHANIC_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Sort by</span><select value={sort} onChange={(event) => setSort(event.target.value)}>{SORT_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select></label></div>
       <div className="build-grid">
         {filtered.map((candidate) => {
           const owners = expedition.players.filter((player) => player.buildId === candidate.id);
@@ -448,6 +470,7 @@ function CodexView({ expedition }: { expedition: Expedition }) {
           return <article className="build-card" key={candidate.id} onClick={() => setSelected(candidate)} tabIndex={0} onKeyDown={(event) => { if (event.key === "Enter") setSelected(candidate); }}>
             <div className="build-card-top"><span className="build-number">{String(builds.indexOf(candidate) + 1).padStart(2, "0")}</span><div className="difficulty"><i />{candidate.complexity}</div></div>
             <h3>{candidate.name}</h3><p className="stats">{classification.attributes} · {classification.range}</p><p>{candidate.playstyle}</p>
+            <div className="build-facts"><span><small>Starting class</small>{candidate.startingClass}</span><span><small>Combat focus</small>{candidate.mechanic}</span></div>
             <div className="mini-phases"><span>{candidate.phases.early}</span><i>→</i><span>{candidate.phases.dlc}</span></div>
             <div className="tag-row">{candidate.tags.slice(0, 3).map((tag) => <span key={tag}>{tag}</span>)}</div>
             {owners.length > 0 && <div className="owners">Chosen by {owners.map((owner) => owner.name).join(", ")}</div>}

@@ -1,5 +1,7 @@
 export type PhaseKey = "early" | "mid" | "late" | "dlc";
 
+export type BuildSource = { label: string; url: string };
+
 export type Build = {
   id: string;
   name: string;
@@ -10,7 +12,49 @@ export type Build = {
   phases: Record<PhaseKey, string>;
   quest?: string;
   tags: string[];
+  startingClass: "Vagabond" | "Warrior" | "Hero" | "Bandit" | "Astrologer" | "Prophet" | "Samurai" | "Prisoner" | "Confessor" | "Wretch";
+  mechanic: string;
+  source: BuildSource;
 };
+
+const BUILD_SOURCES = {
+  eip: "https://eip.gg/elden-ring/builds/pve/",
+  pcGamerDlc: "https://www.pcgamer.com/games/rpg/shadow-of-the-erdtree-best-builds/",
+  pcGamesN: "https://www.pcgamesn.com/elden-ring/builds-best",
+  dlcWeapons: "https://eldenring.wiki.gg/wiki/Weapons_(Shadow_of_the_Erdtree)",
+} as const;
+
+function recommendStartingClass(stats: string, tags: string[]): Build["startingClass"] {
+  const upper = stats.toUpperCase();
+  const has = (stat: string) => upper.includes(stat);
+  const count = ["STR", "DEX", "INT", "FAI", "ARC"].filter(has).length;
+  if (count >= 4 || tags.includes("novelty")) return "Wretch";
+  if (has("INT") && has("DEX")) return "Prisoner";
+  if (has("STR") && has("DEX")) return "Vagabond";
+  if (has("STR") && has("FAI")) return "Hero";
+  if (has("DEX") && has("FAI")) return "Confessor";
+  if (has("INT") && has("FAI")) return "Astrologer";
+  if (has("ARC")) return "Bandit";
+  if (has("INT")) return "Astrologer";
+  if (has("FAI")) return "Prophet";
+  if (has("DEX")) return "Samurai";
+  if (has("STR")) return "Hero";
+  return "Vagabond";
+}
+
+function inferMechanic(role: string, playstyle: string, tags: string[]) {
+  const text = `${role} ${playstyle} ${tags.join(" ")}`.toLowerCase();
+  if (/critical|parry|assassin/.test(text)) return "Critical attacks";
+  if (/jump|aerial/.test(text)) return "Jump attacks";
+  if (/guard|shield|counter/.test(text)) return "Guard counters";
+  if (/charged|charge|roar/.test(text)) return "Charged attacks";
+  if (/stance|breaker|colossal|great hammer|hammer/.test(text)) return "Stance damage";
+  if (/multihit|twinblade|claw|fist|martial|dancer/.test(text)) return "Light attacks";
+  if (/bow|crossbow|ranged|throw|artiller/.test(text)) return "Ranged attacks";
+  if (/sorcer|spell|caster|intelligence/.test(text)) return "Spell damage";
+  if (/bleed|poison|rot|frost|sleep|status/.test(text)) return "Status buildup";
+  return "Skill damage";
+}
 
 const build = (
   id: string,
@@ -22,6 +66,9 @@ const build = (
   tags: string[],
   complexity: Build["complexity"] = "Moderate",
   quest?: string,
+  source?: BuildSource,
+  mechanic?: string,
+  startingClass?: Build["startingClass"],
 ): Build => ({
   id,
   name,
@@ -32,6 +79,12 @@ const build = (
   phases: { early: phases[0], mid: phases[1], late: phases[2], dlc: phases[3] },
   tags,
   quest,
+  startingClass: startingClass || recommendStartingClass(stats, tags),
+  mechanic: mechanic || inferMechanic(role, playstyle, tags),
+  source: source || {
+    label: `${phases[3].replace(/ \+.*/, "").replace(/ \/.*/, "")} weapon reference`,
+    url: `https://eldenring.wiki.gg/index.php?search=${encodeURIComponent(phases[3].replace(/ \+.*/, "").replace(/ \/.*/, ""))}`,
+  },
 });
 
 export const builds: Build[] = [
@@ -111,6 +164,32 @@ export const builds: Build[] = [
   build("trollsmith", "Trollsmith Thrower", "STR", "Breaker", "Classic charged-heavy play gains a spectacular thrown hammer in the DLC.", ["Large Club", "Brick Hammer", "Giant-Crusher", "Smithscript Greathammer"], ["strength", "hammer", "ranged"]),
   build("countermage", "Glintblade Countermage", "DEX / INT", "Spellblade", "Parries spells and converts openings into magical criticals.", ["Magic Rapier + Carian Retaliation", "Carian Knight's Sword", "Glintstone Kris", "Carian Sorcery Sword"], ["dexterity", "intelligence", "parry"], "Advanced"),
   build("dragonslayer-bow", "Greatbow Dragonslayer", "STR / DEX", "Ranged", "A co-op back-line siege archer with a lightweight melee fallback.", ["Longbow", "Erdtree Greatbow", "Lion Greatbow", "Igon's Greatbow"], ["quality", "greatbow", "dragon"], "Advanced", "Igon quest"),
+
+  build("powerstance-spears", "Twin-Spear Jump Attacker", "STR / DEX", "Melee", "Alternates safe thrusts with committed dual-spear jump attacks when a boss leaves a full opening.", ["Short Spear + Partisan", "Cross-Naginata + Spiked Spear", "Keen Cross-Naginata pair", "Messmer Soldier's Spear pair"], ["quality", "spear", "jump"], "Moderate", undefined, { label: "EIP PvE: Dual Wielding Spear Build", url: BUILD_SOURCES.eip }, "Jump attacks", "Vagabond"),
+  build("guardian-swordspear", "Guardian Swordspear Twinblade", "DEX", "Melee", "Fast halberd light strings and paired pressure built around the Guardian's Swordspear's strong Keen scaling.", ["Halberd", "Guardian's Swordspear", "Keen Guardian's Swordspear pair", "Guardian's Swordspear pair + Divine Beast Frost Stomp"], ["dexterity", "halberd", "multihit"], "Moderate", undefined, { label: "EIP PvE: Dual Guardian Swordspear", url: BUILD_SOURCES.eip }, "Light attacks", "Samurai"),
+  build("blasphemous-vicar", "Blasphemous Blade Vicar", "STR / FAI", "Melee", "A Faith greatsword route centred on Taker's Flames, with healing kept as sustain rather than a reason to ignore mechanics.", ["Lordsworn's Greatsword + Sacred Blade", "Magma Wyrm's Scalesword", "Blasphemous Blade", "Blasphemous Blade + Talisman of the Dread"], ["strength", "faith", "fire"], "Easy", "Rya and Rykard progression", { label: "PCGamesN: Blasphemous Blade build", url: BUILD_SOURCES.pcGamesN }, "Skill damage", "Hero"),
+  build("halo-reaper", "Halo Scythe Disciple", "DEX / FAI", "Ranged", "Uses ordinary scythe sweeps up close and Miquella's Ring of Light when spacing or co-op aggro makes range safer.", ["Winged Scythe", "Halo Scythe", "Halo Scythe + Grave Scythe", "Halo Scythe + Barbed Staff-Spear"], ["dexterity", "faith", "reaper", "ranged"], "Moderate", undefined, { label: "EIP PvE: Halo Scythe build", url: BUILD_SOURCES.eip }, "Ranged attacks", "Confessor"),
+  build("nebula-astel", "Wing of Astel Nebula", "DEX / INT", "Melee", "Curved-sword spacing sets up Nebula bursts for large targets without requiring a long buff routine.", ["Magic Shamshir", "Wing of Astel", "Wing of Astel + Carian Regal Scepter", "Wing of Astel + Staff of the Great Beyond"], ["dexterity", "intelligence", "curved", "stance"], "Moderate", "Ranni progression", { label: "PCGamesN: Wing of Astel build", url: BUILD_SOURCES.pcGamesN }, "Stance damage", "Prisoner"),
+  build("poison-lizard", "Poison Lizard Greatsword", "STR / ARC", "Melee", "A conventional greatsword build that adds poison and the Lizard Greatsword's projectile heavy attack in the DLC.", ["Claymore + Poisonous Mist", "Iron Greatsword", "Occult Flamberge", "Poison Lizard Greatsword"], ["strength", "arcane", "poison", "charged"], "Moderate", undefined, { label: "PCGamesN: Poison Lizard build", url: BUILD_SOURCES.pcGamesN }, "Charged attacks", "Bandit"),
+  build("thorn-sorcerer", "Briar and Thorn Sorcerer", "INT / ARC", "Ranged", "A blood-sorcery route using ordinary glintstone spells until the specialised thorn equipment becomes available.", ["Meteorite Staff", "Albinauric Staff", "Staff of the Guilty + Briars of Punishment", "Maternal Staff + Impenetrable Thorns"], ["intelligence", "arcane", "sorcery", "bleed"], "Advanced", "Ymir quest", { label: "PCGamesN: Bleeding Thorns Mage", url: BUILD_SOURCES.pcGamesN }, "Spell damage", "Astrologer"),
+  build("lightning-perfumer", "Lightning Perfume Prophet", "DEX / FAI", "Ranged", "Lightning incantations carry the base game before the perfume bottle supplies broad, close-to-mid-range lightning clouds.", ["Finger Seal + Lightning Spear", "Gravel Stone Seal", "Bolt of Gransax", "Lightning Perfume Bottle"], ["dexterity", "faith", "lightning", "perfume", "ranged"], "Moderate", undefined, { label: "PCGamesN: Lightning Perfume Bottle Prophet", url: BUILD_SOURCES.pcGamesN }, "Ranged attacks", "Prophet"),
+  build("fire-knight-greatsword", "Fire Knight Greatsword", "STR / FAI", "Melee", "Heavy flaming sweeps and Messmer incantations with a DLC weapon whose thrusting heavy attacks reward deliberate spacing.", ["Flame Art Claymore", "Magma Wyrm's Scalesword", "Blasphemous Blade", "Fire Knight's Greatsword + Flame Spear"], ["strength", "faith", "fire", "charged"], "Moderate", undefined, { label: "Shadow of the Erdtree weapon catalogue", url: BUILD_SOURCES.dlcWeapons }, "Charged attacks", "Hero"),
+  build("sunflower-crusader", "Shadow Sunflower Crusader", "STR / FAI", "Melee", "A holy great-weapon progression that finishes with repeated sunflower slams and substantial stance pressure.", ["Sacred Large Club", "Great Stars + Prayerful Strike", "Envoy's Long Horn", "Shadow Sunflower Blossom"], ["strength", "faith", "great hammer", "stance"], "Easy", undefined, { label: "Shadow of the Erdtree weapon catalogue", url: BUILD_SOURCES.dlcWeapons }, "Stance damage", "Hero"),
+  build("black-steel-bulwark", "Black Steel Bulwark", "STR / FAI", "Melee", "Guard counters and holy retaliation culminate in the Black Steel Greatshield and a controllable thrusting sidearm.", ["Broadsword + Brass Shield", "Golden Greatshield + Great Épée", "Haligtree Crest Greatshield + Treespear", "Black Steel Greatshield + Queelign's Greatsword"], ["strength", "faith", "guard", "shield"], "Easy", undefined, { label: "Shadow of the Erdtree weapon catalogue", url: BUILD_SOURCES.dlcWeapons }, "Guard counters", "Hero"),
+  build("night-claws", "Claws of Night Hunter", "DEX", "Ranged", "Fast claw strings share a build with thrown fan blades, giving the same weapon a real answer at two ranges.", ["Hookclaws", "Raptor Talons", "Bloodhound Claws", "Claws of Night"], ["dexterity", "claw", "ranged", "multihit"], "Advanced", "Jolán and Ymir quest", { label: "Shadow of the Erdtree weapon catalogue", url: BUILD_SOURCES.dlcWeapons }, "Light attacks", "Samurai"),
+  build("rakshasa-counter", "Rakshasa Counter-Slasher", "DEX", "Melee", "Great-katana reach and counter-hit timing lead into Rakshasa's aggressive Weed Cutter chains.", ["Uchigatana", "Nagakiba", "Keen Great Katana", "Rakshasa's Great Katana"], ["dexterity", "katana", "counter"], "Advanced", undefined, { label: "Shadow of the Erdtree weapon catalogue", url: BUILD_SOURCES.dlcWeapons }, "Skill damage", "Samurai"),
+  build("horned-storm", "Horned Warrior Stormblade", "STR / DEX", "Melee", "Curved-greatsword fundamentals gain a high-commitment horned storm skill for large punish windows.", ["Dismounter", "Omen Cleaver", "Beastman's Cleaver", "Horned Warrior's Greatsword"], ["quality", "curved greatsword", "storm", "stance"], "Moderate", undefined, { label: "Shadow of the Erdtree weapon catalogue", url: BUILD_SOURCES.dlcWeapons }, "Stance damage", "Vagabond"),
+  build("spread-crossbow", "Spread Crossbow Trapper", "DEX / ARC", "Ranged", "Uses crafted bolts and status ammunition; the DLC spread pattern rewards close-range openings without replacing the sidearm.", ["Light Crossbow", "Pulley Crossbow", "Pulley Crossbow + status bolts", "Spread Crossbow"], ["dexterity", "arcane", "crossbow", "status"], "Advanced", undefined, { label: "Shadow of the Erdtree weapon catalogue", url: BUILD_SOURCES.dlcWeapons }, "Status buildup", "Bandit"),
+  build("golem-fist", "Golem Fist Boxer", "STR", "Melee", "A fist build whose charged heavy eventually launches a short-range projectile while retaining strong close pressure.", ["Caestus", "Spiked Caestus", "Star Fist", "Golem Fist"], ["strength", "fist", "charged"], "Moderate", undefined, { label: "Shadow of the Erdtree weapon catalogue", url: BUILD_SOURCES.dlcWeapons }, "Charged attacks", "Hero"),
+  build("serpent-flail", "Serpent Flail Demolitionist", "DEX / FAI", "Melee", "Flail guard counters and charged attacks finish with the Serpent Flail's delayed explosive coating.", ["Flail", "Nightrider Flail", "Family Heads", "Serpent Flail"], ["dexterity", "faith", "flail", "charged"], "Advanced", undefined, { label: "Shadow of the Erdtree weapon catalogue", url: BUILD_SOURCES.dlcWeapons }, "Charged attacks", "Confessor"),
+  build("sword-of-darkness", "Sword of Darkness Knight", "STR / FAI", "Melee", "A sword-and-seal knight that uses holy damage early before shifting to the Sword of Darkness's resistance debuff.", ["Sacred Lordsworn's Straight Sword", "Golden Epitaph", "Coded Sword", "Sword of Darkness + Dryleaf Seal"], ["strength", "faith", "holy", "skill"], "Moderate", "Stone-Sheathed Sword altar route", { label: "PC Gamer: Unholy Knight", url: BUILD_SOURCES.pcGamerDlc }, "Skill damage", "Hero"),
+  build("carian-shield-sorcerer", "Carian Shield Sorcerer", "DEX / INT", "Hybrid", "Casts through the Carian Sorcery Sword while the thrusting shield handles guarded pressure and counters.", ["Estoc + Demi-Human Queen's Staff", "Carian Knight's Sword + staff", "Loretta's War Sickle + Carian Regal Scepter", "Carian Sorcery Sword + Carian Thrusting Shield"], ["dexterity", "intelligence", "sorcery", "guard"], "Advanced", undefined, { label: "PC Gamer: Carian Spellblade", url: BUILD_SOURCES.pcGamerDlc }, "Guard counters", "Prisoner"),
+  build("wing-stance-duelist", "Wing Stance Court Duelist", "STR / DEX", "Melee", "A clean duelling route centred on stance choice: light slash strings for pressure or the heavy leap for a punish.", ["Rapier", "Rogier's Rapier", "Cleanrot Knight's Sword", "Milady + Wing Stance / Main-gauche"], ["quality", "light greatsword", "critical", "stance"], "Advanced", undefined, { label: "PC Gamer: Courtly Duelist", url: BUILD_SOURCES.pcGamerDlc }, "Critical attacks", "Vagabond"),
+  build("red-bear", "Red Bear Berserker", "STR / DEX", "Melee", "Relentless claw strings and Red Bear Hunt reward staying close without relying on dual-wield jump spam.", ["Hookclaws", "Bloodhound Claws", "Star Fist", "Red Bear's Claw"], ["quality", "claw", "multihit", "bleed"], "Advanced", undefined, { label: "PC Gamer: Bearserker", url: BUILD_SOURCES.pcGamerDlc }, "Light attacks", "Vagabond"),
+  build("pure-priestess", "Co-op Erdtree Priestess", "FAI", "Ranged", "A genuine co-op Faith caster balancing ranged incantations, buffs and area healing rather than MMO-style threat roles.", ["Finger Seal + Catch Flame", "Godslayer's Seal", "Erdtree Seal", "Dryleaf Seal + Knight's Lightning Spear"], ["faith", "caster", "coop", "ranged"], "Moderate", undefined, { label: "EIP PvE: Pure Faith Priestess", url: BUILD_SOURCES.eip }, "Spell damage", "Prophet"),
+  build("magma-sorcerer", "Gelmir Magma Sorcerer", "INT / FAI", "Ranged", "Magma sorceries deny space and punish large enemies while a light greatsword covers fast melee openings.", ["Meteorite Staff + Magic Longsword", "Gelmir Glintstone Staff", "Magma Blade + Gelmir Staff", "Staff of the Great Beyond + Rykard's Rancor"], ["intelligence", "faith", "magma", "caster"], "Advanced", "Volcano Manor progression", { label: "EIP PvE: Magmage", url: BUILD_SOURCES.eip }, "Spell damage", "Astrologer"),
+  build("black-blade-colossus", "Maliketh Black Blade", "STR / FAI", "Melee", "Colossal holy and fire damage with Destined Death used for boss openings rather than repeated skill trading.", ["Sacred Claymore", "Golden Halberd", "Maliketh's Black Blade", "Maliketh's Black Blade + Black Blade incantation"], ["strength", "faith", "colossal", "destined death"], "Advanced", undefined, { label: "EIP PvE: Black Blade STR/Faith", url: BUILD_SOURCES.eip }, "Skill damage", "Hero"),
+  build("messmer-impaler", "Messmer Impaler", "DEX / FAI", "Ranged", "Spear thrusts and fire incantations converge on Messmer's assault skill and a throwable heavy attack.", ["Short Spear + Flame Sling", "Cross-Naginata + Black Flame", "Bolt of Gransax", "Spear of the Impaler + Fire Serpent"], ["dexterity", "faith", "spear", "fire", "ranged"], "Advanced", undefined, { label: "PC Gamer DLC build guide", url: BUILD_SOURCES.pcGamerDlc }, "Skill damage", "Confessor"),
 ];
 
 export type StageLoadout = {
@@ -380,6 +459,12 @@ export const itemGuides: Record<string, string> = {
 
 export const sources = [
   ["Patch 1.16.1", "https://en.bandainamcoent.eu/elden-ring/news/elden-ring-patch-notes-version-1161"],
+  ["Starting origins and base stats", "https://eldenring.wiki.gg/wiki/Origin"],
+  ["PvE build catalogue", "https://eip.gg/elden-ring/builds/pve/"],
+  ["Shadow of the Erdtree tested builds", "https://www.pcgamer.com/games/rpg/shadow-of-the-erdtree-best-builds/"],
+  ["Current build reference", "https://www.pcgamesn.com/elden-ring/builds-best"],
+  ["Stance and poise mechanics", "https://eldenring.wiki.gg/wiki/Poise"],
+  ["Critical attack mechanics", "https://eldenring.wiki.gg/wiki/Critical"],
   ["Realm of Shadow access", "https://en.bandainamcoent.eu/elden-ring/news/elden-ring-how-enter-the-realm-of-shadow"],
   ["Shadow Realm Blessings", "https://en.bandainamcoent.eu/elden-ring/news/elden-ring-how-strengthen-your-character-shadow-of-the-erdtree"],
   ["Talismans and pouch slots", "https://eldenring.wiki.gg/wiki/Talismans"],
