@@ -4,6 +4,22 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { builds, chapters, itemGuides, sources, stageLoadout, type Build, type Chapter, type PhaseKey } from "./data";
 import { findMapItem, findMapItems, findMapRoutePoint, type MapItem } from "./map-items";
 import { deferredPickupGate, literalItemName, PHASE_START, type PickupGate } from "./progression";
+import { splitArmourSpecification } from "./equipment-data";
+import {
+  CHAPTER_ECONOMY,
+  CHAPTER_ECONOMY_BY_ID,
+  expectedPerPlayerBossPot,
+  maxEquipLoad,
+  maxWeightForTier,
+  planBuildStatTarget,
+  planWeaponUpgrade,
+  radagonSoresealBridgeAdvice,
+  runesBetweenLevels,
+  type AttributeBlock,
+  type StatKey,
+  type UpgradePath,
+} from "./run-planner";
+import { findWeaponUpgradeRecord, weaponUpgradePath } from "./weapon-upgrades";
 
 type Mode = "standard" | "seamless";
 type View = "route" | "codex" | "party";
@@ -17,12 +33,13 @@ type Expedition = {
   hostId: string;
   completed: Record<string, boolean>;
   createdAt: string;
+  lossRate?: number;
 };
 type Task = {
   id: string;
   label: string;
   detail: string;
-  kind: "objective" | "boss" | "gear" | "quest";
+  kind: "objective" | "boss" | "gear" | "quest" | "level" | "upgrade" | "armour";
   playerId?: string;
   perPlayer: boolean;
   scope: string;
@@ -70,6 +87,10 @@ function buildClassification(build: Build) {
     attributes: attributes.length ? attributes.join(" / ") : "Quality",
     range: ranged ? "Ranged" : "Melee",
   };
+}
+
+function plannerStartingClass(build: Build) {
+  return build.startingClass === "Not specified" ? planBuildStatTarget(build, 170).origin.name : build.startingClass;
 }
 
 function buildSearchText(build: Build) {
@@ -131,7 +152,7 @@ function loadoutPickups(loadout: ReturnType<typeof stageLoadout>, chapter: Chapt
     { slot: "off-hand", values: [loadout.offhand], categories: /weapon|shield/i },
     { slot: "skill", values: [loadout.skill], categories: /ash/i },
     { slot: "talisman", values: loadout.talismans, categories: /talisman/i },
-    { slot: "armour", values: [loadout.armour], categories: /armor/i },
+    { slot: "armour", values: splitArmourSpecification(loadout.armour).map((piece) => piece.name), categories: /armor/i },
     { slot: "spell", values: loadout.spells, categories: /spell/i },
     { slot: "Physick tear", values: [loadout.flask], categories: /flask/i },
   ];
@@ -445,6 +466,153 @@ function essentialGuide(chapter: Chapter, label: string, index: number) {
   return `Area: ${chapter.region}. Start from ${chapter.grace}${previous}. ${chapter.directions} Complete the named objective before checking off this card.`;
 }
 
+const STAT_LABELS: Record<StatKey, string> = { vigor: "VIG", mind: "MND", endurance: "END", strength: "STR", dexterity: "DEX", intelligence: "INT", faith: "FAI", arcane: "ARC" };
+const formatRunes = (value: number) => Math.max(0, Math.round(value)).toLocaleString("en-GB");
+
+function phaseForChapter(chapter: Chapter): PhaseKey {
+  const index = chapters.indexOf(chapter);
+  const dlc = chapters.findIndex((candidate) => candidate.id === PHASE_START.dlc);
+  const late = chapters.findIndex((candidate) => candidate.id === PHASE_START.late);
+  const mid = chapters.findIndex((candidate) => candidate.id === PHASE_START.mid);
+  return index >= dlc ? "dlc" : index >= late ? "late" : index >= mid ? "mid" : "early";
+}
+
+function weaponRequirements(value: string): Partial<AttributeBlock> {
+  const record = findWeaponUpgradeRecord(value);
+  if (!record) return {};
+  return {
+    ...(record.reqStr ? { strength: record.reqStr } : {}),
+    ...(record.reqDex ? { dexterity: record.reqDex } : {}),
+    ...(record.reqInt ? { intelligence: record.reqInt } : {}),
+    ...(record.reqFai ? { faith: record.reqFai } : {}),
+    ...(record.reqArc ? { arcane: record.reqArc } : {}),
+  };
+}
+
+function statChangeText(previous: AttributeBlock, current: AttributeBlock) {
+  const changes = (Object.keys(STAT_LABELS) as StatKey[])
+    .map((stat) => ({ stat, amount: current[stat] - previous[stat], target: current[stat] }))
+    .filter(({ amount }) => amount > 0)
+    .sort((a, b) => b.amount - a.amount || STAT_LABELS[a.stat].localeCompare(STAT_LABELS[b.stat]));
+  return changes.length
+    ? changes.map(({ stat, amount, target }) => `${STAT_LABELS[stat]} +${amount} → ${target}`).join(", ")
+    : "No levels are due at this checkpoint";
+}
+
+function expectedRunesBeforeBoss(chapterIndex: number, expedition: Expedition) {
+  const lossRate = Math.min(.3, Math.max(.1, (expedition.lossRate ?? 20) / 100));
+  return CHAPTER_ECONOMY.slice(0, chapterIndex + 1).reduce((total, economy, index) => {
+    const boss = index < chapterIndex ? expectedPerPlayerBossPot(economy.bossRunes, expedition.players.length, expedition.mode) : 0;
+    total.low += Math.floor(economy.fieldRunesLow * (1 - lossRate)) + boss;
+    total.high += Math.floor(economy.fieldRunesHigh * (1 - lossRate)) + boss;
+    return total;
+  }, { low: 0, high: 0 });
+}
+
+function progressionTasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
+  const economy = CHAPTER_ECONOMY_BY_ID[chapter.id];
+  if (!economy) return [];
+  const chapterIndex = chapters.indexOf(chapter);
+  const previousEconomy = CHAPTER_ECONOMY[chapterIndex - 1];
+  const phase = phaseForChapter(chapter);
+  const previousPhase = chapterIndex > 0 ? phaseForChapter(chapters[chapterIndex - 1]) : phase;
+  const expected = expectedRunesBeforeBoss(chapterIndex, expedition);
+  const lossRate = expedition.lossRate ?? 20;
+  const result: Task[] = [];
+
+  for (const player of expedition.players) {
+    const selected = builds.find((candidate) => candidate.id === player.buildId)!;
+    const currentLoadout = stageLoadout(selected, phase);
+    const currentWeapon = findWeaponUpgradeRecord(currentLoadout.weapon);
+    const plannedClass = selected.startingClass === "Not specified"
+      ? planBuildStatTarget(selected, 170).origin.name
+      : selected.startingClass;
+    const planningBuild = { ...selected, startingClass: plannedClass };
+    const currentPlan = planBuildStatTarget(planningBuild, economy.targetRuneLevel, weaponRequirements(currentLoadout.weapon));
+    const previousTargetLevel = previousEconomy?.targetRuneLevel ?? currentPlan.origin.level;
+    const previousLoadout = stageLoadout(selected, previousPhase);
+    const previousPlan = previousEconomy
+      ? planBuildStatTarget(planningBuild, previousTargetLevel, weaponRequirements(previousLoadout.weapon))
+      : { ...currentPlan, targetRuneLevel: currentPlan.origin.level, attributes: currentPlan.origin.attributes };
+    const levelRunes = runesBetweenLevels(previousTargetLevel, economy.targetRuneLevel);
+    const cumulativeLevelRunes = runesBetweenLevels(currentPlan.origin.level, economy.targetRuneLevel);
+    const pathResult = weaponUpgradePath(currentLoadout.weapon);
+    const upgradePath: UpgradePath | undefined = pathResult === "none" ? undefined : pathResult;
+    const currentUpgrade = upgradePath === "somber" ? economy.somberUpgradeTarget : economy.standardUpgradeTarget;
+    const previousUpgrade = upgradePath === "somber" ? (previousEconomy?.somberUpgradeTarget ?? 0) : (previousEconomy?.standardUpgradeTarget ?? 0);
+    const cumulativeMaterials = upgradePath ? planWeaponUpgrade(upgradePath, 0, currentUpgrade).materialPurchaseRunes : 0;
+    const projectedLow = expected.low - cumulativeLevelRunes - cumulativeMaterials - economy.purchaseReserve;
+    const projectedHigh = expected.high - cumulativeLevelRunes - cumulativeMaterials - economy.purchaseReserve;
+    const changes = statChangeText(previousPlan.attributes, currentPlan.attributes);
+    const requirementText = currentWeapon
+      ? ` Weapon requirements: ${[["STR", currentWeapon.reqStr], ["DEX", currentWeapon.reqDex], ["INT", currentWeapon.reqInt], ["FAI", currentWeapon.reqFai], ["ARC", currentWeapon.reqArc]].filter(([, value]) => Number(value) > 0).map(([stat, value]) => `${stat} ${value}`).join(", ") || "none"}.`
+      : "";
+    const soreseal = radagonSoresealBridgeAdvice({
+      baseStats: previousPlan.attributes,
+      requiredStats: weaponRequirements(currentLoadout.weapon),
+      targetLevel: economy.targetRuneLevel,
+      phase,
+    });
+    const budgetStatus = projectedHigh < 0
+      ? `The model is short by about ${formatRunes(Math.abs(projectedHigh))} runes even at the high estimate: stay at RL${previousTargetLevel}, use the current weapon and let the next mandatory boss payout fund the catch-up; do not farm or consume Golden Runes merely to force the target.`
+      : projectedLow < 0
+        ? `The low estimate is short by ${formatRunes(Math.abs(projectedLow))}. Spend only if the held-rune counter covers the full level cost plus the ${formatRunes(economy.purchaseReserve)} reserve; otherwise remain at RL${previousTargetLevel} until the next mandatory boss payout.`
+        : `After levels, maximum stone purchases and the reserve, the projected balance is ${formatRunes(projectedLow)}–${formatRunes(projectedHigh)} runes.`;
+
+    result.push({
+      id: `${chapter.id}-level-${player.id}`,
+      label: `${player.name}: level to RL${economy.targetRuneLevel}`,
+      detail: `Rest at ${chapter.grace}. From RL${previousTargetLevel}, leveling costs ${formatRunes(levelRunes)} runes. Add stats in this order: ${changes}. Planned class: ${currentPlan.origin.name}.${requirementText} Expected cumulative runes before this chapter's main boss are ${formatRunes(expected.low)}–${formatRunes(expected.high)} after the ${lossRate}% field-loss allowance and completed-boss rotation. Keep ${formatRunes(economy.purchaseReserve)} unspent for merchants, arrows and consumables. ${budgetStatus}${soreseal.recommended ? ` Radagon's Soreseal can temporarily bridge ${soreseal.bridgedRequirements.map((stat) => STAT_LABELS[stat]).join("/")}; it also makes you take 15% more damage, so remove it once natural requirements are met.` : ""}`,
+      kind: "level",
+      playerId: player.id,
+      perPlayer: false,
+      scope: player.name,
+    });
+
+    if (upgradePath && currentUpgrade > previousUpgrade) {
+      const upgrade = planWeaponUpgrade(upgradePath, previousUpgrade, currentUpgrade);
+      const materials = upgrade.materials.map((material) => `${material.quantity}× ${material.name}`).join(", ");
+      result.push({
+        id: `${chapter.id}-upgrade-${player.id}-${upgradePath}`,
+        label: `${player.name}: ${currentLoadout.weapon} to +${currentUpgrade}`,
+        detail: `At Smithing Master Hewg, take the active ${upgradePath === "somber" ? "Somber" : "regular"} weapon from +${previousUpgrade} to +${currentUpgrade}: ${materials}. Buying every purchasable stone in this step would cost at most ${formatRunes(upgrade.materialPurchaseRunes)} runes; stones collected from this route reduce that amount. The forge service price is weapon-specific and is shown by Hewg before confirmation, so pay it only after keeping the ${formatRunes(economy.purchaseReserve)} merchant reserve. If ${currentLoadout.weapon} is still behind a later route card, reinforce the currently equipped bridge weapon to this cap and save enough stones to catch the named weapon up when collected. Do not exceed +${currentUpgrade} in this chapter.`,
+        kind: "upgrade",
+        playerId: player.id,
+        perPlayer: false,
+        scope: player.name,
+      });
+    }
+
+    const isPhaseStart = PHASE_START[phase] === chapter.id;
+    if (isPhaseStart) {
+      const parsedArmour = splitArmourSpecification(currentLoadout.armour);
+      const armourPieces = parsedArmour.length ? parsedArmour : splitArmourSpecification(`${currentPlan.origin.name} starting armour`);
+      const armourWeight = armourPieces.reduce((sum, piece) => sum + piece.weight, 0);
+      const armourPoise = armourPieces.reduce((sum, piece) => sum + piece.poise, 0);
+      const offhand = findWeaponUpgradeRecord(currentLoadout.offhand);
+      const knownWeight = armourWeight + (currentWeapon?.weight ?? 0) + (offhand?.weight ?? 0);
+      const light = /light load|below 30%|blue dancer/i.test(currentLoadout.armour);
+      const maximumLoad = maxEquipLoad(currentPlan.attributes.endurance);
+      const loadLimit = maxWeightForTier(maximumLoad, light ? "light" : "medium");
+      const remaining = loadLimit - knownWeight;
+      const pieces = armourPieces.length ? armourPieces.map((piece) => `${piece.name} ${piece.weight}`).join(", ") : currentLoadout.armour;
+      const acquisition = /starting armour/i.test(currentLoadout.armour) || !parsedArmour.length
+        ? `The starting set is already owned when ${currentPlan.origin.name} is chosen.`
+        : Array.from(new Set([currentLoadout.armour.includes("Carian Knight") ? itemGuides["Carian Knight Set"] : "", currentLoadout.armour.includes("Scaled") ? itemGuides["Scaled Set"] : "", currentLoadout.armour.includes("Knight Set") && !currentLoadout.armour.includes("Carian") ? itemGuides["Knight Set"] : ""].filter(Boolean))).join(" ");
+      result.push({
+        id: `${chapter.id}-armour-${player.id}`,
+        label: `${player.name}: armour and equip-load check`,
+        detail: `${pieces}. ${acquisition} Named armour totals ${armourWeight.toFixed(1)} weight and ${armourPoise} poise. With ${currentLoadout.weapon}${currentWeapon?.weight != null ? ` (${currentWeapon.weight} weight)` : ""}${offhand?.weight != null ? ` and the named off-hand (${offhand.weight})` : ""}, the verified subtotal is ${knownWeight.toFixed(1)}. END ${currentPlan.attributes.endurance} gives ${maximumLoad.toFixed(1)} maximum load; stay below ${loadLimit.toFixed(1)} for ${light ? "Light" : "Medium"} Load. That leaves ${remaining.toFixed(1)} for the other hand slots and talismans. Confirm the words “${light ? "Light" : "Medium"} Load” on the Status screen; if it says Heavy Load, remove the heaviest armour piece before leaving the grace.`,
+        kind: "armour",
+        playerId: player.id,
+        perPlayer: false,
+        scope: player.name,
+      });
+    }
+  }
+  return result;
+}
+
 function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
   const tasks: Task[] = [];
   chapter.essentials.forEach((label, index) => {
@@ -558,6 +726,12 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
     insertGatedPickupTasks(tasks, deferredTasks, chapter);
   }
 
+  const planningTasks = progressionTasksForChapter(chapter, expedition);
+  if (planningTasks.length) {
+    const lastBossIndex = tasks.reduce((found, task, index) => task.kind === "boss" ? index : found, -1);
+    tasks.splice(lastBossIndex >= 0 ? lastBossIndex : tasks.length, 0, ...planningTasks);
+  }
+
   if (chapter.boss && !chapter.essentials.some((entry) => entry.includes(chapter.boss!.split(",")[0]))) {
     tasks.push({
       id: `${chapter.id}-boss`,
@@ -587,19 +761,27 @@ function nextIncompleteTask(expedition: Expedition) {
 
 function FullBuildDetails({ build, onClose, assignLabel, onAssign }: { build: Build; onClose: () => void; assignLabel?: string; onAssign?: () => void }) {
   const classification = buildClassification(build);
+  const plannedClass = plannerStartingClass(build);
   return (
     <div className="drawer-backdrop" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
       <section className="loadout-dialog" role="dialog" aria-modal="true" aria-label={`${build.name} full build`}>
         <button className="drawer-close" onClick={onClose} aria-label="Close build detail">×</button>
         <div className="loadout-title">
           <div><p className="eyebrow">Build {builds.indexOf(build) + 1} of {builds.length}</p><h2>{build.name}</h2><p>{build.playstyle}</p></div>
-          <div className="drawer-meta"><span>{build.collection}</span><span>{classification.attributes}</span><span>{classification.range}</span><span>{build.mechanic}</span><span>Start: {build.startingClass}</span><span>{build.complexity}</span></div>
+          <div className="drawer-meta"><span>{build.collection}</span><span>{classification.attributes}</span><span>{classification.range}</span><span>{build.mechanic}</span><span>Start: {plannedClass}{build.startingClass === "Not specified" ? " · calculated" : ""}</span><span>{build.complexity}</span></div>
         </div>
         <a className="build-source" href={build.source.url} target="_blank" rel="noreferrer">Source: {build.source.label} ↗</a>
         {build.quest && <div className="quest-callout"><strong>Quest dependency</strong><span>{build.quest}</span></div>}
         <div className="loadout-stages">
           {(["early", "mid", "late", "dlc"] as PhaseKey[]).map((phase) => {
             const loadout = stageLoadout(build, phase);
+            const checkpointLevel: Record<PhaseKey, number> = { early: 40, mid: 90, late: 150, dlc: 170 };
+            const weapon = findWeaponUpgradeRecord(loadout.weapon);
+            const statPlan = planBuildStatTarget({ ...build, startingClass: plannedClass }, checkpointLevel[phase], weaponRequirements(loadout.weapon));
+            const parsedArmour = splitArmourSpecification(loadout.armour);
+            const armourPieces = parsedArmour.length ? parsedArmour : splitArmourSpecification(`${plannedClass} starting armour`);
+            const armourWeight = armourPieces.reduce((sum, piece) => sum + piece.weight, 0);
+            const mediumLimit = maxWeightForTier(maxEquipLoad(statPlan.attributes.endurance), /light load|below 30%|blue dancer/i.test(loadout.armour) ? "light" : "medium");
             return (
               <article key={phase}>
                 <header><span>{phase === "dlc" ? "DLC" : phase}</span><small>{loadout.level}</small></header>
@@ -609,9 +791,10 @@ function FullBuildDetails({ build, onClose, assignLabel, onAssign }: { build: Bu
                   <div><dt>Skill plan</dt><dd>{loadout.skill}</dd></div>
                   <div><dt>Talismans</dt><dd><small>{loadout.talismanSlots}</small>{loadout.talismans.map((talisman) => <span key={talisman}>{talisman}<TimingNote value={talisman} phase={phase} /></span>)}</dd></div>
                   <div><dt>Armour</dt><dd>{loadout.armour}</dd></div>
+                  <div><dt>Weight check</dt><dd>{armourPieces.length ? `${armourWeight.toFixed(1)} armour weight; ${weapon?.weight != null ? `${weapon.weight} main-weapon weight; ` : ""}${mediumLimit.toFixed(1)} total-load limit at END ${statPlan.attributes.endurance}.` : `Use the Status screen limit of ${mediumLimit.toFixed(1)} total weight at END ${statPlan.attributes.endurance}; the source does not name individual pieces for this stage.`}</dd></div>
                   <div><dt>Spells</dt><dd>{loadout.spells.length ? loadout.spells.map((spell) => <span key={spell}>{spell}</span>) : build.publishedLoadout ? "Not specified by source" : "No required spells; use consumables for ranged utility."}</dd></div>
                   <div><dt>Physick</dt><dd>{loadout.flask}</dd></div>
-                  <div><dt>Stats</dt><dd>{loadout.stats}</dd></div>
+                  <div><dt>Stats</dt><dd>{(Object.keys(STAT_LABELS) as StatKey[]).map((stat) => `${STAT_LABELS[stat]} ${statPlan.attributes[stat]}`).join(" · ")}<small>{loadout.stats}</small></dd></div>
                 </dl>
                 {loadout.borrowedFrom && <a className="borrowed-source" href={loadout.borrowedFrom.url} target="_blank" rel="noreferrer">Temporary stage from {loadout.borrowedFrom.buildName} ↗</a>}
                 {loadout.weaponChoice && <div className="weapon-choice-source"><strong>Why this named option</strong><p>{loadout.weaponChoice.rationale}</p><div>{loadout.weaponChoice.sources.map((source) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.label} ↗</a>)}</div></div>}
@@ -630,6 +813,7 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
   const [mode, setMode] = useState<Mode>("standard");
   const [count, setCount] = useState(2);
   const [name, setName] = useState("Our path to the Elden Ring");
+  const [lossRate, setLossRate] = useState(20);
   const [players, setPlayers] = useState<Player[]>(makePlayers(2));
   const [activePlayer, setActivePlayer] = useState(0);
   const [query, setQuery] = useState("");
@@ -675,6 +859,7 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
           <label><span>Run name</span><input value={name} onChange={(event) => setName(event.target.value)} /></label>
           <div><span className="settings-label">Mode</span><div className="plain-segmented"><button type="button" className={mode === "standard" ? "active" : ""} onClick={() => setMode("standard")}>Standard co-op</button><button type="button" className={mode === "seamless" ? "active" : ""} onClick={() => setMode("seamless")}>Seamless Co-op</button></div></div>
           <div><span className="settings-label">Players</span><div className="plain-segmented count-buttons">{[2, 3, 4, 5, 6].map((size) => <button type="button" className={count === size ? "active" : ""} key={size} onClick={() => changeCount(size)}>{size}</button>)}</div></div>
+          <label><span>Rune loss allowance</span><select value={lossRate} onChange={(event) => setLossRate(Number(event.target.value))}><option value={10}>10% · confident</option><option value={20}>20% · normal</option><option value={30}>30% · cautious</option></select><small className="setting-help">The level plan subtracts this share of field runes for deaths, missed enemies and consumables kept in inventory.</small></label>
         </div>
         <div className="player-setup-list">
           {players.map((player, index) => {
@@ -694,7 +879,7 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
             return <article className={selected ? "selected" : ""} key={candidate.id}>
               <header><div><span>{String(builds.indexOf(candidate) + 1).padStart(2, "0")}</span><small>{candidate.complexity}</small></div><h3>{candidate.name}</h3><p>{classification.attributes} · {classification.range}</p><b className="collection-pill">{candidate.collection}</b>{candidate.guideCategories?.length ? <p className="guide-groups">{candidate.guideCategories.join(" · ")}</p> : null}</header>
               <p className="setup-playstyle">{candidate.playstyle}</p>
-              <div className="build-facts"><span><small>Starting class</small>{candidate.startingClass}</span><span><small>Combat focus</small>{candidate.mechanic}</span></div>
+              <div className="build-facts"><span><small>Starting class</small>{plannerStartingClass(candidate)}{candidate.startingClass === "Not specified" ? " (calculated)" : ""}</span><span><small>Combat focus</small>{candidate.mechanic}</span></div>
               <div className="weapon-timeline">{(["early", "mid", "late", "dlc"] as PhaseKey[]).map((phase) => { const stage = stageLoadout(candidate, phase); return <div key={phase}><small>{phase}{stage.borrowedFrom ? " · sourced bridge" : ""}</small><span>{stage.weapon}</span></div>; })}</div>
               <footer><button type="button" onClick={() => setDetail(candidate)}>Full loadout</button><button type="button" className={selected ? "assigned" : ""} onClick={() => chooseBuild(candidate)}>{selected ? "Assigned" : `Assign to ${players[activePlayer].name}`}</button></footer>
             </article>;
@@ -702,7 +887,7 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
         </div>
       </section>
 
-      <div className="setup-actions"><div><strong>{players.length} players ready</strong><span>{mode === "standard" ? "Standard co-op; world steps will be repeated per player." : "Seamless Co-op; host and individual pickups are tracked separately."}</span></div><button type="button" onClick={() => onCreate({ schema: 1, name: name.trim() || "Untitled expedition", mode, players, hostId: players[0].id, completed: {}, createdAt: new Date().toISOString() })}>Create route</button></div>
+      <div className="setup-actions"><div><strong>{players.length} players ready</strong><span>{mode === "standard" ? "Standard co-op; world steps will be repeated per player." : "Seamless Co-op; host and individual pickups are tracked separately."} Rune plans keep a {lossRate}% loss allowance.</span></div><button type="button" onClick={() => onCreate({ schema: 1, name: name.trim() || "Untitled expedition", mode, players, hostId: players[0].id, completed: {}, createdAt: new Date().toISOString(), lossRate })}>Create route</button></div>
       <footer className="setup-footer">Unofficial fan project. Full spoilers. Data baseline: regulation 1.16.1.</footer>
       {detail && <FullBuildDetails build={detail} onClose={() => setDetail(null)} assignLabel={`Assign to ${players[activePlayer].name}`} onAssign={() => chooseBuild(detail)} />}
     </main>
@@ -853,7 +1038,7 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly 
   return (
     <div className="route-layout">
       <aside className="chapter-rail" aria-label="Route chapters">
-        <div className="rail-heading"><span>Journey</span><strong>{chapters.filter((candidate) => candidate.act === "Base game").length + 1} chapters</strong></div>
+        <div className="rail-heading"><span>Journey</span><strong>{chapters.length} chapters</strong></div>
         {(["Base game", "Shadow of the Erdtree"] as const).map((act) => (
           <div key={act} className="act-group">
             <p>{act}</p>
@@ -981,7 +1166,7 @@ function CodexView({ expedition, catalogueOnly = false }: { expedition?: Expedit
           return <article className="build-card" key={candidate.id} onClick={() => setSelected(candidate)} tabIndex={0} onKeyDown={(event) => { if (event.key === "Enter") setSelected(candidate); }}>
             <div className="build-card-top"><span className="build-number">{String(builds.indexOf(candidate) + 1).padStart(2, "0")}</span><div className="difficulty"><i />{candidate.complexity}</div></div>
             <h3>{candidate.name}</h3><p className="stats">{classification.attributes} · {classification.range}</p><b className="collection-pill">{candidate.collection}</b>{candidate.guideCategories?.length ? <p className="guide-groups">{candidate.guideCategories.join(" · ")}</p> : null}<p>{candidate.playstyle}</p>
-            <div className="build-facts"><span><small>Starting class</small>{candidate.startingClass}</span><span><small>Combat focus</small>{candidate.mechanic}</span></div>
+            <div className="build-facts"><span><small>Starting class</small>{plannerStartingClass(candidate)}{candidate.startingClass === "Not specified" ? " (calculated)" : ""}</span><span><small>Combat focus</small>{candidate.mechanic}</span></div>
             <div className="mini-phases"><span>{stageLoadout(candidate, "early").weapon}</span><i>→</i><span>{stageLoadout(candidate, "dlc").weapon}</span></div>
             <div className="tag-row">{candidate.tags.slice(0, 3).map((tag) => <span key={tag}>{tag}</span>)}</div>
             {owners.length > 0 && <div className="owners">Chosen by {owners.map((owner) => owner.name).join(", ")}</div>}
@@ -1013,6 +1198,7 @@ function PartyView({ expedition, setExpedition, onExport, onImport, onReset }: {
   const updatePlayer = (id: string, patch: Partial<Player>) => setExpedition((current) => current ? { ...current, players: current.players.map((player) => player.id === id ? { ...player, ...patch } : player) } : current);
   return <section className="party-page"><div className="page-heading"><div><p className="eyebrow">Expedition management</p><h2>{expedition.name}</h2><p>{expedition.mode === "standard" ? "Standard co-op across independent worlds" : "Seamless Co-op with host-led progression"}</p></div><div className="progress-medallion"><strong>{Math.round((completed / Math.max(totalKeys.length, 1)) * 100)}%</strong><span>route complete</span></div></div>
     <div className="party-cards">{expedition.players.map((player, index) => { const selected = builds.find((candidate) => candidate.id === player.buildId)!; const classification = buildClassification(selected); return <article key={player.id} style={{ "--player": player.color } as React.CSSProperties}><div className="portrait">{player.name.slice(0, 1).toUpperCase()}</div><div className="party-card-head"><input value={player.name} onChange={(event) => updatePlayer(player.id, { name: event.target.value })} /><span>Player {index + 1}</span></div><select value={player.buildId} onChange={(event) => updatePlayer(player.id, { buildId: event.target.value })}>{builds.map((candidate) => <option value={candidate.id} key={candidate.id}>{candidate.name}</option>)}</select><p>{selected.playstyle}</p><div className="party-stats"><span><small>Attributes</small>{classification.attributes}</span><span><small>Range</small>{classification.range}</span></div><label className="host-radio"><input type="radio" name="host" checked={expedition.hostId === player.id} onChange={() => setExpedition((current) => current ? { ...current, hostId: player.id } : current)} /> {expedition.hostId === player.id ? "Current host" : "Make host"}</label></article>; })}</div>
+    <div className="save-panel"><div><p className="eyebrow">Rune plan</p><h3>Loss allowance</h3><p>Expected field income is reduced before levels are assigned. Golden Rune items stay outside the budget until you choose to consume them.</p></div><label className="loss-setting">Allow for <select value={expedition.lossRate ?? 20} onChange={(event) => setExpedition((current) => current ? { ...current, lossRate: Number(event.target.value) } : current)}><option value={10}>10% lost</option><option value={20}>20% lost</option><option value={30}>30% lost</option></select></label></div>
     <div className="save-panel"><div><p className="eyebrow">Carry the route</p><h3>Save and share</h3><p>Progress is saved automatically. Export an expedition file for backup or to move the route to another computer.</p></div><div className="save-actions"><button type="button" className="primary" onClick={onExport}>Export expedition</button><label>Import file<input type="file" accept="application/json" onChange={onImport} /></label><button type="button" className="danger" onClick={onReset}>Start over</button></div></div>
     <div className="source-panel"><p className="eyebrow">Reference shelf</p><h3>Sources and version</h3><p>Content baseline: App/Regulation 1.16.1, checked 1 August 2026. External references open in a new tab.</p><div>{sources.map(([label, url]) => <a key={url} href={url} target="_blank" rel="noreferrer">{label}<span>↗</span></a>)}</div></div>
   </section>;
