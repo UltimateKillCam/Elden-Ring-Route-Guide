@@ -14,6 +14,7 @@ import {
   radagonSoresealBridgeAdvice,
   recommendOrigin,
   runesToNextLevel,
+  selectOptionalRuneBosses,
 } from "../app/run-planner.ts";
 
 test("origin and rune constants match known game values", () => {
@@ -42,8 +43,16 @@ test("all chapter budgets have complete, coherent income bands", () => {
 
 test("co-op calculations are deterministic", () => {
   assert.deepEqual([1, 2, 3].map((players) => bossHealthMultiplier(players)), [1, 1.6, 2.3]);
-  assert.deepEqual([1, 2, 3, 4].map((players) => expectedPerPlayerBossPot(1000, players)), [750, 1000, 1250, 1250]);
+  assert.deepEqual([1, 2, 3, 4].map((players) => expectedPerPlayerBossPot(1000, players)), [1000, 1000, 1250, 1250]);
   assert.equal(expectedPerPlayerBossPot(1000, 4, "seamless"), 1000);
+});
+
+test("rune recovery selects easier accessible bosses until the shortfall is funded", () => {
+  const recovery = selectOptionalRuneBosses(7_000, "first-steps", 2, "standard");
+  assert.ok(recovery.perPlayerRunes >= 7_000);
+  assert.ok(recovery.bosses.length > 0);
+  assert.ok(recovery.bosses.every((boss) => boss.chapterId === "first-steps"));
+  assert.deepEqual([...recovery.bosses].map((boss) => boss.difficulty), [...recovery.bosses].map((boss) => boss.difficulty).sort());
 });
 
 test("upgrade plans include exact material purchase ceilings", () => {

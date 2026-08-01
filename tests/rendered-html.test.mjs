@@ -152,6 +152,11 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /Golden Seed - 2x Capital Outskirts West/);
   assert.match(page, /Sacred Tear \(First Church of Marika\)/);
   assert.match(page, /Flask upgrade for every player/);
+  assert.match(page, /5 levels below guide/);
+  assert.match(page, /weapon-upgrade ceilings are lowered together/);
+  assert.match(page, /Rune top-up:/);
+  assert.match(page, /only recommends a fully funded level/);
+  assert.doesNotMatch(page, /The model is short|stay at RL.*next mandatory boss payout/);
   assert.match(progression, /const EXACT_GATES/);
   assert.match(progression, /const REGION_GATES/);
   assert.match(progression, /Stormveil\/i, gate\("stormveil"/);

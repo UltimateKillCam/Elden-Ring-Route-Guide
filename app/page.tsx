@@ -15,7 +15,9 @@ import {
   planWeaponUpgrade,
   radagonSoresealBridgeAdvice,
   runesBetweenLevels,
+  selectOptionalRuneBosses,
   type AttributeBlock,
+  type OptionalRuneBoss,
   type StatKey,
   type UpgradePath,
 } from "./run-planner";
@@ -34,6 +36,7 @@ type Expedition = {
   completed: Record<string, boolean>;
   createdAt: string;
   lossRate?: number;
+  levelOffset?: number;
 };
 type Task = {
   id: string;
@@ -514,6 +517,117 @@ function expectedRunesBeforeBoss(chapterIndex: number, expedition: Expedition) {
   }, { low: 0, high: 0 });
 }
 
+function guideTargets(economy: (typeof CHAPTER_ECONOMY)[number], levelOffset: number) {
+  const offset = Math.max(0, Math.min(20, Math.floor(levelOffset)));
+  return {
+    runeLevel: Math.max(1, economy.targetRuneLevel - offset),
+    standardUpgrade: Math.max(0, economy.standardUpgradeTarget - Math.floor(offset / 5)),
+    somberUpgrade: Math.max(0, economy.somberUpgradeTarget - Math.floor(offset / 10)),
+  };
+}
+
+function affordableLevelAndUpgrade({
+  originLevel,
+  minimumLevel,
+  desiredLevel,
+  minimumUpgrade,
+  desiredUpgrade,
+  path,
+  availableRunes,
+}: {
+  originLevel: number;
+  minimumLevel: number;
+  desiredLevel: number;
+  minimumUpgrade: number;
+  desiredUpgrade: number;
+  path?: UpgradePath;
+  availableRunes: number;
+}) {
+  for (let level = desiredLevel; level >= Math.max(originLevel, minimumLevel); level -= 1) {
+    const levelGap = desiredLevel - level;
+    const upgradeReduction = path === "somber" ? Math.ceil(levelGap / 10) : Math.ceil(levelGap / 5);
+    const upgrade = path ? Math.max(minimumUpgrade, desiredUpgrade - upgradeReduction) : 0;
+    const materialRunes = path ? planWeaponUpgrade(path, 0, upgrade).materialPurchaseRunes : 0;
+    const levelRunes = runesBetweenLevels(originLevel, level);
+    if (levelRunes + materialRunes <= availableRunes) return { level, upgrade, levelRunes, materialRunes };
+  }
+  return { level: Math.max(originLevel, minimumLevel), upgrade: minimumUpgrade, levelRunes: 0, materialRunes: 0 };
+}
+
+type RuneSupportChapter = {
+  bosses: OptionalRuneBoss[];
+  chapterBossRunes: number;
+  cumulativeBossRunes: number;
+  levels: Record<string, number>;
+  upgrades: Record<string, number>;
+};
+
+function runeSupportPlan(expedition: Expedition): Record<string, RuneSupportChapter> {
+  const result: Record<string, RuneSupportChapter> = {};
+  let cumulativeBossRunes = 0;
+  const levelOffset = expedition.levelOffset ?? 0;
+  const previousLevels: Record<string, number> = {};
+  const previousUpgrades: Record<string, number> = {};
+
+  for (let chapterIndex = 0; chapterIndex < chapters.length; chapterIndex += 1) {
+    const chapter = chapters[chapterIndex];
+    const economy = CHAPTER_ECONOMY_BY_ID[chapter.id];
+    if (!economy) continue;
+    const targets = guideTargets(economy, levelOffset);
+    const expected = expectedRunesBeforeBoss(chapterIndex, expedition);
+    let maximumShortfall = 0;
+
+    for (const player of expedition.players) {
+      const selected = builds.find((candidate) => candidate.id === player.buildId)!;
+      const loadout = stageLoadout(selected, phaseForChapter(chapter));
+      const plannedClass = selected.startingClass === "Not specified" ? planBuildStatTarget(selected, 170).origin.name : selected.startingClass;
+      const plan = planBuildStatTarget({ ...selected, startingClass: plannedClass }, targets.runeLevel, weaponRequirements(loadout.weapon));
+      const pathResult = weaponUpgradePath(loadout.weapon);
+      const path: UpgradePath | undefined = pathResult === "none" ? undefined : pathResult;
+      const desiredUpgrade = path === "somber" ? targets.somberUpgrade : targets.standardUpgrade;
+      const materials = path ? planWeaponUpgrade(path, 0, desiredUpgrade).materialPurchaseRunes : 0;
+      const required = runesBetweenLevels(plan.origin.level, targets.runeLevel) + materials + economy.purchaseReserve;
+      maximumShortfall = Math.max(maximumShortfall, required - expected.low - cumulativeBossRunes);
+    }
+
+    const recovery = selectOptionalRuneBosses(maximumShortfall, chapter.id, expedition.players.length, expedition.mode);
+    cumulativeBossRunes += recovery.perPlayerRunes;
+    const levels: Record<string, number> = {};
+    const upgrades: Record<string, number> = {};
+    for (const player of expedition.players) {
+      const selected = builds.find((candidate) => candidate.id === player.buildId)!;
+      const loadout = stageLoadout(selected, phaseForChapter(chapter));
+      const plannedClass = selected.startingClass === "Not specified" ? planBuildStatTarget(selected, 170).origin.name : selected.startingClass;
+      const plan = planBuildStatTarget({ ...selected, startingClass: plannedClass }, targets.runeLevel, weaponRequirements(loadout.weapon));
+      const pathResult = weaponUpgradePath(loadout.weapon);
+      const path: UpgradePath | undefined = pathResult === "none" ? undefined : pathResult;
+      const desiredUpgrade = path === "somber" ? targets.somberUpgrade : targets.standardUpgrade;
+      const spendable = Math.max(0, expected.low + cumulativeBossRunes - economy.purchaseReserve);
+      const funded = affordableLevelAndUpgrade({
+        originLevel: plan.origin.level,
+        minimumLevel: previousLevels[player.id] ?? plan.origin.level,
+        desiredLevel: targets.runeLevel,
+        minimumUpgrade: previousUpgrades[player.id] ?? 0,
+        desiredUpgrade,
+        path,
+        availableRunes: spendable,
+      });
+      levels[player.id] = funded.level;
+      upgrades[player.id] = funded.upgrade;
+      previousLevels[player.id] = funded.level;
+      previousUpgrades[player.id] = funded.upgrade;
+    }
+    result[chapter.id] = {
+      bosses: recovery.bosses,
+      chapterBossRunes: recovery.perPlayerRunes,
+      cumulativeBossRunes,
+      levels,
+      upgrades,
+    };
+  }
+  return result;
+}
+
 function progressionTasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
   const economy = CHAPTER_ECONOMY_BY_ID[chapter.id];
   if (!economy) return [];
@@ -523,7 +637,19 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition): T
   const previousPhase = chapterIndex > 0 ? phaseForChapter(chapters[chapterIndex - 1]) : phase;
   const expected = expectedRunesBeforeBoss(chapterIndex, expedition);
   const lossRate = expedition.lossRate ?? 20;
-  const result: Task[] = [];
+  const support = runeSupportPlan(expedition);
+  const chapterSupport = support[chapter.id];
+  const levelOffset = expedition.levelOffset ?? 0;
+  const targets = guideTargets(economy, levelOffset);
+  const result: Task[] = (chapterSupport?.bosses ?? []).map((boss) => ({
+    id: `${chapter.id}-rune-boss-${boss.id}`,
+    label: `Rune top-up: ${boss.name}`,
+    detail: `${boss.location}. ${boss.directions} Listed solo reward: ${formatRunes(boss.runes)} runes. ${expedition.mode === "standard" ? `Complete it in each player's world; the planner budgets 75% for that player's hosted clear plus 25% for up to two clears as a summoned cooperator.` : "Complete it once in the shared Seamless world."} This fight was added because the conservative rune budget needs it before the next funded level recommendation.`,
+    kind: "boss" as const,
+    perPlayer: expedition.mode === "standard",
+    scope: expedition.mode === "standard" ? "Each player's world" : "Shared session",
+    optional: false,
+  }));
 
   for (const player of expedition.players) {
     const selected = builds.find((candidate) => candidate.id === player.buildId)!;
@@ -533,8 +659,11 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition): T
       ? planBuildStatTarget(selected, 170).origin.name
       : selected.startingClass;
     const planningBuild = { ...selected, startingClass: plannedClass };
-    const currentPlan = planBuildStatTarget(planningBuild, economy.targetRuneLevel, weaponRequirements(currentLoadout.weapon));
-    const previousTargetLevel = previousEconomy?.targetRuneLevel ?? currentPlan.origin.level;
+    const fundedTargetLevel = chapterSupport?.levels[player.id] ?? targets.runeLevel;
+    const currentPlan = planBuildStatTarget(planningBuild, fundedTargetLevel, weaponRequirements(currentLoadout.weapon));
+    const previousTargetLevel = previousEconomy
+      ? (support[chapters[chapterIndex - 1]?.id]?.levels[player.id] ?? guideTargets(previousEconomy, levelOffset).runeLevel)
+      : currentPlan.origin.level;
     const previousLoadout = stageLoadout(selected, previousPhase);
     const previousPlan = previousEconomy
       ? planBuildStatTarget(planningBuild, previousTargetLevel, weaponRequirements(previousLoadout.weapon))
@@ -543,11 +672,14 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition): T
     const cumulativeLevelRunes = runesBetweenLevels(currentPlan.origin.level, economy.targetRuneLevel);
     const pathResult = weaponUpgradePath(currentLoadout.weapon);
     const upgradePath: UpgradePath | undefined = pathResult === "none" ? undefined : pathResult;
-    const currentUpgrade = upgradePath === "somber" ? economy.somberUpgradeTarget : economy.standardUpgradeTarget;
-    const previousUpgrade = upgradePath === "somber" ? (previousEconomy?.somberUpgradeTarget ?? 0) : (previousEconomy?.standardUpgradeTarget ?? 0);
+    const currentUpgrade = chapterSupport?.upgrades[player.id] ?? (upgradePath === "somber" ? targets.somberUpgrade : targets.standardUpgrade);
+    const previousUpgrade = previousEconomy
+      ? (support[chapters[chapterIndex - 1]?.id]?.upgrades[player.id] ?? 0)
+      : 0;
     const cumulativeMaterials = upgradePath ? planWeaponUpgrade(upgradePath, 0, currentUpgrade).materialPurchaseRunes : 0;
-    const projectedLow = expected.low - cumulativeLevelRunes - cumulativeMaterials - economy.purchaseReserve;
-    const projectedHigh = expected.high - cumulativeLevelRunes - cumulativeMaterials - economy.purchaseReserve;
+    const supplementalRunes = chapterSupport?.cumulativeBossRunes ?? 0;
+    const projectedLow = expected.low + supplementalRunes - cumulativeLevelRunes - cumulativeMaterials - economy.purchaseReserve;
+    const projectedHigh = expected.high + supplementalRunes - cumulativeLevelRunes - cumulativeMaterials - economy.purchaseReserve;
     const changes = statChangeText(previousPlan.attributes, currentPlan.attributes);
     const requirementText = currentWeapon
       ? ` Weapon requirements: ${[["STR", currentWeapon.reqStr], ["DEX", currentWeapon.reqDex], ["INT", currentWeapon.reqInt], ["FAI", currentWeapon.reqFai], ["ARC", currentWeapon.reqArc]].filter(([, value]) => Number(value) > 0).map(([stat, value]) => `${stat} ${value}`).join(", ") || "none"}.`
@@ -555,19 +687,18 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition): T
     const soreseal = radagonSoresealBridgeAdvice({
       baseStats: previousPlan.attributes,
       requiredStats: weaponRequirements(currentLoadout.weapon),
-      targetLevel: economy.targetRuneLevel,
+      targetLevel: fundedTargetLevel,
       phase,
     });
-    const budgetStatus = projectedHigh < 0
-      ? `The model is short by about ${formatRunes(Math.abs(projectedHigh))} runes even at the high estimate: stay at RL${previousTargetLevel}, use the current weapon and let the next mandatory boss payout fund the catch-up; do not farm or consume Golden Runes merely to force the target.`
-      : projectedLow < 0
-        ? `The low estimate is short by ${formatRunes(Math.abs(projectedLow))}. Spend only if the held-rune counter covers the full level cost plus the ${formatRunes(economy.purchaseReserve)} reserve; otherwise remain at RL${previousTargetLevel} until the next mandatory boss payout.`
-        : `After levels, maximum stone purchases and the reserve, the projected balance is ${formatRunes(projectedLow)}–${formatRunes(projectedHigh)} runes.`;
+    const targetNote = fundedTargetLevel < targets.runeLevel
+      ? `The published guide target is RL${economy.targetRuneLevel}${levelOffset ? ` and this run is set ${levelOffset} levels below it` : ""}; the conservative income available here funds RL${fundedTargetLevel}, so that is the recommendation instead of displaying an unaffordable level.`
+      : `This fully funds the ${levelOffset ? `RL${targets.runeLevel} target (${levelOffset} below the published guide)` : `published RL${targets.runeLevel} target`}.`;
+    const budgetStatus = `After the assigned levels, reinforcement-material ceiling and ${formatRunes(economy.purchaseReserve)} reserve, the conservative projected balance is ${formatRunes(Math.max(0, projectedLow))} runes (${formatRunes(Math.max(0, projectedHigh))} on the comfortable estimate). ${targetNote}`;
 
     result.push({
       id: `${chapter.id}-level-${player.id}`,
-      label: `${player.name}: level to RL${economy.targetRuneLevel}`,
-      detail: `Rest at ${chapter.grace}. From RL${previousTargetLevel}, leveling costs ${formatRunes(levelRunes)} runes. Add stats in this order: ${changes}. Planned class: ${currentPlan.origin.name}.${requirementText} Expected cumulative runes before this chapter's main boss are ${formatRunes(expected.low)}–${formatRunes(expected.high)} after the ${lossRate}% field-loss allowance and completed-boss rotation. Keep ${formatRunes(economy.purchaseReserve)} unspent for merchants, arrows and consumables. ${budgetStatus}${soreseal.recommended ? ` Radagon's Soreseal can temporarily bridge ${soreseal.bridgedRequirements.map((stat) => STAT_LABELS[stat]).join("/")}; it also makes you take 15% more damage, so remove it once natural requirements are met.` : ""}`,
+      label: `${player.name}: level to RL${fundedTargetLevel}`,
+      detail: `Rest at ${chapter.grace}. From RL${previousTargetLevel}, leveling costs ${formatRunes(levelRunes)} runes. Add stats in this order: ${changes}. Planned class: ${currentPlan.origin.name}.${requirementText} Conservative cumulative income is ${formatRunes(expected.low + supplementalRunes)} runes after the ${lossRate}% field-loss allowance, completed-boss rotation and ${formatRunes(supplementalRunes)} from assigned rune top-up bosses. Keep ${formatRunes(economy.purchaseReserve)} unspent for merchants, arrows and consumables. ${budgetStatus}${soreseal.recommended ? ` Radagon's Soreseal can temporarily bridge ${soreseal.bridgedRequirements.map((stat) => STAT_LABELS[stat]).join("/")}; it also makes you take 15% more damage, so remove it once natural requirements are met.` : ""}`,
       kind: "level",
       playerId: player.id,
       perPlayer: false,
@@ -825,6 +956,7 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
   const [count, setCount] = useState(2);
   const [name, setName] = useState("Our path to the Elden Ring");
   const [lossRate, setLossRate] = useState(20);
+  const [levelOffset, setLevelOffset] = useState(0);
   const [players, setPlayers] = useState<Player[]>(makePlayers(2));
   const [activePlayer, setActivePlayer] = useState(0);
   const [query, setQuery] = useState("");
@@ -871,6 +1003,7 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
           <div><span className="settings-label">Mode</span><div className="plain-segmented"><button type="button" className={mode === "standard" ? "active" : ""} onClick={() => setMode("standard")}>Standard co-op</button><button type="button" className={mode === "seamless" ? "active" : ""} onClick={() => setMode("seamless")}>Seamless Co-op</button></div></div>
           <div><span className="settings-label">Players</span><div className="plain-segmented count-buttons">{[2, 3, 4, 5, 6].map((size) => <button type="button" className={count === size ? "active" : ""} key={size} onClick={() => changeCount(size)}>{size}</button>)}</div></div>
           <label><span>Rune loss allowance</span><select value={lossRate} onChange={(event) => setLossRate(Number(event.target.value))}><option value={10}>10% · confident</option><option value={20}>20% · normal</option><option value={30}>30% · cautious</option></select><small className="setting-help">The level plan subtracts this share of field runes for deaths, missed enemies and consumables kept in inventory.</small></label>
+          <label><span>Level pace</span><select value={levelOffset} onChange={(event) => setLevelOffset(Number(event.target.value))}><option value={0}>Match guide levels</option><option value={5}>5 levels below guide</option><option value={10}>10 levels below guide</option><option value={15}>15 levels below guide</option><option value={20}>20 levels below guide</option></select><small className="setting-help">Rune-level recommendations and weapon-upgrade ceilings are lowered together. The planner still funds every recommendation.</small></label>
         </div>
         <div className="player-setup-list">
           {players.map((player, index) => {
@@ -898,7 +1031,7 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
         </div>
       </section>
 
-      <div className="setup-actions"><div><strong>{players.length} players ready</strong><span>{mode === "standard" ? "Standard co-op; world steps will be repeated per player." : "Seamless Co-op; host and individual pickups are tracked separately."} Rune plans keep a {lossRate}% loss allowance.</span></div><button type="button" onClick={() => onCreate({ schema: 1, name: name.trim() || "Untitled expedition", mode, players, hostId: players[0].id, completed: {}, createdAt: new Date().toISOString(), lossRate })}>Create route</button></div>
+      <div className="setup-actions"><div><strong>{players.length} players ready</strong><span>{mode === "standard" ? "Standard co-op; world steps will be repeated per player." : "Seamless Co-op; host and individual pickups are tracked separately."} Rune plans keep a {lossRate}% loss allowance and run {levelOffset ? `${levelOffset} levels below guide pace` : "at guide pace"}.</span></div><button type="button" onClick={() => onCreate({ schema: 1, name: name.trim() || "Untitled expedition", mode, players, hostId: players[0].id, completed: {}, createdAt: new Date().toISOString(), lossRate, levelOffset })}>Create route</button></div>
       <footer className="setup-footer">Unofficial fan project. Full spoilers. Data baseline: regulation 1.16.1.</footer>
       {detail && <FullBuildDetails build={detail} onClose={() => setDetail(null)} assignLabel={`Assign to ${players[activePlayer].name}`} onAssign={() => chooseBuild(detail)} />}
     </main>
@@ -1209,7 +1342,7 @@ function PartyView({ expedition, setExpedition, onExport, onImport, onReset }: {
   const updatePlayer = (id: string, patch: Partial<Player>) => setExpedition((current) => current ? { ...current, players: current.players.map((player) => player.id === id ? { ...player, ...patch } : player) } : current);
   return <section className="party-page"><div className="page-heading"><div><p className="eyebrow">Expedition management</p><h2>{expedition.name}</h2><p>{expedition.mode === "standard" ? "Standard co-op across independent worlds" : "Seamless Co-op with host-led progression"}</p></div><div className="progress-medallion"><strong>{Math.round((completed / Math.max(totalKeys.length, 1)) * 100)}%</strong><span>route complete</span></div></div>
     <div className="party-cards">{expedition.players.map((player, index) => { const selected = builds.find((candidate) => candidate.id === player.buildId)!; const classification = buildClassification(selected); return <article key={player.id} style={{ "--player": player.color } as React.CSSProperties}><div className="portrait">{player.name.slice(0, 1).toUpperCase()}</div><div className="party-card-head"><input value={player.name} onChange={(event) => updatePlayer(player.id, { name: event.target.value })} /><span>Player {index + 1}</span></div><select value={player.buildId} onChange={(event) => updatePlayer(player.id, { buildId: event.target.value })}>{builds.map((candidate) => <option value={candidate.id} key={candidate.id}>{candidate.name}</option>)}</select><p>{selected.playstyle}</p><div className="party-stats"><span><small>Attributes</small>{classification.attributes}</span><span><small>Range</small>{classification.range}</span></div><label className="host-radio"><input type="radio" name="host" checked={expedition.hostId === player.id} onChange={() => setExpedition((current) => current ? { ...current, hostId: player.id } : current)} /> {expedition.hostId === player.id ? "Current host" : "Make host"}</label></article>; })}</div>
-    <div className="save-panel"><div><p className="eyebrow">Rune plan</p><h3>Loss allowance</h3><p>Expected field income is reduced before levels are assigned. Golden Rune items stay outside the budget until you choose to consume them.</p></div><label className="loss-setting">Allow for <select value={expedition.lossRate ?? 20} onChange={(event) => setExpedition((current) => current ? { ...current, lossRate: Number(event.target.value) } : current)}><option value={10}>10% lost</option><option value={20}>20% lost</option><option value={30}>30% lost</option></select></label></div>
+    <div className="save-panel"><div><p className="eyebrow">Rune plan</p><h3>Level and loss allowances</h3><p>Expected field income is reduced before levels are assigned. If the conservative balance cannot pay for the selected pace, the route inserts easier optional bosses and only recommends a fully funded level. Golden Rune items remain emergency reserves.</p></div><div className="loss-setting"><label>Allow for <select value={expedition.lossRate ?? 20} onChange={(event) => setExpedition((current) => current ? { ...current, lossRate: Number(event.target.value) } : current)}><option value={10}>10% lost</option><option value={20}>20% lost</option><option value={30}>30% lost</option></select></label><label>Run <select value={expedition.levelOffset ?? 0} onChange={(event) => setExpedition((current) => current ? { ...current, levelOffset: Number(event.target.value), completed: {} } : current)}><option value={0}>at guide level</option><option value={5}>5 levels below</option><option value={10}>10 levels below</option><option value={15}>15 levels below</option><option value={20}>20 levels below</option></select></label></div></div>
     <div className="save-panel"><div><p className="eyebrow">Carry the route</p><h3>Save and share</h3><p>Progress is saved automatically. Export an expedition file for backup or to move the route to another computer.</p></div><div className="save-actions"><button type="button" className="primary" onClick={onExport}>Export expedition</button><label>Import file<input type="file" accept="application/json" onChange={onImport} /></label><button type="button" className="danger" onClick={onReset}>Start over</button></div></div>
     <div className="source-panel"><p className="eyebrow">Reference shelf</p><h3>Sources and version</h3><p>Content baseline: App/Regulation 1.16.1, checked 1 August 2026. External references open in a new tab.</p><div>{sources.map(([label, url]) => <a key={url} href={url} target="_blank" rel="noreferrer">{label}<span>↗</span></a>)}</div></div>
   </section>;
