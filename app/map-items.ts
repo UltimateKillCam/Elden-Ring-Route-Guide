@@ -24410,6 +24410,15 @@ export const mapRoutePoints: MapRoutePoint[] = [
 
 const clean = (value: string) => value.toLowerCase().replace(/[+＋]\d+/g, "").replace(/[^a-z0-9' ]/g, " ").replace(/\s+/g, " ").trim();
 
+const cleanImportedDescription = (value: string) => value
+  .replace(/\uFFFD+/g, " ")
+  .replace(/\s+([,.;:])/g, "$1")
+  .replace(/\s+/g, " ")
+  .trim();
+const cleanMapItem = <T extends MapItem | MapRoutePoint>(item: T): T => (
+  item.description.includes("\uFFFD") ? { ...item, description: cleanImportedDescription(item.description) } as T : item
+);
+
 export function findMapItems(value: string, preferredLayer?: MapItem["layer"], categoryPattern?: RegExp) {
   const query = clean(value);
   const candidates = mapItems
@@ -24425,7 +24434,7 @@ export function findMapItems(value: string, preferredLayer?: MapItem["layer"], c
     const start = query.indexOf(candidate.name);
     const end = start + candidate.name.length;
     if (start >= 0 && occupied.some(([from, to]) => start < to && end > from)) continue;
-    chosen.push(candidate.item);
+    chosen.push(cleanMapItem(candidate.item));
     names.add(candidate.name);
     if (start >= 0) occupied.push([start, end]);
   }
@@ -24444,5 +24453,6 @@ export function findMapRoutePoint(value: string, preferredLayer?: MapItem["layer
     .map((point) => { const name = clean(point.name); const match = name === query ? 0 : name.startsWith(query) ? 1 : query.startsWith(name) ? 2 : name.includes(query) ? 3 : query.includes(name) ? 4 : 99; return { point, match }; })
     .filter(({ match }) => match < 99)
     .sort((a, b) => a.match - b.match || categoryPriority(a.point.category) - categoryPriority(b.point.category) || a.point.name.length - b.point.name.length);
-  return ranked.find(({ point }) => point.layer === preferredLayer)?.point || ranked[0]?.point;
+  const chosen = ranked.find(({ point }) => point.layer === preferredLayer)?.point || ranked[0]?.point;
+  return chosen ? cleanMapItem(chosen) : undefined;
 }

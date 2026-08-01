@@ -246,15 +246,18 @@ function insertGatedPickupTasks(tasks: Task[], pickups: Task[], chapter: Chapter
 }
 
 const ESSENTIAL_GUIDES: Record<string, string> = {
-  "Church of Elleh: Crafting Kit and Kale": "From The First Step, ride north to the ruined church. Buy the Crafting Kit from Kalé, speak to him until his dialogue repeats, then continue north-east toward Gatefront.",
+  "Church of Elleh: Crafting Kit, Kale and smithing table": "From The First Step, walk north while avoiding the Tree Sentinel and activate the Church of Elleh grace. Buy the Crafting Kit from Kalé and exhaust his dialogue. The anvil beside him can reinforce regular armaments only to +3 and Somber armaments only to +1; Hewg is required beyond those limits.",
   "Gatefront: Whetstone Knife and first map": "At Gatefront Ruins, take the West Limgrave map from the roadside pillar. Go down the stairs in the southern camp, open the chest for the Whetstone Knife, then leave east along the main road.",
   "Third Church: Flask of Wondrous Physick": "Follow the road east through Mistwood to the Third Church of Marika. Take the Sacred Tear and Flask of Wondrous Physick, rest at the grace, then head west toward Agheel Lake.",
   "Limgrave Tunnels: early Smithing Stones": "Enter the mine in the cliff at the north-west corner of Agheel Lake. Collect the visible Smithing Stones from the walls, clear as much of the tunnel as the party needs, then continue to the next route card.",
   "Collect Map: Caelid": "Take Map: Caelid from the roadside pillar beside the nomadic merchant near Caelid Highway South, then continue south toward Redmane Castle.",
   "Sealed Tunnel: Smithing-Stone Miner's Bell Bearing [2]": "Enter Sealed Tunnel outside Leyndell. Strike the illusory wall beside the grace, then open the chest in the first chamber for Smithing-Stone Miner's Bell Bearing [2].",
   "Collect two Scadutree Fragments at Church of Consolation": "Ride south-east from Gravesite Plain to the Church of Consolation and take both Scadutree Fragments from the altar.",
-  "Accept Melina's accord and receive Torrent": "Rest at Gatefront or Agheel Lake North after activating three overworld graces. Accept Melina's accord to receive the Spectral Steed Whistle, then put it in a pouch or quick-item slot.",
+  "Accept Melina's accord and receive Torrent": "Rest at the Gatefront grace. Accept Melina's accord to unlock leveling and receive the Spectral Steed Whistle, then put the whistle in a pouch or quick-item slot and summon Torrent before continuing.",
   "Meet Renna at Church of Elleh at night": "After receiving Torrent, pass time until night and fast-travel to Church of Elleh. Tell Renna that you can call the spectral steed; she gives the Spirit Calling Bell and Lone Wolf Ashes. If she no longer appears, both can later be bought from the Twin Maiden Husks.",
+  "Enter Margit's arena once to trigger the Roundtable Hold invitation": "From Stormhill Shack, follow the road through the soldiers and ballista to Castleward Tunnel. Activate its grace, enter Margit's fog and begin the fight once. Winning is not required: after the attempt, rest at a Site of Grace and Melina will offer to take you to Roundtable Hold. The intended route leaves Margit's defeat for the Stormveil chapter.",
+  "Accept Melina's invitation and meet Smithing Master Hewg": "Accept Melina's Roundtable Hold invitation. Activate the Table of Lost Grace, then take the eastern corridor and speak to Smithing Master Hewg at his anvil until his dialogue repeats. Hewg can reinforce past regular +3 and Somber +1. Visit the Twin Maiden Husks in the north-west room, but keep every weapon within the current chapter cap.",
+  "Meet Nepheli before Godrick": "From the Secluded Cell grace, go south away from Godrick's fog, pass the troll and two soldiers, and enter the small side room near the golden sapling. Exhaust Nepheli Loux's dialogue before defeating Godrick; this unlocks her summon sign and preserves the later Arsenal Charm reward.",
   "Speak to Ensha at Roundtable Hold before taking a secret medallion": "Speak to Ensha beside Gideon's room before collecting Albus's medallion half. This records his pre-invasion dialogue and the missable What Do You Want? gesture; after the medallion triggers his invasion, defeat him and collect the Royal Remains set outside Gideon's room.",
   "Ask Seluvis about Nokron and take his introduction": "After joining Ranni, descend Seluvis's Rise and ask him about Nokron. Take Seluvis's Introduction; do not give Ranni the Fingerslayer Blade until the route explicitly clears Seluvis's reward.",
   "Give Seluvis's Introduction to Sellen at Waypoint Ruins": "Defeat the Mad Pumpkin Head below Waypoint Ruins if needed, open Sellen's room and show her Seluvis's Introduction. Ask about General Radahn, then return to Blaidd in Siofra River.",
@@ -319,11 +322,13 @@ const ESSENTIAL_MAP_QUERIES: Record<string, string> = {
   "Greatsword of Radahn (Lord)": "Radahn, Consort of Miquella - Enir-Ilim",
   "Greatsword of Radahn (Light)": "Radahn, Consort of Miquella - Enir-Ilim",
   "Obsidian Lamina": "Radahn, Consort of Miquella - Enir-Ilim",
-  "Church of Elleh: Crafting Kit and Kale": "Church of Elleh",
+  "Church of Elleh: Crafting Kit, Kale and smithing table": "Church of Elleh",
   "Gatefront: Whetstone Knife and first map": "Gatefront Ruins",
   "Third Church: Flask of Wondrous Physick": "Third Church of Marika",
   "Limgrave Tunnels: early Smithing Stones": "Limgrave Tunnels",
   "Accept Melina's accord and receive Torrent": "Gatefront Ruins",
+  "Enter Margit's arena once to trigger the Roundtable Hold invitation": "Margit, the Fell Omen",
+  "Accept Melina's invitation and meet Smithing Master Hewg": "Margit, the Fell Omen",
   "Speak to Ensha at Roundtable Hold before taking a secret medallion": "Haligtree Secret Medallion (Right)",
   "Return to Blaidd in Siofra and exhaust his dialogue": "Blaidd (Ranni's Quest - First Location)",
   "Speak to Jerren in Redmane Plaza to begin the festival": "Redmane Castle Plaza",
@@ -572,10 +577,16 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition): T
     if (upgradePath && currentUpgrade > previousUpgrade) {
       const upgrade = planWeaponUpgrade(upgradePath, previousUpgrade, currentUpgrade);
       const materials = upgrade.materials.map((material) => `${material.quantity}× ${material.name}`).join(", ");
+      const smith = chapter.id === "first-steps"
+        ? "At the Church of Elleh smithing table"
+        : "At Smithing Master Hewg in Roundtable Hold";
+      const smithLimit = chapter.id === "first-steps"
+        ? " This table cannot reinforce beyond regular +3 or Somber +1."
+        : " Hewg is available after the Roundtable invitation step in First Steps.";
       result.push({
         id: `${chapter.id}-upgrade-${player.id}-${upgradePath}`,
         label: `${player.name}: ${currentLoadout.weapon} to +${currentUpgrade}`,
-        detail: `At Smithing Master Hewg, take the active ${upgradePath === "somber" ? "Somber" : "regular"} weapon from +${previousUpgrade} to +${currentUpgrade}: ${materials}. Buying every purchasable stone in this step would cost at most ${formatRunes(upgrade.materialPurchaseRunes)} runes; stones collected from this route reduce that amount. The forge service price is weapon-specific and is shown by Hewg before confirmation, so pay it only after keeping the ${formatRunes(economy.purchaseReserve)} merchant reserve. If ${currentLoadout.weapon} is still behind a later route card, reinforce the currently equipped bridge weapon to this cap and save enough stones to catch the named weapon up when collected. Do not exceed +${currentUpgrade} in this chapter.`,
+        detail: `${smith}, take the active ${upgradePath === "somber" ? "Somber" : "regular"} weapon from +${previousUpgrade} to +${currentUpgrade}: ${materials}.${smithLimit} Buying every purchasable stone in this step would cost at most ${formatRunes(upgrade.materialPurchaseRunes)} runes; stones collected from this route reduce that amount. The reinforcement service price is weapon-specific and is shown before confirmation, so pay it only after keeping the ${formatRunes(economy.purchaseReserve)} merchant reserve. If ${currentLoadout.weapon} is still behind a later route card, reinforce the currently equipped bridge weapon to this cap and save enough stones to catch the named weapon up when collected. Do not exceed +${currentUpgrade} in this chapter.`,
         kind: "upgrade",
         playerId: player.id,
         perPlayer: false,

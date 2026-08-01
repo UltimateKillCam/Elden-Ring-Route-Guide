@@ -140,6 +140,15 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.doesNotMatch(page, /after collecting the item cards above/);
   assert.doesNotMatch(page, /legacyId/);
   assert.match(page, /FLASK_UPGRADE_STOPS/);
+  assert.match(data, /Accept Melina's accord and receive Torrent/);
+  assert.match(data, /Enter Margit's arena once to trigger the Roundtable Hold invitation/);
+  assert.match(data, /Accept Melina's invitation and meet Smithing Master Hewg/);
+  assert.match(page, /regular armaments only to \+3 and Somber armaments only to \+1/);
+  assert.match(page, /Winning is not required/);
+  assert.match(mapItems, /cleanImportedDescription/);
+  assert.match(page, /Meet Nepheli before Godrick.*Secluded Cell/s);
+  const { findMapItem } = await import("../app/map-items.ts");
+  assert.doesNotMatch(findMapItem("Nepheli Loux")?.description ?? "", /�/);
   assert.match(page, /Golden Seed - 2x Capital Outskirts West/);
   assert.match(page, /Sacred Tear \(First Church of Marika\)/);
   assert.match(page, /Flask upgrade for every player/);
