@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { builds, chapters, itemGuides, sources, stageLoadout, type Build, type Chapter, type PhaseKey } from "./data";
-import { findMapItem, type MapItem } from "./map-items";
+import { findMapItem, findMapRoutePoint, type MapItem } from "./map-items";
 
 type Mode = "standard" | "seamless";
 type View = "route" | "codex" | "party";
@@ -125,6 +125,19 @@ const ESSENTIAL_GUIDES: Record<string, string> = {
   "Third Church: Flask of Wondrous Physick": "Follow the road east through Mistwood to the Third Church of Marika. Take the Sacred Tear and Flask of Wondrous Physick, rest at the grace, then head west toward Agheel Lake.",
   "Limgrave Tunnels: early Smithing Stones": "Enter the mine in the cliff at the north-west corner of Agheel Lake. Collect the visible Smithing Stones from the walls, clear as much of the tunnel as the party needs, then continue to the next route card.",
 };
+
+const ESSENTIAL_MAP_QUERIES: Record<string, string> = {
+  "Church of Elleh: Crafting Kit and Kale": "Church of Elleh",
+  "Gatefront: Whetstone Knife and first map": "Gatefront Ruins",
+  "Third Church: Flask of Wondrous Physick": "Third Church of Marika",
+  "Limgrave Tunnels: early Smithing Stones": "Limgrave Tunnels",
+};
+
+function objectiveMapQuery(label: string) {
+  if (ESSENTIAL_MAP_QUERIES[label]) return ESSENTIAL_MAP_QUERIES[label];
+  const withoutAction = label.replace(/^Defeat\s+/i, "").replace(/^Speak (?:to|with)\s+/i, "").trim();
+  return withoutAction.split(":")[0].split(",")[0].trim();
+}
 
 function essentialGuide(chapter: Chapter, label: string, index: number) {
   if (ESSENTIAL_GUIDES[label]) return ESSENTIAL_GUIDES[label];
@@ -365,11 +378,13 @@ function MapPanel({ chapter, expedition, onSelect }: { chapter: Chapter; expedit
   const mapTitle = mapLayer === "shadow" ? "Realm of Shadow" : mapLayer === "underground" ? "Underground" : mapLayer === "ashen" ? "Leyndell, Ashen Capital" : "The Lands Between";
   const currentTask = tasksForChapter(chapter, expedition).find((task) => !taskDone(task, expedition));
   const mappedItem = currentTask?.item ? findMapItem(currentTask.item, mapLayer) : undefined;
+  const mappedObjective = !mappedItem && currentTask ? findMapRoutePoint(objectiveMapQuery(currentTask.label), mapLayer) : undefined;
+  const mappedPoint = mappedItem || mappedObjective;
   const tileLevel = MAP_TILE_LEVELS[mapLayer];
   const tileCount = 2 ** tileLevel;
   const zoom = mapLayer === "surface" || mapLayer === "underground" ? 18 : 10;
-  const rawFocusX = mappedItem?.layer === mapLayer ? mappedItem.x : chapter.x;
-  const rawFocusY = mappedItem?.layer === mapLayer ? mappedItem.y : chapter.y;
+  const rawFocusX = mappedPoint?.layer === mapLayer ? mappedPoint.x : chapter.x;
+  const rawFocusY = mappedPoint?.layer === mapLayer ? mappedPoint.y : chapter.y;
   const edge = 50 / zoom;
   const focusX = Math.max(edge, Math.min(100 - edge, rawFocusX));
   const focusY = Math.max(edge, Math.min(100 - edge, rawFocusY));
@@ -410,10 +425,10 @@ function MapPanel({ chapter, expedition, onSelect }: { chapter: Chapter; expedit
             ><span>{chapters.indexOf(pin) + 1}</span></button>
           );
         })}
-        {mappedItem?.layer === mapLayer && <a className="map-item-pin" href={mappedItem.url} target="_blank" rel="noreferrer" title={mappedItem.name} style={viewPosition(mappedItem.x, mappedItem.y)}><i /> <span>{mappedItem.name}</span></a>}
+        {mappedPoint?.layer === mapLayer && <a className="map-item-pin" href={mappedPoint.url} target="_blank" rel="noreferrer" title={mappedPoint.name} style={viewPosition(mappedPoint.x, mappedPoint.y)}><i /> <span>{mappedPoint.name}</span></a>}
       </div>
       <div className="map-compass" aria-hidden="true">N<span>✦</span></div>
-      <div className="map-current"><span>{mappedItem?.layer === mapLayer ? "Current item" : "Current region"}</span><strong>{mappedItem?.layer === mapLayer ? mappedItem.name : chapter.region}</strong><small>{mappedItem?.layer === mapLayer ? `in ${chapter.region}` : `from ${chapter.grace}`}</small></div>
+      <div className="map-current"><span>{mappedPoint?.layer === mapLayer ? "Current objective" : "Current region"}</span><strong>{mappedPoint?.layer === mapLayer ? mappedPoint.name : chapter.region}</strong><small>{currentTask ? currentTask.label : `from ${chapter.grace}`}</small></div>
       <div className="map-sources"><a href={fextraMap} target="_blank" rel="noreferrer">Open Fextralife map ↗</a><a href={mapGenie} target="_blank" rel="noreferrer">Open MapGenie ↗</a></div>
     </div>
   );
