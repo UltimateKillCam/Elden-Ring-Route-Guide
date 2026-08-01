@@ -229,6 +229,35 @@ const DEFERRED_AVATAR_ITEMS: Record<string, string> = {
   "Thorny Cracked Tear": "haligtree",
 };
 
+const ITEM_REGION_GATES: Array<[RegExp, string]> = [
+  [/Castle Morne|Weeping Peninsula|Morne Tunnel|Tombsward/i, "weeping"],
+  [/Stormveil/i, "stormveil"],
+  [/Caria Manor/i, "caria"],
+  [/Raya Lucaria|Academy of Raya Lucaria/i, "academy"],
+  [/Liurnia|Academy Gate Town|Church of Irith/i, "liurnia-south"],
+  [/Caelid|Dragonbarrow|Sellia|Redmane|Gael Tunnel/i, "caelid"],
+  [/Siofra|Nokron/i, "nokron"],
+  [/Altus Plateau|Altus Highway|Lux Ruins|Windmill Village/i, "altus"],
+  [/Volcano Manor|Mt\. Gelmir|Gelmir|Seethewater/i, "gelmir"],
+  [/Leyndell|Royal Capital|Capital Outskirts/i, "leyndell"],
+  [/Ainsel|Nokstella|Lake of Rot|Grand Cloister/i, "ainsel"],
+  [/Deeproot/i, "deeproot"],
+  [/Consecrated Snowfield|Ordina|Haligtree|Elphael/i, "haligtree"],
+  [/Forbidden Lands|Mountaintops|Flame Peak|Castle Sol/i, "mountaintops"],
+  [/Mohgwyn/i, "mohgwyn"],
+  [/Crumbling Farum Azula|Farum Azula/i, "farum"],
+];
+
+function deferredChapterForPickup(item: string, phase: PhaseKey) {
+  const marker = findMapItem(item);
+  const coordinateGate = marker?.layer === "surface" && marker.x >= 32 && marker.x <= 35.5 && marker.y >= 68.5 && marker.y <= 71.5 ? "stormveil" : undefined;
+  const target = DEFERRED_AVATAR_ITEMS[item] || coordinateGate || ITEM_REGION_GATES.find(([pattern]) => pattern.test(`${marker?.name || item} ${marker?.description || ""}`))?.[1];
+  if (!target) return undefined;
+  const phaseStart = chapters.findIndex((candidate) => candidate.id === PHASE_START[phase]);
+  const targetIndex = chapters.findIndex((candidate) => candidate.id === target);
+  return targetIndex >= phaseStart ? target : undefined;
+}
+
 function objectiveMapQuery(label: string) {
   if (ESSENTIAL_MAP_QUERIES[label]) return ESSENTIAL_MAP_QUERIES[label];
   const withoutAction = label.replace(/^Defeat\s+/i, "").replace(/^Speak (?:to|with)\s+/i, "").trim();
@@ -284,7 +313,7 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
       const loadout = stageLoadout(selected, chapter.phase!);
       const phaseIndex = PHASE_ORDER.indexOf(chapter.phase!);
       const earlierItems = new Set(PHASE_ORDER.slice(0, phaseIndex).flatMap((phase) => loadoutPickups(stageLoadout(selected, phase), chapter)).map((pickup) => cleanItemName(pickup.item)));
-      const newPickups = loadoutPickups(loadout, chapter).filter((pickup) => !earlierItems.has(cleanItemName(pickup.item)) && !DEFERRED_AVATAR_ITEMS[pickup.item]);
+      const newPickups = loadoutPickups(loadout, chapter).filter((pickup) => !earlierItems.has(cleanItemName(pickup.item)) && !deferredChapterForPickup(pickup.item, chapter.phase!));
       newPickups.forEach((pickup, pickupIndex) => {
         const itemKey = cleanItemName(pickup.item).replace(/ /g, "-");
         pickupTasks.push({
@@ -324,11 +353,11 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
         const itemKey = cleanItemName(pickup.item);
         if (seen.has(itemKey)) return;
         seen.add(itemKey);
-        if (DEFERRED_AVATAR_ITEMS[pickup.item] !== chapter.id) return;
+        if (deferredChapterForPickup(pickup.item, phase) !== chapter.id) return;
         deferredTasks.push({
           id: `${chapter.id}-loadout-item-${player.id}-${selected.id}-${itemKey.replace(/ /g, "-")}`,
           label: pickup.item,
-          detail: `Optional Avatar reward for ${player.name}'s ${selected.name} setup. ${inferGuide(pickup.item, chapter)} Skip it if the fight is not comfortable yet; the route will continue normally.`,
+          detail: `Optional item for ${player.name}'s ${selected.name} setup, delayed until its region is open. ${inferGuide(pickup.item, chapter)} Skip it if the fight or detour is not comfortable yet; the route will continue normally.`,
           kind: "gear",
           playerId: player.id,
           perPlayer: false,
