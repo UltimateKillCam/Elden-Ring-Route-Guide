@@ -21,4 +21,20 @@ test("calculator weapon records supply path, weight and requirements", () => {
   assert.equal(weaponUpgradePath("Meteorite Staff"), "none");
   assert.equal(weaponUpgradePath("Rellana's Twin Blades"), "somber");
   assert.equal(weaponUpgradePath("Milady + Wing Stance"), "standard");
+  assert.equal(weaponUpgradePath("Carian Sorcery Sword"), "somber");
+  assert.equal(weaponUpgradePath("Beast Claw + Savage Claws"), "standard");
+  assert.equal(findWeaponUpgradeRecord("Beast Claw + Savage Claws")?.weight, 3);
+
+  const milady = findWeaponUpgradeRecord("Milady + Wing Stance");
+  assert.deepEqual(
+    { weight: milady?.weight, str: milady?.reqStr, dex: milady?.reqDex },
+    { weight: 6.5, str: 12, dex: 17 },
+  );
+
+  const deathKnight = findWeaponUpgradeRecord("Death Knight's Longhaft Axe");
+  assert.deepEqual(
+    { weight: deathKnight?.weight, str: deathKnight?.reqStr, dex: deathKnight?.reqDex, fai: deathKnight?.reqFai },
+    { weight: 11.5, str: 23, dex: 10, fai: 18 },
+  );
+  assert.equal(weaponUpgradePath("Death Knight's Longhaft Axe"), "somber");
 });
