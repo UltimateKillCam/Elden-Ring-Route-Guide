@@ -129,7 +129,11 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(packageJson, /scripts\/lan-server\.mjs/);
   assert.match(page, /loadoutPickups/);
   assert.match(page, /loadout-item-/);
-  assert.match(page, /after collecting the item cards above/);
+  assert.match(page, /equip unlocked items/);
+  assert.match(page, /Equip only what has been collected/);
+  assert.match(page, /Keep the current equipment unchanged/);
+  assert.doesNotMatch(page, /after collecting the item cards above/);
+  assert.doesNotMatch(page, /legacyId/);
   assert.match(page, /FLASK_UPGRADE_STOPS/);
   assert.match(page, /Golden Seed - 2x Capital Outskirts West/);
   assert.match(page, /Sacred Tear \(First Church of Marika\)/);

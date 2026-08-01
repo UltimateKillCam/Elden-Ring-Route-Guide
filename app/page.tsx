@@ -26,7 +26,6 @@ type Task = {
   perPlayer: boolean;
   scope: string;
   item?: string;
-  legacyId?: string;
   optional?: boolean;
 };
 
@@ -311,12 +310,13 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
     expedition.players.forEach((player) => {
       const selected = builds.find((candidate) => candidate.id === player.buildId)!;
       const loadout = stageLoadout(selected, chapter.phase!);
+      const playerPickupTasks: Task[] = [];
       const phaseIndex = PHASE_ORDER.indexOf(chapter.phase!);
       const earlierItems = new Set(PHASE_ORDER.slice(0, phaseIndex).flatMap((phase) => loadoutPickups(stageLoadout(selected, phase), chapter)).map((pickup) => cleanItemName(pickup.item)));
       const newPickups = loadoutPickups(loadout, chapter).filter((pickup) => !earlierItems.has(cleanItemName(pickup.item)) && !deferredChapterForPickup(pickup.item, chapter.phase!));
       newPickups.forEach((pickup, pickupIndex) => {
         const itemKey = cleanItemName(pickup.item).replace(/ /g, "-");
-        pickupTasks.push({
+        const pickupTask: Task = {
           id: pickup.slot === "weapon" && pickupIndex === 0 ? `${chapter.id}-gear-${player.id}` : `${chapter.id}-loadout-item-${player.id}-${selected.id}-${itemKey}`,
           label: pickup.item,
           detail: `For ${player.name}'s ${selected.name} ${chapter.phase === "dlc" ? "DLC" : chapter.phase} setup. ${inferGuide(pickup.item, chapter)}${loadout.borrowedFrom ? ` This temporary stage comes from the sourced ${loadout.borrowedFrom.buildName} guide.` : ""}`,
@@ -325,14 +325,18 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
           perPlayer: false,
           scope: player.name,
           item: pickup.item,
-          legacyId: `${chapter.id}-loadout-${player.id}`,
           optional: true,
-        });
+        };
+        pickupTasks.push(pickupTask);
+        playerPickupTasks.push(pickupTask);
       });
+      const unlockedItems = playerPickupTasks.filter((task) => !expedition.completed[`${task.id}:skipped`] && Boolean(expedition.completed[task.id])).map((task) => task.label);
       tasks.push({
         id: `${chapter.id}-loadout-${player.id}`,
-        label: `Equip ${selected.name}: ${chapter.phase === "dlc" ? "DLC" : chapter.phase} loadout`,
-        detail: `For ${player.name}, after collecting the item cards above. Main weapon: ${loadout.weapon}. Off-hand: ${loadout.offhand}. Skill: ${loadout.skill}. Talismans (${loadout.talismanSlots}): ${loadout.talismans.join(", ")}. Armour: ${loadout.armour}. Physick: ${loadout.flask}.${loadout.spells.length ? ` Spells: ${loadout.spells.join(", ")}.` : ""}`,
+        label: `${selected.name}: equip unlocked items`,
+        detail: unlockedItems.length
+          ? `For ${player.name}. Equip only what has been collected: ${unlockedItems.join(", ")}. Keep the current weapon, armour, talismans, skills and Physick in every other slot until their own route cards are completed.`
+          : `For ${player.name}. No new build item has been collected yet. Keep the current equipment unchanged; this card will update as the individual item steps above are completed.`,
         kind: "gear",
         playerId: player.id,
         perPlayer: false,
@@ -363,7 +367,6 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
           perPlayer: false,
           scope: player.name,
           item: pickup.item,
-          legacyId: `${PHASE_START[phase]}-loadout-${player.id}`,
           optional: true,
         });
       });
@@ -392,7 +395,7 @@ const taskKeys = (task: Task, expedition: Expedition) =>
   task.perPlayer ? expedition.players.map((player) => `${task.id}:${player.id}`) : [task.id];
 
 const taskDone = (task: Task, expedition: Expedition) =>
-  Boolean(expedition.completed[`${task.id}:skipped`]) || Boolean(task.legacyId && expedition.completed[task.legacyId]) || taskKeys(task, expedition).every((key) => expedition.completed[key]);
+  Boolean(expedition.completed[`${task.id}:skipped`]) || taskKeys(task, expedition).every((key) => expedition.completed[key]);
 
 function nextIncompleteTask(expedition: Expedition) {
   for (const chapter of chapters) {
