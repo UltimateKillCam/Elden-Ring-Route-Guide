@@ -252,6 +252,7 @@ function deferredChapterForPickup(item: string, phase: PhaseKey) {
   const coordinateGate = marker?.layer === "surface" && marker.x >= 32 && marker.x <= 35.5 && marker.y >= 68.5 && marker.y <= 71.5 ? "stormveil" : undefined;
   const target = DEFERRED_AVATAR_ITEMS[item] || coordinateGate || ITEM_REGION_GATES.find(([pattern]) => pattern.test(`${marker?.name || item} ${marker?.description || ""}`))?.[1];
   if (!target) return undefined;
+  if (target === "weeping" || target === "stormveil") return target;
   const phaseStart = chapters.findIndex((candidate) => candidate.id === PHASE_START[phase]);
   const targetIndex = chapters.findIndex((candidate) => candidate.id === target);
   return targetIndex >= phaseStart ? target : undefined;
@@ -272,7 +273,7 @@ function essentialGuide(chapter: Chapter, label: string, index: number) {
 function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
   const tasks: Task[] = [];
   chapter.essentials.forEach((label, index) => {
-    if (/Collect three Sacred Tears|Collect Golden Seeds along the highway/i.test(label)) return;
+    if (/Collect three Sacred Tears|Collect Golden Seeds along the highway|Castle Morne weapon pickups/i.test(label)) return;
     const isBoss = label.startsWith("Defeat");
     const isQuest = /speak|meet|quest|dialogue|decision|finish|resolve|ranni|fia|millicent|leda|ansbach|thiollier|moore|igon|varre/i.test(label);
     const individualPickup = /Sacred Tear|Golden Seed|collect|pickup|medallion|key/i.test(label);
