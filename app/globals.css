@@ -305,6 +305,9 @@ body::before {
 .task-links a { color: #a69269; font-size: 9px; text-decoration: none; }
 .task-links a:hover { color: var(--gold-bright); }
 .complete-button { display: inline-flex; align-items: center; gap: 7px; margin-top: 13px; padding: 0; border: 0; background: transparent; color: #8d887e; font-size: 10px; cursor: pointer; }
+.task-actions { display: flex; align-items: center; gap: 20px; }
+.skip-button { color: #a08f72; }
+.task-card.skipped { opacity: .48; }
 .complete-button i, .player-checks i { width: 17px; height: 17px; display: grid; place-content: center; border: 1px solid #4e4c46; font-style: normal; font-size: 9px; }
 .complete-button:hover { color: var(--gold); }
 .complete .complete-button i { border-color: #68836b; color: #9ac29d; }

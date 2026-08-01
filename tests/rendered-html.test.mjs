@@ -134,6 +134,11 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /Golden Seed - 2x Capital Outskirts West/);
   assert.match(page, /Sacred Tear \(First Church of Marika\)/);
   assert.match(page, /Flask upgrade for every player/);
+  assert.match(page, /DEFERRED_AVATAR_ITEMS/);
+  assert.match(page, /"Stonebarb Cracked Tear": "caelid"/);
+  assert.match(page, /"Opaline Hardtear": "caelid"/);
+  assert.match(page, /Skip this item/);
+  assert.match(page, /Restore item/);
   assert.match(mapItems, /Found in a cellar underneath the Mistwood Ruins/);
   assert.match(mapItems, /requires 1 Stonesword Key to unlock/);
 });

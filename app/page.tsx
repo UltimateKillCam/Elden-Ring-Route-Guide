@@ -27,6 +27,7 @@ type Task = {
   scope: string;
   item?: string;
   legacyId?: string;
+  optional?: boolean;
 };
 
 const PLAYER_COLORS = ["#d8ad62", "#7db6a8", "#b987aa", "#7698c8", "#c5775e", "#a7a36c"];
@@ -211,6 +212,23 @@ const FLASK_UPGRADE_STOPS: Record<string, string[]> = {
   mohgwyn: ["Golden Seed - Mohgwyn Palace"],
 };
 
+const DEFERRED_AVATAR_ITEMS: Record<string, string> = {
+  "Crimsonburst Crystal Tear": "weeping",
+  "Opaline Bubbletear": "weeping",
+  "Holy-Shrouding Cracked Tear": "liurnia-south",
+  "Lightning-Shrouding Cracked Tear": "liurnia-south",
+  "Magic-Shrouding Cracked Tear": "liurnia-south",
+  "Flame-Shrouding Cracked Tear": "caelid",
+  "Greenburst Crystal Tear": "caelid",
+  "Opaline Hardtear": "caelid",
+  "Stonebarb Cracked Tear": "caelid",
+  "Cerulean Crystal Tear A": "gelmir",
+  "Ruptured Crystal Tear": "gelmir",
+  "Cerulean Crystal Tear B": "mountaintops",
+  "Crimson Bubbletear": "mountaintops",
+  "Thorny Cracked Tear": "haligtree",
+};
+
 function objectiveMapQuery(label: string) {
   if (ESSENTIAL_MAP_QUERIES[label]) return ESSENTIAL_MAP_QUERIES[label];
   const withoutAction = label.replace(/^Defeat\s+/i, "").replace(/^Speak (?:to|with)\s+/i, "").trim();
@@ -266,7 +284,7 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
       const loadout = stageLoadout(selected, chapter.phase!);
       const phaseIndex = PHASE_ORDER.indexOf(chapter.phase!);
       const earlierItems = new Set(PHASE_ORDER.slice(0, phaseIndex).flatMap((phase) => loadoutPickups(stageLoadout(selected, phase), chapter)).map((pickup) => cleanItemName(pickup.item)));
-      const newPickups = loadoutPickups(loadout, chapter).filter((pickup) => !earlierItems.has(cleanItemName(pickup.item)));
+      const newPickups = loadoutPickups(loadout, chapter).filter((pickup) => !earlierItems.has(cleanItemName(pickup.item)) && !DEFERRED_AVATAR_ITEMS[pickup.item]);
       newPickups.forEach((pickup, pickupIndex) => {
         const itemKey = cleanItemName(pickup.item).replace(/ /g, "-");
         pickupTasks.push({
@@ -279,6 +297,7 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
           scope: player.name,
           item: pickup.item,
           legacyId: `${chapter.id}-loadout-${player.id}`,
+          optional: true,
         });
       });
       tasks.push({
@@ -289,9 +308,42 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
         playerId: player.id,
         perPlayer: false,
         scope: player.name,
+        optional: true,
       });
     });
     tasks.splice(tasks.length - expedition.players.length, 0, ...orderPickupTasks(pickupTasks, chapter));
+  }
+
+  const deferredTasks: Task[] = [];
+  expedition.players.forEach((player) => {
+    const selected = builds.find((candidate) => candidate.id === player.buildId)!;
+    const seen = new Set<string>();
+    PHASE_ORDER.forEach((phase) => {
+      const loadout = stageLoadout(selected, phase);
+      loadoutPickups(loadout, chapter).forEach((pickup) => {
+        const itemKey = cleanItemName(pickup.item);
+        if (seen.has(itemKey)) return;
+        seen.add(itemKey);
+        if (DEFERRED_AVATAR_ITEMS[pickup.item] !== chapter.id) return;
+        deferredTasks.push({
+          id: `${chapter.id}-loadout-item-${player.id}-${selected.id}-${itemKey.replace(/ /g, "-")}`,
+          label: pickup.item,
+          detail: `Optional Avatar reward for ${player.name}'s ${selected.name} setup. ${inferGuide(pickup.item, chapter)} Skip it if the fight is not comfortable yet; the route will continue normally.`,
+          kind: "gear",
+          playerId: player.id,
+          perPlayer: false,
+          scope: player.name,
+          item: pickup.item,
+          legacyId: `${PHASE_START[phase]}-loadout-${player.id}`,
+          optional: true,
+        });
+      });
+    });
+  });
+  if (deferredTasks.length) {
+    const finalBossName = chapter.boss?.split(",")[0];
+    const finalBossIndex = finalBossName ? tasks.findIndex((task) => task.label.includes(finalBossName)) : -1;
+    tasks.splice(finalBossIndex >= 0 ? finalBossIndex : tasks.length, 0, ...orderPickupTasks(deferredTasks, chapter));
   }
 
   if (chapter.boss && !chapter.essentials.some((entry) => entry.includes(chapter.boss!.split(",")[0]))) {
@@ -311,7 +363,7 @@ const taskKeys = (task: Task, expedition: Expedition) =>
   task.perPlayer ? expedition.players.map((player) => `${task.id}:${player.id}`) : [task.id];
 
 const taskDone = (task: Task, expedition: Expedition) =>
-  Boolean(task.legacyId && expedition.completed[task.legacyId]) || taskKeys(task, expedition).every((key) => expedition.completed[key]);
+  Boolean(expedition.completed[`${task.id}:skipped`]) || Boolean(task.legacyId && expedition.completed[task.legacyId]) || taskKeys(task, expedition).every((key) => expedition.completed[key]);
 
 function nextIncompleteTask(expedition: Expedition) {
   for (const chapter of chapters) {
@@ -558,6 +610,27 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly 
     if (following) setActiveId(following.chapter.id);
   };
 
+  const skipAndContinue = () => {
+    if (!nextStep?.task.optional || readOnly) return;
+    const completed = { ...expedition.completed, [`${nextStep.task.id}:skipped`]: true };
+    const updated = { ...expedition, completed };
+    setExpedition(updated);
+    const following = nextIncompleteTask(updated);
+    if (following) setActiveId(following.chapter.id);
+  };
+
+  const toggleSkipped = (task: Task) => {
+    if (readOnly || !task.optional) return;
+    setExpedition((current) => {
+      if (!current) return current;
+      const completed = { ...current.completed };
+      const key = `${task.id}:skipped`;
+      if (completed[key]) delete completed[key];
+      else completed[key] = true;
+      return { ...current, completed };
+    });
+  };
+
   const goNextIncomplete = () => {
     const next = chapters.find((candidate, index) => index > chapterIndex && !tasksForChapter(candidate, expedition).every((task) => taskDone(task, expedition)));
     if (next) setActiveId(next.id);
@@ -602,6 +675,7 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly 
             <div className="next-step-actions">
               {activeId !== nextStep.chapter.id && <button type="button" onClick={() => setActiveId(nextStep.chapter.id)}>Show area</button>}
               {!readOnly && <button type="button" className="primary" onClick={completeAndContinue}>Complete and continue</button>}
+              {!readOnly && nextStep.task.optional && <button type="button" onClick={skipAndContinue}>Skip this item</button>}
               {readOnly && <span>Updates from the host</span>}
             </div>
           </section>
@@ -621,12 +695,13 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly 
           {tasks.map((task, index) => {
             const owner = task.playerId ? expedition.players.find((player) => player.id === task.playerId) : undefined;
             const done = taskDone(task, expedition);
+            const skipped = Boolean(expedition.completed[`${task.id}:skipped`]);
             const mapItem = task.item ? findMapItem(task.item, mapLayerForChapter(chapter)) : undefined;
             return (
-              <article className={`task-card ${done ? "complete" : ""}`} key={task.id} style={owner ? { "--player": owner.color } as React.CSSProperties : undefined}>
-                <div className="task-index">{done ? "✓" : String(index + 1).padStart(2, "0")}</div>
+              <article className={`task-card ${done ? "complete" : ""} ${skipped ? "skipped" : ""}`} key={task.id} style={owner ? { "--player": owner.color } as React.CSSProperties : undefined}>
+                <div className="task-index">{skipped ? "—" : done ? "✓" : String(index + 1).padStart(2, "0")}</div>
                 <div className="task-body">
-                  <div className="task-meta"><span className={`kind ${task.kind}`}>{task.kind}</span><span className="scope">{task.scope}</span></div>
+                  <div className="task-meta"><span className={`kind ${task.kind}`}>{task.kind}</span><span className="scope">{task.scope}</span>{task.optional && <span className="scope">Optional</span>}{skipped && <span className="scope">Skipped</span>}</div>
                   <h4>{task.label}</h4>
                   <p>{task.detail}</p>
                   {task.item && <div className="task-links"><a href={wikiUrl(task.item)} target="_blank" rel="noreferrer">Item reference ↗</a>{mapItem && <a href={mapItem.url} target="_blank" rel="noreferrer">Exact Fextralife marker ↗</a>}<a href={chapter.act === "Shadow of the Erdtree" ? "https://mapgenie.io/elden-ring/maps/the-shadow-realm" : "https://mapgenie.io/elden-ring/maps/the-lands-between"} target="_blank" rel="noreferrer">Search on MapGenie ↗</a></div>}
@@ -638,7 +713,10 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly 
                       })}
                     </div>
                   ) : !readOnly ? (
-                    <button type="button" className="complete-button" onClick={() => toggle(task.id)}><i>{done ? "✓" : ""}</i>{done ? "Completed" : "Mark complete"}</button>
+                    <div className="task-actions">
+                      {!skipped && <button type="button" className="complete-button" onClick={() => toggle(task.id)}><i>{done ? "✓" : ""}</i>{done ? "Completed" : "Mark complete"}</button>}
+                      {task.optional && <button type="button" className="complete-button skip-button" onClick={() => toggleSkipped(task)}><i>{skipped ? "↶" : "—"}</i>{skipped ? "Restore item" : "Skip item"}</button>}
+                    </div>
                   ) : null}
                 </div>
               </article>
