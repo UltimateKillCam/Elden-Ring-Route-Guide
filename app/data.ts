@@ -1,3 +1,8 @@
+import { wikiBuilds } from "./wiki-builds";
+import { sourcedMemeBuilds } from "./meme-builds";
+import { additionalSourcedBuilds } from "./sourced-builds";
+import { weaponResolutions } from "./weapon-resolutions";
+
 export type PhaseKey = "early" | "mid" | "late" | "dlc";
 
 export type BuildSource = { label: string; url: string };
@@ -8,12 +13,17 @@ export type Build = {
   stats: string;
   role: string;
   playstyle: string;
-  complexity: "Easy" | "Moderate" | "Advanced";
+  complexity: "Easy" | "Moderate" | "Advanced" | "Published guide";
   phases: Record<PhaseKey, string>;
   quest?: string;
   tags: string[];
-  startingClass: "Vagabond" | "Warrior" | "Hero" | "Bandit" | "Astrologer" | "Prophet" | "Samurai" | "Prisoner" | "Confessor" | "Wretch";
+  startingClass: "Vagabond" | "Warrior" | "Hero" | "Bandit" | "Astrologer" | "Prophet" | "Samurai" | "Prisoner" | "Confessor" | "Wretch" | "Not specified";
   mechanic: string;
+  collection: "Curated" | "Fextralife" | "Other guides" | "Meme / cosplay";
+  availableFrom?: PhaseKey;
+  publishedLoadout?: Omit<StageLoadout, "talismanSlots">;
+  phaseBridges?: Partial<Record<PhaseKey, string>>;
+  guideCategories?: string[];
   source: BuildSource;
 };
 
@@ -81,13 +91,14 @@ const build = (
   quest,
   startingClass: startingClass || recommendStartingClass(stats, tags),
   mechanic: mechanic || inferMechanic(role, playstyle, tags),
+  collection: "Curated",
   source: source || {
     label: `${phases[3].replace(/ \+.*/, "").replace(/ \/.*/, "")} weapon reference`,
     url: `https://eldenring.wiki.gg/index.php?search=${encodeURIComponent(phases[3].replace(/ \+.*/, "").replace(/ \/.*/, ""))}`,
   },
 });
 
-export const builds: Build[] = [
+const curatedBuilds: Build[] = [
   build("quality-knight", "Quality Knight", "STR / DEX", "Frontline", "A flexible knight using stance-breaking skills and a quicker DLC finish.", ["Longsword", "Claymore", "Quality Great Épée", "Milady + Wing Stance"], ["quality", "sword", "guard"], "Easy"),
   build("heavy-greatsword", "Heavy Greatsword Knight", "STR", "Frontline", "Measured colossal swings, high poise and reliable stance damage.", ["Lordsworn's Greatsword", "Claymore", "Greatsword", "Greatsword of Solitude"], ["strength", "greatsword", "stance"], "Easy"),
   build("colossal-wanderer", "Colossal Wandering Swordsman", "STR → STR / ARC", "Breaker", "Charged heavies and crouch pokes with one purposeful DLC respec.", ["Zweihander", "Grafted Blade Greatsword", "Ruins Greatsword", "Ancient Meteoric Ore Greatsword"], ["strength", "colossal", "respec"], "Advanced"),
@@ -192,6 +203,8 @@ export const builds: Build[] = [
   build("messmer-impaler", "Messmer Impaler", "DEX / FAI", "Ranged", "Spear thrusts and fire incantations converge on Messmer's assault skill and a throwable heavy attack.", ["Short Spear + Flame Sling", "Cross-Naginata + Black Flame", "Bolt of Gransax", "Spear of the Impaler + Fire Serpent"], ["dexterity", "faith", "spear", "fire", "ranged"], "Advanced", undefined, { label: "PC Gamer DLC build guide", url: BUILD_SOURCES.pcGamerDlc }, "Skill damage", "Confessor"),
 ];
 
+export const builds: Build[] = [...curatedBuilds, ...wikiBuilds, ...additionalSourcedBuilds, ...sourcedMemeBuilds];
+
 export type StageLoadout = {
   level: string;
   weapon: string;
@@ -203,6 +216,11 @@ export type StageLoadout = {
   spells: string[];
   flask: string;
   stats: string;
+  borrowedFrom?: BuildSource & { buildName: string };
+  weaponChoice?: {
+    rationale: string;
+    sources: BuildSource[];
+  };
 };
 
 const includesAny = (build: Build, values: string[]) => {
@@ -212,7 +230,68 @@ const includesAny = (build: Build, values: string[]) => {
 
 const unique = (items: string[]) => Array.from(new Set(items));
 
+const PHASES: PhaseKey[] = ["early", "mid", "late", "dlc"];
+
+const statCodes = (build: Build) => ["STR", "DEX", "INT", "FAI", "ARC"].filter((stat) => build.stats.toUpperCase().includes(stat));
+
+const weaponKinds = (weapon: string) => {
+  const text = weapon.toLowerCase();
+  return [
+    "colossal sword", "colossal weapon", "curved greatsword", "greatsword", "straight sword", "curved sword",
+    "great katana", "katana", "twinblade", "great spear", "spear", "halberd", "great hammer", "hammer",
+    "greataxe", "axe", "fist", "claw", "katar", "dagger", "rapier", "thrusting sword", "light greatsword",
+    "flail", "reaper", "whip", "bow", "crossbow", "staff", "seal", "shield", "torch",
+  ].filter((kind) => text.includes(kind));
+};
+
+function closestPublishedStage(build: Build, phase: PhaseKey) {
+  const explicitBridge = build.phaseBridges?.[phase];
+  if (explicitBridge) return builds.find((candidate) => candidate.id === explicitBridge && candidate.publishedLoadout);
+  const targetKinds = weaponKinds(build.publishedLoadout?.weapon || "");
+  const targetStats = statCodes(build);
+  const candidates = builds.filter((candidate) =>
+    candidate.id !== build.id &&
+    candidate.collection === "Fextralife" &&
+    candidate.publishedLoadout &&
+    (candidate.availableFrom || "early") === phase,
+  );
+
+  return candidates.sort((a, b) => {
+    const score = (candidate: Build) => {
+      const candidateKinds = weaponKinds(candidate.publishedLoadout?.weapon || "");
+      const sharedStats = statCodes(candidate).filter((stat) => targetStats.includes(stat)).length;
+      const sharedKinds = candidateKinds.filter((kind) => targetKinds.includes(kind)).length;
+      return sharedKinds * 12 + sharedStats * 6 + Number(candidate.mechanic === build.mechanic) * 8 + Number(candidate.role === build.role) * 4 + Number(candidate.startingClass === build.startingClass) * 2;
+    };
+    return score(b) - score(a) || a.name.localeCompare(b.name);
+  })[0];
+}
+
 export function stageLoadout(build: Build, phase: PhaseKey): StageLoadout {
+  if (build.publishedLoadout) {
+    const available = build.availableFrom || "early";
+    if (PHASES.indexOf(phase) < PHASES.indexOf(available)) {
+      const borrowed = closestPublishedStage(build, phase);
+      if (borrowed?.publishedLoadout) {
+        const resolution = weaponResolutions[borrowed.id];
+        return {
+          ...borrowed.publishedLoadout,
+          weapon: resolution?.weapon || borrowed.publishedLoadout.weapon,
+          talismanSlots: `${borrowed.publishedLoadout.talismans.length} listed by source`,
+          borrowedFrom: { ...borrowed.source, buildName: borrowed.name },
+          weaponChoice: resolution && { rationale: resolution.rationale, sources: resolution.sources },
+        };
+      }
+    }
+    const resolution = weaponResolutions[build.id];
+    return {
+      ...build.publishedLoadout,
+      weapon: resolution?.weapon || build.publishedLoadout.weapon,
+      talismanSlots: `${build.publishedLoadout.talismans.length} listed by source`,
+      weaponChoice: resolution && { rationale: resolution.rationale, sources: resolution.sources },
+    };
+  }
+
   const casterInt = includesAny(build, ["intelligence", "sorcer", "magic", "spellblade", "gravity", "frost", "death"]);
   const casterFaith = includesAny(build, ["faith", "holy", "fire", "lightning", "dragon", "bestial", "frenzy", "blackflame", "crucible"]);
   const arcane = includesAny(build, ["arcane", "bleed", "poison", "rot", "dragon-communion"]);
@@ -401,7 +480,7 @@ export type Chapter = {
   repeatInStandard?: boolean;
 };
 
-export const chapters: Chapter[] = [
+const chapterData: Chapter[] = [
   { id: "first-steps", act: "Base game", title: "First Steps", region: "West Limgrave", level: "1–15", upgrade: "+0–2 / Somber +1", grace: "The First Step", x: 34, y: 76, phase: "early", summary: "Unlock the core systems, assemble every player's first functional kit, and avoid high-level detours.", essentials: ["Church of Elleh: Crafting Kit and Kale", "Gatefront: Whetstone Knife and first map", "Third Church: Flask of Wondrous Physick", "Limgrave Tunnels: early Smithing Stones"], directions: "From The First Step, ride north to Church of Elleh, then follow the road to Gatefront. Sweep east only as far as the Third Church before returning to Limgrave Tunnels." },
   { id: "weeping", act: "Base game", title: "The Weeping Peninsula", region: "Weeping Peninsula", level: "18–30", upgrade: "+3–5 / Somber +2", grace: "Castle Morne Rampart", x: 37, y: 91, phase: "early", summary: "Finish early weapon pickups, flask upgrades and the peninsula's compact quest chain.", essentials: ["Collect three Sacred Tears", "Castle Morne weapon pickups", "Defeat Leonine Misbegotten", "Speak to Irina and Edgar before leaving"], directions: "Cross the Bridge of Sacrifice, activate the rampart grace, then make a clockwise sweep of the three churches before ending at Castle Morne.", boss: "Leonine Misbegotten", repeatInStandard: true },
   { id: "stormveil", act: "Base game", title: "Stormveil Castle", region: "Stormhill & Stormveil", level: "30–40", upgrade: "+4–7 / Somber +2–3", grace: "Stormveil Main Gate", x: 28, y: 63, phase: "early", summary: "Secure the first Great Rune and the castle's high-value build tools without over-upgrading.", essentials: ["Defeat Margit", "Collect Iron Whetblade and Misericorde", "Meet Rogier and Nepheli", "Defeat Godrick the Grafted"], directions: "Enter via the side path suggested by Gostoc. Clear each interior grace before the courtyard, then descend for the hidden items before challenging Godrick.", boss: "Godrick the Grafted", remembrance: true, repeatInStandard: true },
@@ -433,6 +512,40 @@ export const chapters: Chapter[] = [
   { id: "enir", act: "Shadow of the Erdtree", title: "Enir-Ilim Finale", region: "Enir-Ilim", level: "150+", upgrade: "Max weapons", blessing: "Scadutree 17–20", grace: "Divine Gate Front Staircase", x: 43, y: 23, summary: "Resolve the follower battle, finish Ansbach and Thiollier, and complete every Remembrance.", essentials: ["Defeat Leda and her allies", "Summon eligible allies for their quest rewards", "Spend remaining fragments up to the desired difficulty", "Defeat Promised Consort Radahn"], directions: "From the cleansed tower, climb Enir-Ilim's spiral streets and rooftops, pass the purification chamber, and ascend the final staircase to the Gate of Divinity.", boss: "Promised Consort Radahn", remembrance: true, quest: "DLC finale", repeatInStandard: true },
 ];
 
+const sourcedMapCoordinates: Record<string, { x: number; y: number }> = {
+  "first-steps": { x: 39.104, y: 76.300 },
+  weeping: { x: 44.912, y: 83.835 },
+  stormveil: { x: 34.991, y: 70.929 },
+  "liurnia-south": { x: 31.984, y: 66.800 },
+  academy: { x: 21.571, y: 51.810 },
+  caria: { x: 20.577, y: 44.809 },
+  caelid: { x: 62.111, y: 76.260 },
+  nokron: { x: 47.748, y: 71.948 },
+  altus: { x: 33.122, y: 39.328 },
+  gelmir: { x: 25.383, y: 34.076 },
+  leyndell: { x: 46.532, y: 38.837 },
+  ainsel: { x: 29.650, y: 46.994 },
+  deeproot: { x: 45.656, y: 37.631 },
+  mountaintops: { x: 57.111, y: 35.235 },
+  haligtree: { x: 57.359, y: 19.193 },
+  mohgwyn: { x: 57.889, y: 71.023 },
+  farum: { x: 84.020, y: 48.636 },
+  ashen: { x: 45.588, y: 39.249 },
+  gravesite: { x: 43.837, y: 62.878 },
+  ensiss: { x: 46.382, y: 53.220 },
+  fissure: { x: 50.131, y: 71.803 },
+  "shadow-keep": { x: 47.654, y: 52.682 },
+  "gaius-avatar": { x: 50.609, y: 44.992 },
+  jagged: { x: 62.375, y: 64.592 },
+  abyss: { x: 49.767, y: 62.506 },
+  metyr: { x: 54.119, y: 50.891 },
+  messmer: { x: 49.342, y: 45.294 },
+  rauh: { x: 38.030, y: 50.293 },
+  enir: { x: 38.065, y: 53.993 },
+};
+
+export const chapters: Chapter[] = chapterData.map((chapter) => ({ ...chapter, ...sourcedMapCoordinates[chapter.id] }));
+
 export const itemGuides: Record<string, string> = {
   Longsword: "Purchase from the Twin Maiden Husks after reaching Roundtable Hold.",
   Claymore: "Open the chest inside Castle Morne, just beyond the burning corpse pile.",
@@ -461,6 +574,8 @@ export const sources = [
   ["Patch 1.16.1", "https://en.bandainamcoent.eu/elden-ring/news/elden-ring-patch-notes-version-1161"],
   ["Starting origins and base stats", "https://eldenring.wiki.gg/wiki/Origin"],
   ["PvE build catalogue", "https://eip.gg/elden-ring/builds/pve/"],
+  ["Fextralife complete build catalogue", "https://eldenring.wiki.fextralife.com/Builds"],
+  ["Game8 Wing Stance Milady guide", "https://game8.co/games/Elden-Ring/archives/460059"],
   ["Shadow of the Erdtree tested builds", "https://www.pcgamer.com/games/rpg/shadow-of-the-erdtree-best-builds/"],
   ["Current build reference", "https://www.pcgamesn.com/elden-ring/builds-best"],
   ["Stance and poise mechanics", "https://eldenring.wiki.gg/wiki/Poise"],
@@ -469,6 +584,8 @@ export const sources = [
   ["Shadow Realm Blessings", "https://en.bandainamcoent.eu/elden-ring/news/elden-ring-how-strengthen-your-character-shadow-of-the-erdtree"],
   ["Talismans and pouch slots", "https://eldenring.wiki.gg/wiki/Talismans"],
   ["Seamless Co-op progression FAQ", "https://ersc-docs.github.io/faq/"],
-  ["MapGenie interactive map", "https://mapgenie.io/elden-ring"],
+  ["Fextralife interactive maps", "https://eldenring.wiki.fextralife.com/Interactive+Map"],
+  ["MapGenie Lands Between map", "https://mapgenie.io/elden-ring/maps/the-lands-between"],
+  ["MapGenie Shadow Realm map", "https://mapgenie.io/elden-ring/maps/the-shadow-realm"],
   ["Elden Ring progression bands", "https://eldenringprogress.com/"],
 ] as const;

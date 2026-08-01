@@ -28,10 +28,20 @@ test("server-renders the finished expedition setup", async () => {
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Your site is taking shape/i);
 });
 
-test("ships all 100 builds and the full remembrance route", async () => {
-  const data = await readFile(new URL("../app/data.ts", import.meta.url), "utf8");
+test("ships the curated, complete wiki and sourced build catalogues with the full remembrance route", async () => {
+  const [data, wikiBuilds, sourcedBuilds, memeBuilds] = await Promise.all([
+    readFile(new URL("../app/data.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/wiki-builds.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/sourced-builds.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/meme-builds.ts", import.meta.url), "utf8"),
+  ]);
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.equal((data.match(/^\s*build\(/gm) ?? []).length, 100);
+  assert.equal((wikiBuilds.match(/^\s*"id": "fextra-/gm) ?? []).length, 160);
+  assert.equal((wikiBuilds.match(/^\s*"collection": "Fextralife"/gm) ?? []).length, 160);
+  assert.equal((sourcedBuilds.match(/^\s*id: "game8-/gm) ?? []).length, 1);
+  assert.equal((memeBuilds.match(/^\s*id: "meme-/gm) ?? []).length, 6);
+  assert.match(data, /wikiBuilds.*additionalSourcedBuilds.*sourcedMemeBuilds/);
   assert.ok((data.match(/remembrance:\s*true/g) ?? []).length >= 22);
   for (const boss of [
     "Godrick the Grafted",
@@ -75,6 +85,13 @@ test("ships all 100 builds and the full remembrance route", async () => {
   assert.match(page, /Combat focus/);
   assert.match(page, /Starting class/);
   assert.match(page, /Sort by/);
+  assert.match(page, /Source category/);
+  assert.match(page, /Meme \/ cosplay/);
+  assert.match(page, /Other guides/);
+  assert.match(data, /closestPublishedStage/);
+  assert.match(sourcedBuilds, /Wing Stance Milady/);
+  assert.match(sourcedBuilds, /Finger Seal for buffs only; no shield/);
+  assert.doesNotMatch(sourcedBuilds, /Guard counters/);
 });
 
 test("uses plain product copy and the revised social card", async () => {
@@ -97,12 +114,16 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /Complete and continue/);
   assert.match(page, /Updates from the host/);
   assert.match(page, /catalogueOnly/);
-  assert.match(page, /Compare every build before the run controller assigns them/);
+  assert.match(page, /Compare every sourced build before the run controller assigns them/);
   assert.match(page, /Strength.*Dexterity.*Intelligence.*Faith.*Arcane.*Ranged/);
   assert.doesNotMatch(page, /Party role|All roles/);
   assert.match(server, /Follower access is read-only/);
   assert.match(server, /Build catalogue/);
   assert.match(server, /\?catalog=1/);
   assert.match(server, /x-control-token/);
+  assert.match(server, /Other network adapters/);
+  assert.match(page, /map-c5431314-6159-4599-9668-0ccf4e1f8e9a/);
+  assert.match(page, /map-96747699-d8a3-44b4-b2d6-cf6b45c579c6/);
+  assert.match(page, /the-shadow-realm/);
   assert.match(packageJson, /scripts\/lan-server\.mjs/);
 });

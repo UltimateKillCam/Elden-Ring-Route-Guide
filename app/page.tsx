@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { builds, chapters, itemGuides, sources, stageLoadout, type Build, type Chapter, type PhaseKey } from "./data";
+import { findMapItem, type MapItem } from "./map-items";
 
 type Mode = "standard" | "seamless";
 type View = "route" | "codex" | "party";
@@ -48,8 +49,11 @@ const wikiUrl = (item: string) =>
   `https://eldenring.wiki.fextralife.com/${encodeURIComponent(item.replace(/ \+.*/, "").replace(/ \/.*/, ""))}`;
 
 const ATTRIBUTE_FILTERS = ["All builds", "Strength", "Dexterity", "Intelligence", "Faith", "Arcane", "Ranged"];
+const COLLECTION_FILTERS = ["All sources", "Curated", "Fextralife", "Other guides", "Meme / cosplay"];
+const FEXTRA_CATEGORY_FILTERS = ["All Fextralife groups", ...Array.from(new Set(builds.flatMap((candidate) => candidate.guideCategories || [])))];
 const MECHANIC_FILTERS = ["All focuses", ...Array.from(new Set(builds.map((candidate) => candidate.mechanic))).sort()];
-const SORT_OPTIONS = ["Catalogue order", "Attribute", "Combat focus", "Starting class", "Name"];
+const SORT_OPTIONS = ["Catalogue order", "Collection", "Attribute", "Combat focus", "Starting class", "Name"];
+const PHASE_ORDER: PhaseKey[] = ["early", "mid", "late", "dlc"];
 
 function buildClassification(build: Build) {
   const stats = build.stats.toUpperCase();
@@ -68,6 +72,21 @@ function buildClassification(build: Build) {
   };
 }
 
+function buildSearchText(build: Build) {
+  const classification = buildClassification(build);
+  const loadouts = PHASE_ORDER.map((phase) => stageLoadout(build, phase));
+  return [
+    build.name,
+    build.stats,
+    classification.range,
+    build.tags.join(" "),
+    (build.guideCategories || []).join(" "),
+    build.playstyle,
+    ...Object.values(build.phases),
+    ...loadouts.flatMap((loadout) => [loadout.weapon, loadout.offhand, loadout.skill, loadout.armour, loadout.talismans.join(" "), loadout.spells.join(" ")]),
+  ].join(" ").toLowerCase();
+}
+
 function matchesBuildFilter(build: Build, filter: string) {
   const classification = buildClassification(build);
   if (filter === "All builds") return true;
@@ -75,9 +94,16 @@ function matchesBuildFilter(build: Build, filter: string) {
   return classification.attributes.includes(filter);
 }
 
+function matchesCollection(build: Build, collection: string) {
+  if (collection === "All sources") return true;
+  if (collection === "Meme / cosplay") return build.collection === collection || build.tags.includes("meme");
+  return build.collection === collection;
+}
+
 function sortBuilds(candidates: Build[], order: string) {
   const sorted = [...candidates];
   if (order === "Catalogue order") return sorted.sort((a, b) => builds.indexOf(a) - builds.indexOf(b));
+  if (order === "Collection") return sorted.sort((a, b) => a.collection.localeCompare(b.collection) || a.name.localeCompare(b.name));
   if (order === "Attribute") return sorted.sort((a, b) => buildClassification(a).attributes.localeCompare(buildClassification(b).attributes) || a.name.localeCompare(b.name));
   if (order === "Combat focus") return sorted.sort((a, b) => a.mechanic.localeCompare(b.mechanic) || a.name.localeCompare(b.name));
   if (order === "Starting class") return sorted.sort((a, b) => a.startingClass.localeCompare(b.startingClass) || a.name.localeCompare(b.name));
@@ -93,6 +119,19 @@ const inferGuide = (item: string, chapter: Chapter) => {
   return `Pick this up during the ${chapter.region} sweep. Begin at ${chapter.grace}, search the exact item name on the linked map, and keep the weapon at this chapter's upgrade cap.`;
 };
 
+const ESSENTIAL_GUIDES: Record<string, string> = {
+  "Church of Elleh: Crafting Kit and Kale": "From The First Step, ride north to the ruined church. Buy the Crafting Kit from Kalé, speak to him until his dialogue repeats, then continue north-east toward Gatefront.",
+  "Gatefront: Whetstone Knife and first map": "At Gatefront Ruins, take the West Limgrave map from the roadside pillar. Go down the stairs in the southern camp, open the chest for the Whetstone Knife, then leave east along the main road.",
+  "Third Church: Flask of Wondrous Physick": "Follow the road east through Mistwood to the Third Church of Marika. Take the Sacred Tear and Flask of Wondrous Physick, rest at the grace, then head west toward Agheel Lake.",
+  "Limgrave Tunnels: early Smithing Stones": "Enter the mine in the cliff at the north-west corner of Agheel Lake. Collect the visible Smithing Stones from the walls, clear as much of the tunnel as the party needs, then continue to the next route card.",
+};
+
+function essentialGuide(chapter: Chapter, label: string, index: number) {
+  if (ESSENTIAL_GUIDES[label]) return ESSENTIAL_GUIDES[label];
+  if (index === 0) return `Start from ${chapter.grace} and make this the first stop in the ${chapter.region} route. Complete it, then continue to the next card below.`;
+  return `Continue from “${chapter.essentials[index - 1]}” to this stop. Complete it once, then move directly to the next card below.`;
+}
+
 function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
   const tasks: Task[] = [];
   chapter.essentials.forEach((label, index) => {
@@ -105,7 +144,7 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
       label,
       detail: isBoss
         ? `Fight at the end of this route segment. Target ${chapter.level} and ${chapter.upgrade}; stop upgrading once the party reaches the listed cap.`
-        : `${chapter.directions} This stop protects the route from missed rewards or an unnecessary return trip.`,
+        : essentialGuide(chapter, label, index),
       kind: isBoss ? "boss" : isQuest ? "quest" : "objective",
       perPlayer,
       scope: perPlayer ? "Each player" : expedition.mode === "seamless" ? "Shared session" : "Party",
@@ -115,18 +154,22 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
   if (chapter.phase && PHASE_START[chapter.phase] === chapter.id) {
     expedition.players.forEach((player) => {
       const selected = builds.find((candidate) => candidate.id === player.buildId)!;
-      const item = selected.phases[chapter.phase!];
       const loadout = stageLoadout(selected, chapter.phase!);
-      tasks.push({
-        id: `${chapter.id}-gear-${player.id}`,
-        label: `${item}`,
-        detail: inferGuide(item, chapter),
-        kind: "gear",
-        playerId: player.id,
-        perPlayer: false,
-        scope: player.name,
-        item,
-      });
+      const available = selected.availableFrom || "early";
+      const needsPickup = !selected.publishedLoadout || PHASE_ORDER.indexOf(chapter.phase!) <= PHASE_ORDER.indexOf(available);
+      if (needsPickup) {
+        const item = loadout.weapon;
+        tasks.push({
+          id: `${chapter.id}-gear-${player.id}`,
+          label: `${item}`,
+          detail: `${inferGuide(item, chapter)}${loadout.borrowedFrom ? ` This temporary stage comes from the sourced ${loadout.borrowedFrom.buildName} guide; replace it when ${selected.name}'s own published setup becomes available.` : ""}`,
+          kind: "gear",
+          playerId: player.id,
+          perPlayer: false,
+          scope: player.name,
+          item,
+        });
+      }
       tasks.push({
         id: `${chapter.id}-loadout-${player.id}`,
         label: `${selected.name}: ${chapter.phase === "dlc" ? "DLC" : chapter.phase} loadout`,
@@ -175,7 +218,7 @@ function FullBuildDetails({ build, onClose, assignLabel, onAssign }: { build: Bu
         <button className="drawer-close" onClick={onClose} aria-label="Close build detail">×</button>
         <div className="loadout-title">
           <div><p className="eyebrow">Build {builds.indexOf(build) + 1} of {builds.length}</p><h2>{build.name}</h2><p>{build.playstyle}</p></div>
-          <div className="drawer-meta"><span>{classification.attributes}</span><span>{classification.range}</span><span>{build.mechanic}</span><span>Start: {build.startingClass}</span><span>{build.complexity}</span></div>
+          <div className="drawer-meta"><span>{build.collection}</span><span>{classification.attributes}</span><span>{classification.range}</span><span>{build.mechanic}</span><span>Start: {build.startingClass}</span><span>{build.complexity}</span></div>
         </div>
         <a className="build-source" href={build.source.url} target="_blank" rel="noreferrer">Source: {build.source.label} ↗</a>
         {build.quest && <div className="quest-callout"><strong>Quest dependency</strong><span>{build.quest}</span></div>}
@@ -191,15 +234,17 @@ function FullBuildDetails({ build, onClose, assignLabel, onAssign }: { build: Bu
                   <div><dt>Skill plan</dt><dd>{loadout.skill}</dd></div>
                   <div><dt>Talismans</dt><dd><small>{loadout.talismanSlots}</small>{loadout.talismans.map((talisman) => <span key={talisman}>{talisman}</span>)}</dd></div>
                   <div><dt>Armour</dt><dd>{loadout.armour}</dd></div>
-                  <div><dt>Spells</dt><dd>{loadout.spells.length ? loadout.spells.map((spell) => <span key={spell}>{spell}</span>) : "No required spells; use consumables for ranged utility."}</dd></div>
+                  <div><dt>Spells</dt><dd>{loadout.spells.length ? loadout.spells.map((spell) => <span key={spell}>{spell}</span>) : build.publishedLoadout ? "Not specified by source" : "No required spells; use consumables for ranged utility."}</dd></div>
                   <div><dt>Physick</dt><dd>{loadout.flask}</dd></div>
                   <div><dt>Stats</dt><dd>{loadout.stats}</dd></div>
                 </dl>
+                {loadout.borrowedFrom && <a className="borrowed-source" href={loadout.borrowedFrom.url} target="_blank" rel="noreferrer">Temporary stage from {loadout.borrowedFrom.buildName} ↗</a>}
+                {loadout.weaponChoice && <div className="weapon-choice-source"><strong>Why this named option</strong><p>{loadout.weaponChoice.rationale}</p><div>{loadout.weaponChoice.sources.map((source) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.label} ↗</a>)}</div></div>}
               </article>
             );
           })}
         </div>
-        <p className="loadout-note">Talismans are listed in slot order. Swap the defensive slot for the boss-specific elemental drake talisman when needed.</p>
+        <p className="loadout-note">{build.publishedLoadout ? "The build's published stage is reproduced from its linked source. Earlier gaps use the closest matching Fextralife stage and show that source on the stage; once the build's own weapon is available it is carried forward." : "Talismans are listed in slot order. Swap the defensive slot for the boss-specific elemental drake talisman when needed."}</p>
         {onAssign && <button type="button" className="assign-build-button" onClick={onAssign}>{assignLabel || "Choose this build"}</button>}
       </section>
     </div>
@@ -214,14 +259,14 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
   const [activePlayer, setActivePlayer] = useState(0);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All builds");
+  const [collection, setCollection] = useState("All sources");
   const [mechanic, setMechanic] = useState("All focuses");
+  const [fextraCategory, setFextraCategory] = useState("All Fextralife groups");
   const [sort, setSort] = useState("Catalogue order");
   const [detail, setDetail] = useState<Build | null>(null);
 
   const visibleBuilds = sortBuilds(builds.filter((candidate) => {
-    const classification = buildClassification(candidate);
-    const text = `${candidate.name} ${candidate.stats} ${classification.range} ${candidate.tags.join(" ")} ${candidate.playstyle}`.toLowerCase();
-    return text.includes(query.toLowerCase()) && matchesBuildFilter(candidate, filter) && (mechanic === "All focuses" || candidate.mechanic === mechanic);
+    return buildSearchText(candidate).includes(query.toLowerCase()) && matchesBuildFilter(candidate, filter) && matchesCollection(candidate, collection) && (mechanic === "All focuses" || candidate.mechanic === mechanic) && (fextraCategory === "All Fextralife groups" || candidate.guideCategories?.includes(fextraCategory));
   }), sort);
 
   const changeCount = (value: number) => {
@@ -266,16 +311,16 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
 
       <section className="build-picker">
         <div className="picker-heading"><div className="settings-title"><span>2</span><div><h2>Choose a build for {players[activePlayer].name}</h2><p>Open any build to see the complete equipment plan before assigning it.</p></div></div><div className="selected-build-summary"><small>Currently selected</small><strong>{builds.find((candidate) => candidate.id === players[activePlayer].buildId)?.name}</strong></div></div>
-        <div className="picker-tools extended"><label><span>Search builds</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Weapon, damage type or playstyle" /></label><label><span>Build type</span><select value={filter} onChange={(event) => setFilter(event.target.value)}>{ATTRIBUTE_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Combat focus</span><select value={mechanic} onChange={(event) => setMechanic(event.target.value)}>{MECHANIC_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Sort by</span><select value={sort} onChange={(event) => setSort(event.target.value)}>{SORT_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select></label><p>{visibleBuilds.length} of {builds.length} builds</p></div>
+        <div className="picker-tools extended"><label><span>Search builds</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Weapon, damage type or playstyle" /></label><label><span>Source category</span><select value={collection} onChange={(event) => setCollection(event.target.value)}>{COLLECTION_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Fextralife group</span><select value={fextraCategory} onChange={(event) => setFextraCategory(event.target.value)}>{FEXTRA_CATEGORY_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Build type</span><select value={filter} onChange={(event) => setFilter(event.target.value)}>{ATTRIBUTE_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Combat focus</span><select value={mechanic} onChange={(event) => setMechanic(event.target.value)}>{MECHANIC_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Sort by</span><select value={sort} onChange={(event) => setSort(event.target.value)}>{SORT_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select></label><p>{visibleBuilds.length} of {builds.length} builds</p></div>
         <div className="setup-build-grid">
           {visibleBuilds.map((candidate) => {
             const selected = candidate.id === players[activePlayer].buildId;
             const classification = buildClassification(candidate);
             return <article className={selected ? "selected" : ""} key={candidate.id}>
-              <header><div><span>{String(builds.indexOf(candidate) + 1).padStart(2, "0")}</span><small>{candidate.complexity}</small></div><h3>{candidate.name}</h3><p>{classification.attributes} · {classification.range}</p></header>
+              <header><div><span>{String(builds.indexOf(candidate) + 1).padStart(2, "0")}</span><small>{candidate.complexity}</small></div><h3>{candidate.name}</h3><p>{classification.attributes} · {classification.range}</p><b className="collection-pill">{candidate.collection}</b>{candidate.guideCategories?.length ? <p className="guide-groups">{candidate.guideCategories.join(" · ")}</p> : null}</header>
               <p className="setup-playstyle">{candidate.playstyle}</p>
               <div className="build-facts"><span><small>Starting class</small>{candidate.startingClass}</span><span><small>Combat focus</small>{candidate.mechanic}</span></div>
-              <div className="weapon-timeline">{(["early", "mid", "late", "dlc"] as PhaseKey[]).map((phase) => <div key={phase}><small>{phase}</small><span>{candidate.phases[phase]}</span></div>)}</div>
+              <div className="weapon-timeline">{(["early", "mid", "late", "dlc"] as PhaseKey[]).map((phase) => { const stage = stageLoadout(candidate, phase); return <div key={phase}><small>{phase}{stage.borrowedFrom ? " · sourced bridge" : ""}</small><span>{stage.weapon}</span></div>; })}</div>
               <footer><button type="button" onClick={() => setDetail(candidate)}>Full loadout</button><button type="button" className={selected ? "assigned" : ""} onClick={() => chooseBuild(candidate)}>{selected ? "Assigned" : `Assign to ${players[activePlayer].name}`}</button></footer>
             </article>;
           })}
@@ -289,29 +334,87 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
   );
 }
 
+type MapLayer = MapItem["layer"];
+
+const MAP_TILE_ROOTS: Record<MapLayer, string> = {
+  surface: "https://eldenring.wiki.fextralife.com/file/Elden-Ring/map-50be4728-3907-4f33-8857-7f063e0d24eb/map-tiles.4",
+  underground: "https://eldenring.wiki.fextralife.com/file/Elden-Ring/map-c5431314-6159-4599-9668-0ccf4e1f8e9a/map-tiles.4",
+  ashen: "https://eldenring.wiki.fextralife.com/file/Elden-Ring/map-96747699-d8a3-44b4-b2d6-cf6b45c579c6/map-tiles.1",
+  shadow: "https://eldenring.wiki.fextralife.com/file/Elden-Ring/map-9d02bccc-081b-4a1d-b26e-a363f366fb40/map-tiles.3",
+};
+const MAP_TILE_LEVELS: Record<MapLayer, number> = {
+  surface: 7,
+  underground: 7,
+  ashen: 6,
+  shadow: 6,
+};
+
+function mapLayerForChapter(chapter: Chapter): MapLayer {
+  if (chapter.act === "Shadow of the Erdtree") return "shadow";
+  if (["nokron", "ainsel", "deeproot", "mohgwyn"].includes(chapter.id)) return "underground";
+  if (chapter.id === "ashen") return "ashen";
+  return "surface";
+}
+
 function MapPanel({ chapter, expedition, onSelect }: { chapter: Chapter; expedition: Expedition; onSelect: (id: string) => void }) {
-  const actChapters = chapters.filter((candidate) => candidate.act === chapter.act);
+  const mapLayer = mapLayerForChapter(chapter);
+  const mapChapters = chapters.filter((candidate) => mapLayerForChapter(candidate) === mapLayer);
+  const isDlc = mapLayer === "shadow";
+  const fextraMap = isDlc ? "https://eldenring.wiki.fextralife.com/Shadow+of+the+Erdtree+Map" : "https://eldenring.wiki.fextralife.com/Interactive+Map";
+  const mapGenie = isDlc ? "https://mapgenie.io/elden-ring/maps/the-shadow-realm" : "https://mapgenie.io/elden-ring/maps/the-lands-between";
+  const mapTitle = mapLayer === "shadow" ? "Realm of Shadow" : mapLayer === "underground" ? "Underground" : mapLayer === "ashen" ? "Leyndell, Ashen Capital" : "The Lands Between";
+  const currentTask = tasksForChapter(chapter, expedition).find((task) => !taskDone(task, expedition));
+  const mappedItem = currentTask?.item ? findMapItem(currentTask.item, mapLayer) : undefined;
+  const tileLevel = MAP_TILE_LEVELS[mapLayer];
+  const tileCount = 2 ** tileLevel;
+  const zoom = mapLayer === "surface" || mapLayer === "underground" ? 18 : 10;
+  const rawFocusX = mappedItem?.layer === mapLayer ? mappedItem.x : chapter.x;
+  const rawFocusY = mappedItem?.layer === mapLayer ? mappedItem.y : chapter.y;
+  const edge = 50 / zoom;
+  const focusX = Math.max(edge, Math.min(100 - edge, rawFocusX));
+  const focusY = Math.max(edge, Math.min(100 - edge, rawFocusY));
+  const tileStartX = Math.max(0, Math.floor(((focusX - edge) / 100) * tileCount) - 1);
+  const tileEndX = Math.min(tileCount - 1, Math.ceil(((focusX + edge) / 100) * tileCount) + 1);
+  const tileStartY = Math.max(0, Math.floor(((focusY - edge) / 100) * tileCount) - 1);
+  const tileEndY = Math.min(tileCount - 1, Math.ceil(((focusY + edge) / 100) * tileCount) + 1);
+  const visibleTiles = [];
+  for (let tileY = tileStartY; tileY <= tileEndY; tileY += 1) {
+    for (let tileX = tileStartX; tileX <= tileEndX; tileX += 1) visibleTiles.push({ tileX, tileY });
+  }
+  const viewPosition = (x: number, y: number) => ({
+    left: `${50 + (x - focusX) * zoom}%`,
+    top: `${50 + (y - focusY) * zoom}%`,
+  });
   return (
-    <div className={`route-map ${chapter.act === "Shadow of the Erdtree" ? "shadow-map" : "lands-map"}`}>
-      <div className="terrain terrain-a" /><div className="terrain terrain-b" /><div className="terrain terrain-c" />
-      <div className="map-title"><span>{chapter.act === "Base game" ? "The Lands Between" : "Realm of Shadow"}</span><small>Route overview</small></div>
-      {actChapters.map((pin) => {
-        const tasks = tasksForChapter(pin, expedition);
-        const done = tasks.every((task) => taskDone(task, expedition));
-        return (
-          <button
-            type="button"
-            aria-label={`${pin.title}${done ? ", complete" : ""}`}
-            title={pin.title}
-            onClick={() => onSelect(pin.id)}
-            className={`map-pin ${pin.id === chapter.id ? "current" : ""} ${done ? "done" : ""}`}
-            style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
-            key={pin.id}
-          ><span>{actChapters.indexOf(pin) + 1}</span></button>
-        );
-      })}
+    <div className={`route-map map-layer-${mapLayer}`}>
+      <div className="map-title"><span>{mapTitle}</span><small>Maximum-detail Fextralife tiles · active stage</small></div>
+      <div className="map-art">
+        <div className="map-tiles" aria-hidden="true" style={{ left: `${50 - focusX * zoom}%`, top: `${50 - focusY * zoom}%`, width: `${zoom * 100}%`, height: `${zoom * 100}%` }}>
+          {visibleTiles.map(({ tileX, tileY }) => <span className="map-tile" key={`tile-${tileX}-${tileY}`} style={{ left: `${(tileX / tileCount) * 100}%`, top: `${(tileY / tileCount) * 100}%`, width: `${100 / tileCount}%`, height: `${100 / tileCount}%`, backgroundImage: `url(${MAP_TILE_ROOTS[mapLayer]}/${tileLevel}/${tileX}/${tileY}.jpg)` }} />)}
+        </div>
+        {mapChapters.map((pin) => {
+          const tasks = tasksForChapter(pin, expedition);
+          const done = tasks.every((task) => taskDone(task, expedition));
+          const position = viewPosition(pin.x, pin.y);
+          const visible = Number.parseFloat(position.left) >= -5 && Number.parseFloat(position.left) <= 105 && Number.parseFloat(position.top) >= -5 && Number.parseFloat(position.top) <= 105;
+          if (!visible) return null;
+          return (
+            <button
+              type="button"
+              aria-label={`${pin.title}${done ? ", complete" : ""}`}
+              title={pin.title}
+              onClick={() => onSelect(pin.id)}
+              className={`map-pin ${pin.id === chapter.id ? "current" : ""} ${done ? "done" : ""}`}
+              style={position}
+              key={pin.id}
+            ><span>{chapters.indexOf(pin) + 1}</span></button>
+          );
+        })}
+        {mappedItem?.layer === mapLayer && <a className="map-item-pin" href={mappedItem.url} target="_blank" rel="noreferrer" title={mappedItem.name} style={viewPosition(mappedItem.x, mappedItem.y)}><i /> <span>{mappedItem.name}</span></a>}
+      </div>
       <div className="map-compass" aria-hidden="true">N<span>✦</span></div>
-      <div className="map-current"><span>Current region</span><strong>{chapter.region}</strong><small>from {chapter.grace}</small></div>
+      <div className="map-current"><span>{mappedItem?.layer === mapLayer ? "Current item" : "Current region"}</span><strong>{mappedItem?.layer === mapLayer ? mappedItem.name : chapter.region}</strong><small>{mappedItem?.layer === mapLayer ? `in ${chapter.region}` : `from ${chapter.grace}`}</small></div>
+      <div className="map-sources"><a href={fextraMap} target="_blank" rel="noreferrer">Open Fextralife map ↗</a><a href={mapGenie} target="_blank" rel="noreferrer">Open MapGenie ↗</a></div>
     </div>
   );
 }
@@ -405,6 +508,7 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly 
           {tasks.map((task, index) => {
             const owner = task.playerId ? expedition.players.find((player) => player.id === task.playerId) : undefined;
             const done = taskDone(task, expedition);
+            const mapItem = task.item ? findMapItem(task.item, mapLayerForChapter(chapter)) : undefined;
             return (
               <article className={`task-card ${done ? "complete" : ""}`} key={task.id} style={owner ? { "--player": owner.color } as React.CSSProperties : undefined}>
                 <div className="task-index">{done ? "✓" : String(index + 1).padStart(2, "0")}</div>
@@ -412,7 +516,7 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly 
                   <div className="task-meta"><span className={`kind ${task.kind}`}>{task.kind}</span><span className="scope">{task.scope}</span></div>
                   <h4>{task.label}</h4>
                   <p>{task.detail}</p>
-                  {task.item && <div className="task-links"><a href={wikiUrl(task.item)} target="_blank" rel="noreferrer">Item reference ↗</a><a href="https://mapgenie.io/elden-ring" target="_blank" rel="noreferrer">Search on map ↗</a></div>}
+                  {task.item && <div className="task-links"><a href={wikiUrl(task.item)} target="_blank" rel="noreferrer">Item reference ↗</a>{mapItem && <a href={mapItem.url} target="_blank" rel="noreferrer">Exact Fextralife marker ↗</a>}<a href={chapter.act === "Shadow of the Erdtree" ? "https://mapgenie.io/elden-ring/maps/the-shadow-realm" : "https://mapgenie.io/elden-ring/maps/the-lands-between"} target="_blank" rel="noreferrer">Search on MapGenie ↗</a></div>}
                   {task.perPlayer ? (
                     <div className="player-checks">
                       {expedition.players.map((player) => {
@@ -450,28 +554,28 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly 
 function CodexView({ expedition, catalogueOnly = false }: { expedition?: Expedition; catalogueOnly?: boolean }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All builds");
+  const [collection, setCollection] = useState("All sources");
   const [mechanic, setMechanic] = useState("All focuses");
+  const [fextraCategory, setFextraCategory] = useState("All Fextralife groups");
   const [sort, setSort] = useState("Catalogue order");
   const [selected, setSelected] = useState<Build | null>(null);
   const filtered = sortBuilds(builds.filter((candidate) => {
-    const classification = buildClassification(candidate);
-    const haystack = `${candidate.name} ${candidate.stats} ${classification.range} ${candidate.tags.join(" ")}`.toLowerCase();
-    return haystack.includes(query.toLowerCase()) && matchesBuildFilter(candidate, filter) && (mechanic === "All focuses" || candidate.mechanic === mechanic);
+    return buildSearchText(candidate).includes(query.toLowerCase()) && matchesBuildFilter(candidate, filter) && matchesCollection(candidate, collection) && (mechanic === "All focuses" || candidate.mechanic === mechanic) && (fextraCategory === "All Fextralife groups" || candidate.guideCategories?.includes(fextraCategory));
   }), sort);
 
   return (
     <section className="codex-page">
-      <div className="page-heading"><div><p className="eyebrow">{builds.length} sourced paths · four stages each</p><h2>{catalogueOnly ? "Build catalogue" : "Build codex"}</h2><p>{catalogueOnly ? "Compare every build before the run controller assigns them. This page cannot change the party or route." : "Each build has a recommended origin, a defined combat focus, and early, mid, late and DLC gear."}</p></div><div className="codex-count"><strong>{filtered.length}</strong><span>builds shown</span></div></div>
-      <div className="codex-tools extended"><label><span>Search</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Frost, bow, faith…" /></label><label><span>Build type</span><select value={filter} onChange={(event) => setFilter(event.target.value)}>{ATTRIBUTE_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Combat focus</span><select value={mechanic} onChange={(event) => setMechanic(event.target.value)}>{MECHANIC_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Sort by</span><select value={sort} onChange={(event) => setSort(event.target.value)}>{SORT_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select></label></div>
+      <div className="page-heading"><div><p className="eyebrow">{builds.length} sourced builds · source-linked stages</p><h2>{catalogueOnly ? "Build catalogue" : "Build codex"}</h2><p>{catalogueOnly ? "Compare every sourced build before the run controller assigns them. Search includes weapons, off-hands, skills, armour, talismans and spells." : "Each published build keeps its documented setup; earlier gaps use a clearly linked stage from the closest matching sourced build."}</p></div><div className="codex-count"><strong>{filtered.length}</strong><span>builds shown</span></div></div>
+      <div className="codex-tools extended"><label><span>Search</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Frost, bow, faith…" /></label><label><span>Source category</span><select value={collection} onChange={(event) => setCollection(event.target.value)}>{COLLECTION_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Fextralife group</span><select value={fextraCategory} onChange={(event) => setFextraCategory(event.target.value)}>{FEXTRA_CATEGORY_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Build type</span><select value={filter} onChange={(event) => setFilter(event.target.value)}>{ATTRIBUTE_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Combat focus</span><select value={mechanic} onChange={(event) => setMechanic(event.target.value)}>{MECHANIC_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Sort by</span><select value={sort} onChange={(event) => setSort(event.target.value)}>{SORT_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select></label></div>
       <div className="build-grid">
         {filtered.map((candidate) => {
           const owners = expedition?.players.filter((player) => player.buildId === candidate.id) || [];
           const classification = buildClassification(candidate);
           return <article className="build-card" key={candidate.id} onClick={() => setSelected(candidate)} tabIndex={0} onKeyDown={(event) => { if (event.key === "Enter") setSelected(candidate); }}>
             <div className="build-card-top"><span className="build-number">{String(builds.indexOf(candidate) + 1).padStart(2, "0")}</span><div className="difficulty"><i />{candidate.complexity}</div></div>
-            <h3>{candidate.name}</h3><p className="stats">{classification.attributes} · {classification.range}</p><p>{candidate.playstyle}</p>
+            <h3>{candidate.name}</h3><p className="stats">{classification.attributes} · {classification.range}</p><b className="collection-pill">{candidate.collection}</b>{candidate.guideCategories?.length ? <p className="guide-groups">{candidate.guideCategories.join(" · ")}</p> : null}<p>{candidate.playstyle}</p>
             <div className="build-facts"><span><small>Starting class</small>{candidate.startingClass}</span><span><small>Combat focus</small>{candidate.mechanic}</span></div>
-            <div className="mini-phases"><span>{candidate.phases.early}</span><i>→</i><span>{candidate.phases.dlc}</span></div>
+            <div className="mini-phases"><span>{stageLoadout(candidate, "early").weapon}</span><i>→</i><span>{stageLoadout(candidate, "dlc").weapon}</span></div>
             <div className="tag-row">{candidate.tags.slice(0, 3).map((tag) => <span key={tag}>{tag}</span>)}</div>
             {owners.length > 0 && <div className="owners">Chosen by {owners.map((owner) => owner.name).join(", ")}</div>}
             <button type="button">Full loadout <span>↗</span></button>

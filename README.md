@@ -4,7 +4,7 @@ A responsive Elden Ring route planner for 2–6 players. It supports standard co
 
 The app includes:
 
-- 75 builds with early, mid, late and DLC equipment;
+- the complete Fextralife build catalogue, curated progression builds and sourced meme/cosplay builds;
 - a 29-chapter base-game and Shadow of the Erdtree route;
 - every Remembrance boss, plus Bayle;
 - player-specific gear and world-progress tracking;
@@ -15,6 +15,10 @@ The app includes:
 ## Run for your local co-op group
 
 Double-click `Start-LAN.cmd`. The launcher builds the current guide, opens the controller on this PC, and prints two read-only links for each home-network address: a complete build catalogue for choosing before the run and the live route follower. Other players do not need a ChatGPT account and cannot assign builds or change route progress.
+
+Use the links under **Home network links**. Addresses under **Other network adapters** are normally VPN or virtual-machine adapters and should not be sent to another computer on your Wi-Fi.
+
+If the correct `192.168.x.x` or `10.x.x.x` link still times out, double-click `Allow-LAN-Through-Firewall.cmd`, approve the Windows prompt, and try again. It opens only TCP port 8787 on Private networks.
 
 Keep the launcher window open while playing. If Windows Firewall asks for access, allow Node.js on Private networks only. The shared expedition state is saved in the ignored `work` directory and is restored the next time the LAN host starts.
 

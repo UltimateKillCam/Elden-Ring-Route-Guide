@@ -150,9 +150,19 @@ function proxyToApp(request, response) {
 }
 
 function localAddresses() {
-  return Object.values(networkInterfaces()).flat().filter((entry) =>
-    entry && entry.family === "IPv4" && !entry.internal,
-  ).map((entry) => entry.address);
+  const virtualAdapter = /tailscale|vethernet|virtual|vmware|hyper-v|wsl|docker|loopback|local area connection\*/i;
+  const privateAddress = (address) => /^10\./.test(address) || /^192\.168\./.test(address) || (() => {
+    const match = address.match(/^172\.(\d+)\./);
+    return match && Number(match[1]) >= 16 && Number(match[1]) <= 31;
+  })();
+
+  return Object.entries(networkInterfaces()).flatMap(([adapter, entries]) =>
+    (entries || []).filter((entry) => entry.family === "IPv4" && !entry.internal).map((entry) => ({
+      address: entry.address,
+      adapter,
+      preferred: privateAddress(entry.address) && !virtualAdapter.test(adapter),
+    })),
+  ).sort((a, b) => Number(b.preferred) - Number(a.preferred) || a.adapter.localeCompare(b.adapter));
 }
 
 async function openController(url) {
@@ -208,17 +218,26 @@ async function main() {
   });
 
   const controllerUrl = `http://localhost:${gatewayPort}/?control=${controlToken}`;
-  const followerUrls = localAddresses().map((address) => ({
-    route: `http://${address}:${gatewayPort}/?follow=1`,
-    catalogue: `http://${address}:${gatewayPort}/?catalog=1`,
+  const followerUrls = localAddresses().map((network) => ({
+    ...network,
+    route: `http://${network.address}:${gatewayPort}/?follow=1`,
+    catalogue: `http://${network.address}:${gatewayPort}/?catalog=1`,
   }));
   console.log("\nLAN guide is running. Keep this window open while you play.\n");
   console.log(`Controller (your PC):\n  ${controllerUrl}\n`);
-  console.log("Read-only links (send the pair matching your home network):");
-  followerUrls.forEach((urls) => {
+  const preferredUrls = followerUrls.filter((urls) => urls.preferred);
+  const otherUrls = followerUrls.filter((urls) => !urls.preferred);
+  console.log("Home network links (send these to the other PC):");
+  (preferredUrls.length ? preferredUrls : followerUrls).forEach((urls) => {
+    console.log(`  ${urls.adapter} (${urls.address})`);
     console.log(`  Build catalogue: ${urls.catalogue}`);
     console.log(`  Live route:      ${urls.route}\n`);
   });
+  if (preferredUrls.length && otherUrls.length) {
+    console.log("Other network adapters (usually ignore these):");
+    otherUrls.forEach((urls) => console.log(`  ${urls.adapter}: ${urls.address}`));
+    console.log("");
+  }
   console.log("\nIf Windows asks, allow Node.js on Private networks only. Press Ctrl+C to stop.\n");
   await openController(controllerUrl);
 
