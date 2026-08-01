@@ -26,6 +26,7 @@ type Task = {
   perPlayer: boolean;
   scope: string;
   item?: string;
+  slot?: string;
   optional?: boolean;
 };
 
@@ -165,11 +166,12 @@ function orderPickupTasks(tasks: Task[], chapter: Chapter) {
   let y = chapter.y;
   while (remaining.length) {
     remaining.sort((a, b) => {
+      const slotPriority = (task: Task) => task.slot === "weapon" ? 0 : task.slot === "off-hand" || task.slot === "skill" ? 1 : 2;
       const pointA = a.item && findMapItem(a.item, mapLayerForChapter(chapter));
       const pointB = b.item && findMapItem(b.item, mapLayerForChapter(chapter));
       const distanceA = pointA ? (pointA.x - x) ** 2 + (pointA.y - y) ** 2 : Number.POSITIVE_INFINITY;
       const distanceB = pointB ? (pointB.x - x) ** 2 + (pointB.y - y) ** 2 : Number.POSITIVE_INFINITY;
-      return distanceA - distanceB || a.id.localeCompare(b.id);
+      return slotPriority(a) - slotPriority(b) || distanceA - distanceB || a.id.localeCompare(b.id);
     });
     const next = remaining.shift()!;
     ordered.push(next);
@@ -274,7 +276,7 @@ const ITEM_REGION_GATES: Array<[RegExp, string]> = [
   [/Liurnia|Academy Gate Town|Church of Irith/i, "liurnia-south"],
   [/Caelid|Dragonbarrow|Sellia|Redmane|Gael Tunnel/i, "caelid"],
   [/Siofra|Nokron/i, "nokron"],
-  [/Altus Plateau|Altus Highway|Lux Ruins|Windmill Village/i, "altus"],
+  [/\bAltus\b|Lux Ruins|Windmill Village/i, "altus"],
   [/Volcano Manor|Mt\. Gelmir|Gelmir|Seethewater/i, "gelmir"],
   [/Leyndell|Royal Capital|Capital Outskirts/i, "leyndell"],
   [/Ainsel|Nokstella|Lake of Rot|Grand Cloister/i, "ainsel"],
@@ -366,6 +368,7 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
           perPlayer: false,
           scope: player.name,
           item: pickup.item,
+          slot: pickup.slot,
           optional: true,
         };
         pickupTasks.push(pickupTask);
@@ -408,6 +411,7 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
           perPlayer: false,
           scope: player.name,
           item: pickup.item,
+          slot: pickup.slot,
           optional: true,
         });
       });

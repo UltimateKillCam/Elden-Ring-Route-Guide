@@ -141,7 +141,11 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /DEFERRED_AVATAR_ITEMS/);
   assert.match(page, /ITEM_REGION_GATES/);
   assert.match(page, /\[\/Stormveil\/i, "stormveil"\]/);
+  assert.match(page, /\[\/\\bAltus\\b\|Lux Ruins\|Windmill Village\/i, "altus"\]/);
   assert.match(page, /deferredChapterForPickup/);
+  assert.match(page, /const slotPriority/);
+  assert.match(page, /slotPriority\(a\) - slotPriority\(b\)/);
+  assert.equal((page.match(/slot: pickup\.slot/g) || []).length, 2);
   assert.match(page, /marker\.x >= 32.*marker\.y >= 68\.5/);
   assert.match(page, /target === "weeping" \|\| target === "stormveil"/);
   assert.match(page, /Castle Morne weapon pickups/);
