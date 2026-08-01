@@ -96,9 +96,13 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   ]);
   assert.match(page, /Complete and continue/);
   assert.match(page, /Updates from the host/);
+  assert.match(page, /catalogueOnly/);
+  assert.match(page, /Compare every build before the run controller assigns them/);
   assert.match(page, /Strength.*Dexterity.*Intelligence.*Faith.*Arcane.*Ranged/);
   assert.doesNotMatch(page, /Party role|All roles/);
   assert.match(server, /Follower access is read-only/);
+  assert.match(server, /Build catalogue/);
+  assert.match(server, /\?catalog=1/);
   assert.match(server, /x-control-token/);
   assert.match(packageJson, /scripts\/lan-server\.mjs/);
 });

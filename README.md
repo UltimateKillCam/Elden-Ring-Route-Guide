@@ -14,7 +14,7 @@ The app includes:
 
 ## Run for your local co-op group
 
-Double-click `Start-LAN.cmd`. The launcher builds the current guide, opens the controller on this PC, and prints one or more follower links. Send the link matching your home-network address to the other players. They do not need a ChatGPT account and cannot change route progress.
+Double-click `Start-LAN.cmd`. The launcher builds the current guide, opens the controller on this PC, and prints two read-only links for each home-network address: a complete build catalogue for choosing before the run and the live route follower. Other players do not need a ChatGPT account and cannot assign builds or change route progress.
 
 Keep the launcher window open while playing. If Windows Firewall asks for access, allow Node.js on Private networks only. The shared expedition state is saved in the ignored `work` directory and is restored the next time the LAN host starts.
 

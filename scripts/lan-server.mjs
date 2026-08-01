@@ -158,11 +158,17 @@ async function main() {
   });
 
   const controllerUrl = `http://localhost:${gatewayPort}/?control=${controlToken}`;
-  const followerUrls = localAddresses().map((address) => `http://${address}:${gatewayPort}/?follow=1`);
+  const followerUrls = localAddresses().map((address) => ({
+    route: `http://${address}:${gatewayPort}/?follow=1`,
+    catalogue: `http://${address}:${gatewayPort}/?catalog=1`,
+  }));
   console.log("\nLAN guide is running. Keep this window open while you play.\n");
   console.log(`Controller (your PC):\n  ${controllerUrl}\n`);
-  console.log("Follower link (send the address matching your home network):");
-  followerUrls.forEach((url) => console.log(`  ${url}`));
+  console.log("Read-only links (send the pair matching your home network):");
+  followerUrls.forEach((urls) => {
+    console.log(`  Build catalogue: ${urls.catalogue}`);
+    console.log(`  Live route:      ${urls.route}\n`);
+  });
   console.log("\nIf Windows asks, allow Node.js on Private networks only. Press Ctrl+C to stop.\n");
   await openController(controllerUrl);
 

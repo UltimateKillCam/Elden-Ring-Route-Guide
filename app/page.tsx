@@ -447,7 +447,7 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly 
   );
 }
 
-function CodexView({ expedition }: { expedition: Expedition }) {
+function CodexView({ expedition, catalogueOnly = false }: { expedition?: Expedition; catalogueOnly?: boolean }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All builds");
   const [mechanic, setMechanic] = useState("All focuses");
@@ -461,11 +461,11 @@ function CodexView({ expedition }: { expedition: Expedition }) {
 
   return (
     <section className="codex-page">
-      <div className="page-heading"><div><p className="eyebrow">{builds.length} sourced paths · four stages each</p><h2>Build codex</h2><p>Each build has a recommended origin, a defined combat focus, and early, mid, late and DLC gear.</p></div><div className="codex-count"><strong>{filtered.length}</strong><span>builds shown</span></div></div>
+      <div className="page-heading"><div><p className="eyebrow">{builds.length} sourced paths · four stages each</p><h2>{catalogueOnly ? "Build catalogue" : "Build codex"}</h2><p>{catalogueOnly ? "Compare every build before the run controller assigns them. This page cannot change the party or route." : "Each build has a recommended origin, a defined combat focus, and early, mid, late and DLC gear."}</p></div><div className="codex-count"><strong>{filtered.length}</strong><span>builds shown</span></div></div>
       <div className="codex-tools extended"><label><span>Search</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Frost, bow, faith…" /></label><label><span>Build type</span><select value={filter} onChange={(event) => setFilter(event.target.value)}>{ATTRIBUTE_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Combat focus</span><select value={mechanic} onChange={(event) => setMechanic(event.target.value)}>{MECHANIC_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Sort by</span><select value={sort} onChange={(event) => setSort(event.target.value)}>{SORT_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select></label></div>
       <div className="build-grid">
         {filtered.map((candidate) => {
-          const owners = expedition.players.filter((player) => player.buildId === candidate.id);
+          const owners = expedition?.players.filter((player) => player.buildId === candidate.id) || [];
           const classification = buildClassification(candidate);
           return <article className="build-card" key={candidate.id} onClick={() => setSelected(candidate)} tabIndex={0} onKeyDown={(event) => { if (event.key === "Enter") setSelected(candidate); }}>
             <div className="build-card-top"><span className="build-number">{String(builds.indexOf(candidate) + 1).padStart(2, "0")}</span><div className="difficulty"><i />{candidate.complexity}</div></div>
@@ -484,6 +484,18 @@ function CodexView({ expedition }: { expedition: Expedition }) {
   );
 }
 
+function ReadOnlyBuildCatalogue({ lanAvailable }: { lanAvailable: boolean }) {
+  return (
+    <main className="app-shell catalogue-shell">
+      <header className="catalogue-header">
+        <div><strong>Tarnished Together</strong><span>Build catalogue</span></div>
+        <div><b>Read-only</b>{lanAvailable && <button type="button" onClick={() => { window.location.href = "/?follow=1"; }}>Follow the live route</button>}</div>
+      </header>
+      <CodexView catalogueOnly />
+    </main>
+  );
+}
+
 function PartyView({ expedition, setExpedition, onExport, onImport, onReset }: { expedition: Expedition; setExpedition: React.Dispatch<React.SetStateAction<Expedition | null>>; onExport: () => void; onImport: (event: React.ChangeEvent<HTMLInputElement>) => void; onReset: () => void }) {
   const totalKeys = chapters.flatMap((chapter) => tasksForChapter(chapter, expedition)).flatMap((task) => taskKeys(task, expedition));
   const completed = totalKeys.filter((key) => expedition.completed[key]).length;
@@ -499,6 +511,7 @@ export default function Home() {
   const [expedition, setExpedition] = useState<Expedition | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [lanMode, setLanMode] = useState<LanMode | null>(null);
+  const [catalogueOnly, setCatalogueOnly] = useState(false);
   const [view, setView] = useState<View>("route");
   const [activeId, setActiveId] = useState(chapters[0].id);
   const [toast, setToast] = useState("");
@@ -509,6 +522,9 @@ export default function Home() {
   useEffect(() => {
     let cancelled = false;
     const hydrate = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const requestedCatalogue = params.get("catalog") === "1";
+      if (!cancelled) setCatalogueOnly(requestedCatalogue);
       let localExpedition: Expedition | null = null;
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
@@ -521,7 +537,7 @@ export default function Home() {
         if (response.ok && contentType.includes("application/json")) {
           const remote = await response.json();
           if (remote.enabled === true) {
-            const token = new URLSearchParams(window.location.search).get("control") || "";
+            const token = params.get("control") || "";
             const mode: LanMode = token ? "controller" : "follower";
             controlToken.current = token;
             lanRevision.current = Number(remote.revision || 0);
@@ -611,7 +627,8 @@ export default function Home() {
   const handleReset = () => { if (window.confirm("Start a new expedition? The current local progress will be removed unless you export it first.")) { setExpedition(null); setView("route"); setActiveId(chapters[0].id); } };
 
   if (!hydrated) return <main className="loading-screen"><span>✦</span><p>Reading the guidance of grace…</p></main>;
-  if (!expedition && lanMode === "follower") return <main className="follower-waiting"><strong>Tarnished Together</strong><h1>Waiting for the host</h1><p>The route will appear here after the host creates or restores an expedition.</p><span>Follower view · refreshes automatically</span></main>;
+  if (catalogueOnly) return <ReadOnlyBuildCatalogue lanAvailable={lanMode !== "none"} />;
+  if (!expedition && lanMode === "follower") return <main className="follower-waiting"><strong>Tarnished Together</strong><h1>Waiting for the host</h1><p>The route will appear here after the host creates or restores an expedition.</p><button type="button" onClick={() => { window.location.href = "/?catalog=1"; }}>Browse all builds while you wait</button><span>Follower view · refreshes automatically</span></main>;
   if (!expedition) return <Setup onCreate={(created) => { setExpedition(created); notify("Route created"); }} imported={handleImport} />;
 
   const readOnly = lanMode === "follower";
@@ -620,7 +637,7 @@ export default function Home() {
     <main className={`app-shell ${readOnly ? "follower-mode" : ""}`}>
       <header className="topbar">
         <button type="button" className="brand" onClick={() => { setView("route"); setActiveId(chapters[0].id); }}><span>✦</span><strong>Tarnished <em>Together</em></strong></button>
-        <nav aria-label="Primary"><button type="button" className={view === "route" ? "active" : ""} onClick={() => setView("route")}>Route</button>{!readOnly && <><button type="button" className={view === "codex" ? "active" : ""} onClick={() => setView("codex")}>Build codex</button><button type="button" className={view === "party" ? "active" : ""} onClick={() => setView("party")}>Company</button></>}</nav>
+        <nav aria-label="Primary"><button type="button" className={view === "route" ? "active" : ""} onClick={() => setView("route")}>Route</button>{readOnly && <button type="button" onClick={() => { window.location.href = "/?catalog=1"; }}>Build catalogue</button>}{!readOnly && <><button type="button" className={view === "codex" ? "active" : ""} onClick={() => setView("codex")}>Build codex</button><button type="button" className={view === "party" ? "active" : ""} onClick={() => setView("party")}>Company</button></>}</nav>
         <div className="top-progress"><span><i style={{ width: `${progress}%` }} /></span><strong>{progress}%</strong>{readOnly ? <b className="lan-badge">Following</b> : <button type="button" onClick={handleExport} aria-label="Export expedition">⇩</button>}</div>
       </header>
       {(view === "route" || readOnly) && <RouteView expedition={expedition} setExpedition={setExpedition} activeId={activeId} setActiveId={setActiveId} readOnly={readOnly} />}
