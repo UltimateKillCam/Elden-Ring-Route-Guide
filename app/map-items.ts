@@ -24440,8 +24440,9 @@ export function findMapRoutePoint(value: string, preferredLayer?: MapItem["layer
   const query = clean(value);
   if (query.length < 3) return undefined;
   const categoryPriority = (category: string) => /locations/i.test(category) ? 0 : /grace/i.test(category) ? 1 : /boss/i.test(category) ? 2 : /npc/i.test(category) ? 3 : 4;
-  return mapRoutePoints
+  const ranked = mapRoutePoints
     .map((point) => { const name = clean(point.name); const match = name === query ? 0 : name.startsWith(query) ? 1 : query.startsWith(name) ? 2 : name.includes(query) ? 3 : query.includes(name) ? 4 : 99; return { point, match }; })
-    .filter(({ point, match }) => match < 99 && (!preferredLayer || point.layer === preferredLayer))
-    .sort((a, b) => a.match - b.match || categoryPriority(a.point.category) - categoryPriority(b.point.category) || a.point.name.length - b.point.name.length)[0]?.point;
+    .filter(({ match }) => match < 99)
+    .sort((a, b) => a.match - b.match || categoryPriority(a.point.category) - categoryPriority(b.point.category) || a.point.name.length - b.point.name.length);
+  return ranked.find(({ point }) => point.layer === preferredLayer)?.point || ranked[0]?.point;
 }

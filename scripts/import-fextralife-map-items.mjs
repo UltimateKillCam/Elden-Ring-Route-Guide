@@ -88,10 +88,11 @@ const output = `// Generated from the Fextralife interactive-map data. Do not ha
 `  const query = clean(value);\n` +
 `  if (query.length < 3) return undefined;\n` +
 `  const categoryPriority = (category: string) => /locations/i.test(category) ? 0 : /grace/i.test(category) ? 1 : /boss/i.test(category) ? 2 : /npc/i.test(category) ? 3 : 4;\n` +
-`  return mapRoutePoints\n` +
+`  const ranked = mapRoutePoints\n` +
 `    .map((point) => { const name = clean(point.name); const match = name === query ? 0 : name.startsWith(query) ? 1 : query.startsWith(name) ? 2 : name.includes(query) ? 3 : query.includes(name) ? 4 : 99; return { point, match }; })\n` +
-`    .filter(({ point, match }) => match < 99 && (!preferredLayer || point.layer === preferredLayer))\n` +
-`    .sort((a, b) => a.match - b.match || categoryPriority(a.point.category) - categoryPriority(b.point.category) || a.point.name.length - b.point.name.length)[0]?.point;\n` +
+`    .filter(({ match }) => match < 99)\n` +
+`    .sort((a, b) => a.match - b.match || categoryPriority(a.point.category) - categoryPriority(b.point.category) || a.point.name.length - b.point.name.length);\n` +
+`  return ranked.find(({ point }) => point.layer === preferredLayer)?.point || ranked[0]?.point;\n` +
 `}\n`;
 
 await writeFile(path.join(root, "app/map-items.ts"), output, "utf8");

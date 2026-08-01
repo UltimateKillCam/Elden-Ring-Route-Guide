@@ -191,6 +191,44 @@ const ESSENTIAL_MAP_QUERIES: Record<string, string> = {
   "Gatefront: Whetstone Knife and first map": "Gatefront Ruins",
   "Third Church: Flask of Wondrous Physick": "Third Church of Marika",
   "Limgrave Tunnels: early Smithing Stones": "Limgrave Tunnels",
+  "Meet Rogier and Nepheli": "Sorcerer Rogier (First Location)",
+  "Reach Iji in north-west Liurnia": "War Counselor Iji",
+  "Collect Academy Glintstone Key": "Academy Glintstone Key (A)",
+  "Speak to Ranni and all three retainers": "Ranni the Witch",
+  "Meet Blaidd in Siofra": "Blaidd (Ranni's Quest - First Location)",
+  "Collect Caelid map fragments": "Map (Caelid)",
+  "Activate the festival": "Redmane Castle Plaza",
+  "Finish selected contracts before Rykard": "Tanith",
+  "Defeat Godfrey's golden shade": "Godfrey, First Elden Lord (Golden Shade)",
+  "Defeat Baleful Shadow": "Nokstella Waterfall Basin",
+  "Exhaust Fia's dialogue and reload": "Fia (Second Location)",
+  "Enter the deathbed dream": "Prince of Death's Throne",
+  "Use both Haligtree Secret Medallion halves": "Grand Lift of Rold",
+  "Solve Ordina's evergaol": "Ordina, Liturgical Town",
+  "Finish Millicent before Malenia": "Millicent (Final Location)",
+  "Finish relevant Varre steps": "White-Mask Varre (Second Location)",
+  "Enter through Varre or Snowfield waygate": "Palace Approach Ledge-Road",
+  "Defeat Mohg": "Mohg, Lord of Blood",
+  "Find the hidden Placidusax drop-down": "Beside the Great Bridge",
+  "Defeat Maliketh only after capital checks": "Beast Clergyman / Maliketh, The Black Blade",
+  "Defeat Godfrey / Hoarah Loux": "Godfrey, First Elden Lord",
+  "Defeat Radagon and Elden Beast": "Radagon of the Golden Order",
+  "Choose ending; do not start Journey 2": "Fractured Marika",
+  "Defeat Blackgaol Knight": "Western Nameless Mausoleum",
+  "Clear Belurat and Dancing Lion": "Divine Beast Dancing Lion - Belurat Tower Settlement",
+  "Collect nearby Miquella Crosses": "Three-Path Cross",
+  "Speak to every follower before and after the rune breaks": "Highroad Cross",
+  "Open Storehouse paths": "Storehouse, First Floor",
+  "Do not burn the sealing tree": "Church of the Bud",
+  "Cross the woods without Torrent": "Abyssal Woods",
+  "Summon Igon inside the summit arena": "Bayle the Dread",
+  "Ring the Rhia and Dheo ruin bells": "Finger Ruins of Rhia",
+  "Enter the throne passage": "Count Ymir",
+  "Collect Rauh map from the lower ravine route": "Map: Rauh Ruins",
+  "Burn the sealing tree only when all quests are ready": "Church of the Bud",
+  "Defeat Leda and her allies": "Cleansing Chamber Anteroom",
+  "Summon eligible allies for their quest rewards": "Cleansing Chamber Anteroom",
+  "Spend remaining fragments up to the desired difficulty": "Spiral Rise",
 };
 
 const FLASK_UPGRADE_STOPS: Record<string, string[]> = {
@@ -273,11 +311,12 @@ function essentialGuide(chapter: Chapter, label: string, index: number) {
 function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
   const tasks: Task[] = [];
   chapter.essentials.forEach((label, index) => {
-    if (/Collect three Sacred Tears|Collect Golden Seeds along the highway|Castle Morne weapon pickups/i.test(label)) return;
+    if (/Collect three Sacred Tears|Collect Golden Seeds along the highway|Castle Morne weapon pickups|Collect key Altus build items|Collect early DLC build replacements|Collect Storehouse build items/i.test(label)) return;
     const isBoss = label.startsWith("Defeat");
     const isQuest = /speak|meet|quest|dialogue|decision|finish|resolve|ranni|fia|millicent|leda|ansbach|thiollier|moore|igon|varre/i.test(label);
     const individualPickup = /Sacred Tear|Golden Seed|collect|pickup|medallion|key/i.test(label);
     const perPlayer = expedition.mode === "standard" || individualPickup;
+    const essentialItem = findMapItem(label, mapLayerForChapter(chapter));
     tasks.push({
       id: `${chapter.id}-essential-${index}`,
       label,
@@ -287,6 +326,7 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
       kind: isBoss ? "boss" : isQuest ? "quest" : "objective",
       perPlayer,
       scope: perPlayer ? "Each player" : expedition.mode === "seamless" ? "Shared session" : "Party",
+      item: essentialItem?.name,
     });
   });
 
@@ -553,16 +593,17 @@ function mapLayerForChapter(chapter: Chapter): MapLayer {
 }
 
 function MapPanel({ chapter, expedition, onSelect }: { chapter: Chapter; expedition: Expedition; onSelect: (id: string) => void }) {
-  const mapLayer = mapLayerForChapter(chapter);
+  const chapterMapLayer = mapLayerForChapter(chapter);
+  const currentTask = tasksForChapter(chapter, expedition).find((task) => !taskDone(task, expedition));
+  const mappedItem = currentTask?.item ? findMapItem(currentTask.item, chapterMapLayer) : undefined;
+  const mappedObjective = !mappedItem && currentTask ? findMapRoutePoint(objectiveMapQuery(currentTask.label), chapterMapLayer) : undefined;
+  const mappedPoint = mappedItem || mappedObjective || findMapRoutePoint(chapter.grace, chapterMapLayer);
+  const mapLayer = mappedPoint?.layer || chapterMapLayer;
   const mapChapters = chapters.filter((candidate) => mapLayerForChapter(candidate) === mapLayer);
   const isDlc = mapLayer === "shadow";
   const fextraMap = isDlc ? "https://eldenring.wiki.fextralife.com/Shadow+of+the+Erdtree+Map" : "https://eldenring.wiki.fextralife.com/Interactive+Map";
   const mapGenie = isDlc ? "https://mapgenie.io/elden-ring/maps/the-shadow-realm" : "https://mapgenie.io/elden-ring/maps/the-lands-between";
   const mapTitle = mapLayer === "shadow" ? "Realm of Shadow" : mapLayer === "underground" ? "Underground" : mapLayer === "ashen" ? "Leyndell, Ashen Capital" : "The Lands Between";
-  const currentTask = tasksForChapter(chapter, expedition).find((task) => !taskDone(task, expedition));
-  const mappedItem = currentTask?.item ? findMapItem(currentTask.item, mapLayer) : undefined;
-  const mappedObjective = !mappedItem && currentTask ? findMapRoutePoint(objectiveMapQuery(currentTask.label), mapLayer) : undefined;
-  const mappedPoint = mappedItem || mappedObjective;
   const tileLevel = MAP_TILE_LEVELS[mapLayer];
   const tileCount = 2 ** tileLevel;
   const zoom = mapLayer === "surface" || mapLayer === "underground" ? 18 : 10;

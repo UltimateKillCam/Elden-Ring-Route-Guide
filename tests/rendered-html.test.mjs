@@ -144,11 +144,38 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /deferredChapterForPickup/);
   assert.match(page, /marker\.x >= 32.*marker\.y >= 68\.5/);
   assert.match(page, /target === "weeping" \|\| target === "stormveil"/);
-  assert.match(page, /Castle Morne weapon pickups\/i\.test\(label\)/);
+  assert.match(page, /Castle Morne weapon pickups/);
   assert.match(page, /"Stonebarb Cracked Tear": "caelid"/);
   assert.match(page, /"Opaline Hardtear": "caelid"/);
   assert.match(page, /Skip this item/);
   assert.match(page, /Restore item/);
   assert.match(mapItems, /Found in a cellar underneath the Mistwood Ruins/);
   assert.match(mapItems, /requires 1 Stonesword Key to unlock/);
+});
+
+test("every ordered objective resolves to a sourced item or map marker", async () => {
+  const [page, data, mapSource] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/data.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/map-items.ts", import.meta.url), "utf8"),
+  ]);
+  const mapItems = JSON.parse(mapSource.match(/export const mapItems: MapItem\[\] = (\[[\s\S]*?\]);\n\nexport type MapRoutePoint/)[1]);
+  const routePoints = JSON.parse(mapSource.match(/export const mapRoutePoints: MapRoutePoint\[\] = (\[[\s\S]*?\]);\n\nconst clean/)[1]);
+  const aliasBlock = page.match(/const ESSENTIAL_MAP_QUERIES[\s\S]*?\n};/)[0];
+  const aliases = Object.fromEntries([...aliasBlock.matchAll(/^\s*"([^"]+)": "([^"]+)",?$/gm)].map((match) => [match[1], match[2]]));
+  const clean = (value) => value.toLowerCase().replace(/[+＋]\d+/g, "").replace(/[^a-z0-9' ]/g, " ").replace(/\s+/g, " ").trim();
+  const matches = (value, candidate) => {
+    const query = clean(value);
+    const name = clean(candidate);
+    return name.length > 3 && (query.includes(name) || name.includes(query));
+  };
+  const labels = [...data.matchAll(/essentials: \[(.*?)\]/g)]
+    .flatMap((match) => [...match[1].matchAll(/"([^"]+)"/g)].map((entry) => entry[1]))
+    .filter((label) => !/Collect three Sacred Tears|Collect Golden Seeds along the highway|Castle Morne weapon pickups|Collect key Altus build items|Collect early DLC build replacements|Collect Storehouse build items/i.test(label));
+  for (const label of labels) {
+    if (mapItems.some((item) => matches(label, item.name))) continue;
+    const query = aliases[label] || label.replace(/^Defeat\s+/i, "").replace(/^Speak (?:to|with)\s+/i, "").trim().split(":")[0].split(",")[0].trim();
+    assert.ok(routePoints.some((point) => matches(query, point.name)), `No sourced map target for: ${label}`);
+  }
+  assert.match(page, /const mapLayer = mappedPoint\?\.layer \|\| chapterMapLayer/);
 });
