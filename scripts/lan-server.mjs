@@ -1,15 +1,28 @@
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import { createServer, request as httpRequest } from "node:http";
 import { networkInterfaces } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 
 const root = process.cwd();
 const gatewayPort = Number(process.env.ELDEN_RING_LAN_PORT || 8787);
 const appPort = Number(process.env.ELDEN_RING_APP_PORT || 4173);
 const statePath = join(root, "work", "lan-expedition.json");
+const clientDir = join(root, "dist", "client");
 const controlToken = randomBytes(24).toString("hex");
+
+const assetTypes = {
+  ".css": "text/css; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".webp": "image/webp",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+};
 
 let expedition = null;
 let revision = 0;
@@ -85,8 +98,42 @@ function validExpedition(value) {
   );
 }
 
+async function serveClientAsset(pathname, request, response) {
+  let decodedPath;
+  try {
+    decodedPath = decodeURIComponent(pathname);
+  } catch {
+    return false;
+  }
+
+  const filePath = resolve(clientDir, `.${decodedPath}`);
+  const relativePath = relative(clientDir, filePath);
+  if (relativePath.startsWith("..") || isAbsolute(relativePath) || !decodedPath.startsWith("/assets/")) return false;
+
+  try {
+    const file = await stat(filePath);
+    if (!file.isFile()) return false;
+
+    const extension = extname(filePath).toLowerCase();
+    response.writeHead(200, {
+      "content-type": assetTypes[extension] || "application/octet-stream",
+      "content-length": file.size,
+      "cache-control": "public, max-age=31536000, immutable",
+    });
+    if (request.method === "HEAD") response.end();
+    else createReadStream(filePath).pipe(response);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function proxyToApp(request, response) {
-  const headers = { ...request.headers, host: `127.0.0.1:${appPort}` };
+  const headers = {
+    ...request.headers,
+    "x-forwarded-host": request.headers.host,
+    "x-forwarded-proto": "http",
+  };
   delete headers["accept-encoding"];
   const upstream = httpRequest({
     hostname: "127.0.0.1",
@@ -128,6 +175,9 @@ async function main() {
 
   const server = createServer(async (request, response) => {
     const url = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`);
+    if ((request.method === "GET" || request.method === "HEAD") && await serveClientAsset(url.pathname, request, response)) {
+      return;
+    }
     if (url.pathname === "/api/expedition" && request.method === "GET") {
       sendJson(response, 200, { enabled: true, revision, expedition });
       return;
