@@ -106,10 +106,11 @@ test("uses plain product copy and the revised social card", async () => {
 });
 
 test("includes a read-only LAN follower and Elden Ring build filters", async () => {
-  const [page, server, packageJson] = await Promise.all([
+  const [page, server, packageJson, mapItems] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../scripts/lan-server.mjs", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
+    readFile(new URL("../app/map-items.ts", import.meta.url), "utf8"),
   ]);
   assert.match(page, /Complete and continue/);
   assert.match(page, /Updates from the host/);
@@ -126,4 +127,13 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /map-96747699-d8a3-44b4-b2d6-cf6b45c579c6/);
   assert.match(page, /the-shadow-realm/);
   assert.match(packageJson, /scripts\/lan-server\.mjs/);
+  assert.match(page, /loadoutPickups/);
+  assert.match(page, /loadout-item-/);
+  assert.match(page, /after collecting the item cards above/);
+  assert.match(page, /FLASK_UPGRADE_STOPS/);
+  assert.match(page, /Golden Seed - 2x Capital Outskirts West/);
+  assert.match(page, /Sacred Tear \(First Church of Marika\)/);
+  assert.match(page, /Flask upgrade for every player/);
+  assert.match(mapItems, /Found in a cellar underneath the Mistwood Ruins/);
+  assert.match(mapItems, /requires 1 Stonesword Key to unlock/);
 });

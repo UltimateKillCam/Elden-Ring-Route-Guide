@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { builds, chapters, itemGuides, sources, stageLoadout, type Build, type Chapter, type PhaseKey } from "./data";
-import { findMapItem, findMapRoutePoint, type MapItem } from "./map-items";
+import { findMapItem, findMapItems, findMapRoutePoint, type MapItem } from "./map-items";
 
 type Mode = "standard" | "seamless";
 type View = "route" | "codex" | "party";
@@ -26,6 +26,7 @@ type Task = {
   perPlayer: boolean;
   scope: string;
   item?: string;
+  legacyId?: string;
 };
 
 const PLAYER_COLORS = ["#d8ad62", "#7db6a8", "#b987aa", "#7698c8", "#c5775e", "#a7a36c"];
@@ -45,8 +46,10 @@ const makePlayers = (count: number): Player[] =>
     color: PLAYER_COLORS[index],
   }));
 
-const wikiUrl = (item: string) =>
-  `https://eldenring.wiki.fextralife.com/${encodeURIComponent(item.replace(/ \+.*/, "").replace(/ \/.*/, ""))}`;
+const wikiUrl = (item: string) => {
+  const page = item.startsWith("Golden Seed") ? "Golden Seed" : item.startsWith("Sacred Tear") ? "Sacred Tear" : item.replace(/ \+.*/, "").replace(/ \/.*/, "");
+  return `https://eldenring.wiki.fextralife.com/${encodeURIComponent(page)}`;
+};
 
 const ATTRIBUTE_FILTERS = ["All builds", "Strength", "Dexterity", "Intelligence", "Faith", "Arcane", "Ranged"];
 const COLLECTION_FILTERS = ["All sources", "Curated", "Fextralife", "Other guides", "Meme / cosplay"];
@@ -113,11 +116,68 @@ function sortBuilds(candidates: Build[], order: string) {
 const inferGuide = (item: string, chapter: Chapter) => {
   const exact = Object.entries(itemGuides).find(([key]) => item.includes(key));
   if (exact) return exact[1];
+  const marker = findMapItem(item, mapLayerForChapter(chapter)) || findMapItem(item);
+  if (marker?.description) return marker.description;
   if (chapter.act === "Shadow of the Erdtree") {
     return `Acquire this during the ${chapter.region} leg. Start from ${chapter.grace}; use the item name in the linked map search, then return to the party route.`;
   }
   return `Pick this up during the ${chapter.region} sweep. Begin at ${chapter.grace}, search the exact item name on the linked map, and keep the weapon at this chapter's upgrade cap.`;
 };
+
+type LoadoutPickup = { item: string; slot: string };
+
+const cleanItemName = (value: string) => value.toLowerCase().replace(/[+＋]\d+/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+
+function loadoutPickups(loadout: ReturnType<typeof stageLoadout>, chapter: Chapter): LoadoutPickup[] {
+  const layer = mapLayerForChapter(chapter);
+  const fields: Array<{ slot: string; values: string[]; categories: RegExp }> = [
+    { slot: "weapon", values: [loadout.weapon], categories: /weapon|shield|ash/i },
+    { slot: "off-hand", values: [loadout.offhand], categories: /weapon|shield/i },
+    { slot: "skill", values: [loadout.skill], categories: /ash/i },
+    { slot: "talisman", values: loadout.talismans, categories: /talisman/i },
+    { slot: "armour", values: [loadout.armour], categories: /armor/i },
+    { slot: "spell", values: loadout.spells, categories: /spell/i },
+    { slot: "Physick tear", values: [loadout.flask], categories: /flask/i },
+  ];
+  const pickups: LoadoutPickup[] = [];
+  for (const field of fields) {
+    for (const value of field.values) {
+      const matches = findMapItems(value, layer, field.categories);
+      const isChoice = /\bor\b|according to|best available|build-specific|named weapon/i.test(value) && ["off-hand", "skill", "talisman", "armour", "spell"].includes(field.slot);
+      const selectedMatches = isChoice && matches.length > 1
+        ? [...matches].sort((a, b) => cleanItemName(value).indexOf(cleanItemName(a.name)) - cleanItemName(value).indexOf(cleanItemName(b.name))).slice(0, 1)
+        : matches;
+      for (const match of selectedMatches) pickups.push({ item: match.name, slot: field.slot });
+      if (!matches.length && /weapon|off-hand/.test(field.slot)) {
+        for (const known of Object.keys(itemGuides)) {
+          if (cleanItemName(value).includes(cleanItemName(known))) pickups.push({ item: known, slot: field.slot });
+        }
+      }
+    }
+  }
+  return pickups.filter((pickup, index) => pickups.findIndex((candidate) => cleanItemName(candidate.item) === cleanItemName(pickup.item)) === index);
+}
+
+function orderPickupTasks(tasks: Task[], chapter: Chapter) {
+  const remaining = [...tasks];
+  const ordered: Task[] = [];
+  let x = chapter.x;
+  let y = chapter.y;
+  while (remaining.length) {
+    remaining.sort((a, b) => {
+      const pointA = a.item && findMapItem(a.item, mapLayerForChapter(chapter));
+      const pointB = b.item && findMapItem(b.item, mapLayerForChapter(chapter));
+      const distanceA = pointA ? (pointA.x - x) ** 2 + (pointA.y - y) ** 2 : Number.POSITIVE_INFINITY;
+      const distanceB = pointB ? (pointB.x - x) ** 2 + (pointB.y - y) ** 2 : Number.POSITIVE_INFINITY;
+      return distanceA - distanceB || a.id.localeCompare(b.id);
+    });
+    const next = remaining.shift()!;
+    ordered.push(next);
+    const point = next.item && findMapItem(next.item, mapLayerForChapter(chapter));
+    if (point) { x = point.x; y = point.y; }
+  }
+  return ordered;
+}
 
 const ESSENTIAL_GUIDES: Record<string, string> = {
   "Church of Elleh: Crafting Kit and Kale": "From The First Step, ride north to the ruined church. Buy the Crafting Kit from Kalé, speak to him until his dialogue repeats, then continue north-east toward Gatefront.",
@@ -131,6 +191,24 @@ const ESSENTIAL_MAP_QUERIES: Record<string, string> = {
   "Gatefront: Whetstone Knife and first map": "Gatefront Ruins",
   "Third Church: Flask of Wondrous Physick": "Third Church of Marika",
   "Limgrave Tunnels: early Smithing Stones": "Limgrave Tunnels",
+};
+
+const FLASK_UPGRADE_STOPS: Record<string, string[]> = {
+  "first-steps": ["Sacred Tear (Third Church of Marika)", "Golden Seed - Fort Haight"],
+  weeping: ["Golden Seed - Weeping Peninsula", "Sacred Tear (Church of Pilgrimage)", "Sacred Tear (Fourth Church of Marika)", "Sacred Tear (Callu Baptismal Church)"],
+  stormveil: ["Golden Seed (A) - Stormveil Castle"],
+  "liurnia-south": ["Sacred Tear (Church of Irith)", "Golden Seed - Academy Gate Town"],
+  academy: ["Golden Seed - Raya Lucaria Academy"],
+  caria: ["Golden Seed - Caria Manor", "Sacred Tear (Bellum Church)", "Sacred Tear (Church of Inhibition)"],
+  caelid: ["Golden Seed - South Caelid", "Golden Seed - Sellia, Town of Sorcery", "Sacred Tear (Church of the Plague)"],
+  nokron: ["Golden Seed"],
+  altus: ["Golden Seed - Altus Highway Junction", "Golden Seed - Lux Ruins", "Golden Seed - Minor Erdtree Altus Plateau", "Golden Seed - Windmill Village", "Sacred Tear (Second Church of Marika)", "Sacred Tear (Stormcaller Church)"],
+  gelmir: ["Golden Seed - Seethewater River", "Golden Seed - Northwest Mt. Gelmir"],
+  leyndell: ["Golden Seed - 2x Capital Outskirts West", "Golden Seed - 2x Capital Outskirts Northwest", "Golden Seed - 2x Leyndell Royal Capital"],
+  ainsel: ["Golden Seed - Ainsel River", "Golden Seed - Grand Cloister"],
+  mountaintops: ["Golden Seed - Forbidden Lands", "Golden Seed - Flame Peak", "Golden Seed - Mountaintops of the Giants East", "Sacred Tear (Church of Ripose)", "Sacred Tear (First Church of Marika)"],
+  haligtree: ["Golden Seed (Consecrated Snowfield)", "Golden Seed (Ordina Liturgical Town)", "Golden Seed - Elphael, Brace of the Haligtree"],
+  mohgwyn: ["Golden Seed - Mohgwyn Palace"],
 };
 
 function objectiveMapQuery(label: string) {
@@ -148,6 +226,7 @@ function essentialGuide(chapter: Chapter, label: string, index: number) {
 function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
   const tasks: Task[] = [];
   chapter.essentials.forEach((label, index) => {
+    if (/Collect three Sacred Tears|Collect Golden Seeds along the highway/i.test(label)) return;
     const isBoss = label.startsWith("Defeat");
     const isQuest = /speak|meet|quest|dialogue|decision|finish|resolve|ranni|fia|millicent|leda|ansbach|thiollier|moore|igon|varre/i.test(label);
     const individualPickup = /Sacred Tear|Golden Seed|collect|pickup|medallion|key/i.test(label);
@@ -164,36 +243,55 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
     });
   });
 
+  const flaskTasks = (FLASK_UPGRADE_STOPS[chapter.id] || []).map((item) => ({
+    id: `${chapter.id}-flask-${cleanItemName(item).replace(/ /g, "-")}`,
+    label: item,
+    detail: `Flask upgrade for every player. ${inferGuide(item, chapter)}`,
+    kind: "objective" as const,
+    perPlayer: true,
+    scope: "Each player",
+    item,
+  }));
+  if (flaskTasks.length) {
+    const finalBossName = chapter.boss?.split(",")[0];
+    const finalBossIndex = finalBossName ? tasks.findIndex((task) => task.label.includes(finalBossName)) : -1;
+    const insertAt = chapter.id === "first-steps" ? 3 : finalBossIndex >= 0 ? finalBossIndex : tasks.length;
+    tasks.splice(insertAt, 0, ...flaskTasks);
+  }
+
   if (chapter.phase && PHASE_START[chapter.phase] === chapter.id) {
+    const pickupTasks: Task[] = [];
     expedition.players.forEach((player) => {
       const selected = builds.find((candidate) => candidate.id === player.buildId)!;
       const loadout = stageLoadout(selected, chapter.phase!);
-      const available = selected.availableFrom || "early";
-      const needsPickup = !selected.publishedLoadout || PHASE_ORDER.indexOf(chapter.phase!) <= PHASE_ORDER.indexOf(available);
-      if (needsPickup) {
-        const item = loadout.weapon;
-        tasks.push({
-          id: `${chapter.id}-gear-${player.id}`,
-          label: `${item}`,
-          detail: `${inferGuide(item, chapter)}${loadout.borrowedFrom ? ` This temporary stage comes from the sourced ${loadout.borrowedFrom.buildName} guide; replace it when ${selected.name}'s own published setup becomes available.` : ""}`,
+      const phaseIndex = PHASE_ORDER.indexOf(chapter.phase!);
+      const earlierItems = new Set(PHASE_ORDER.slice(0, phaseIndex).flatMap((phase) => loadoutPickups(stageLoadout(selected, phase), chapter)).map((pickup) => cleanItemName(pickup.item)));
+      const newPickups = loadoutPickups(loadout, chapter).filter((pickup) => !earlierItems.has(cleanItemName(pickup.item)));
+      newPickups.forEach((pickup, pickupIndex) => {
+        const itemKey = cleanItemName(pickup.item).replace(/ /g, "-");
+        pickupTasks.push({
+          id: pickup.slot === "weapon" && pickupIndex === 0 ? `${chapter.id}-gear-${player.id}` : `${chapter.id}-loadout-item-${player.id}-${selected.id}-${itemKey}`,
+          label: pickup.item,
+          detail: `For ${player.name}'s ${selected.name} ${chapter.phase === "dlc" ? "DLC" : chapter.phase} setup. ${inferGuide(pickup.item, chapter)}${loadout.borrowedFrom ? ` This temporary stage comes from the sourced ${loadout.borrowedFrom.buildName} guide.` : ""}`,
           kind: "gear",
           playerId: player.id,
           perPlayer: false,
           scope: player.name,
-          item,
+          item: pickup.item,
+          legacyId: `${chapter.id}-loadout-${player.id}`,
         });
-      }
+      });
       tasks.push({
         id: `${chapter.id}-loadout-${player.id}`,
-        label: `${selected.name}: ${chapter.phase === "dlc" ? "DLC" : chapter.phase} loadout`,
-        detail: `For ${player.name}. Off-hand: ${loadout.offhand}. Skill: ${loadout.skill}. Talismans (${loadout.talismanSlots}): ${loadout.talismans.join(", ")}. Armour: ${loadout.armour}. Physick: ${loadout.flask}.${loadout.spells.length ? ` Spells: ${loadout.spells.join(", ")}.` : ""}`,
+        label: `Equip ${selected.name}: ${chapter.phase === "dlc" ? "DLC" : chapter.phase} loadout`,
+        detail: `For ${player.name}, after collecting the item cards above. Main weapon: ${loadout.weapon}. Off-hand: ${loadout.offhand}. Skill: ${loadout.skill}. Talismans (${loadout.talismanSlots}): ${loadout.talismans.join(", ")}. Armour: ${loadout.armour}. Physick: ${loadout.flask}.${loadout.spells.length ? ` Spells: ${loadout.spells.join(", ")}.` : ""}`,
         kind: "gear",
         playerId: player.id,
         perPlayer: false,
         scope: player.name,
-        item: loadout.talismans[0],
       });
     });
+    tasks.splice(tasks.length - expedition.players.length, 0, ...orderPickupTasks(pickupTasks, chapter));
   }
 
   if (chapter.boss && !chapter.essentials.some((entry) => entry.includes(chapter.boss!.split(",")[0]))) {
@@ -213,7 +311,7 @@ const taskKeys = (task: Task, expedition: Expedition) =>
   task.perPlayer ? expedition.players.map((player) => `${task.id}:${player.id}`) : [task.id];
 
 const taskDone = (task: Task, expedition: Expedition) =>
-  taskKeys(task, expedition).every((key) => expedition.completed[key]);
+  Boolean(task.legacyId && expedition.completed[task.legacyId]) || taskKeys(task, expedition).every((key) => expedition.completed[key]);
 
 function nextIncompleteTask(expedition: Expedition) {
   for (const chapter of chapters) {
