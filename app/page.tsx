@@ -189,6 +189,9 @@ const ESSENTIAL_GUIDES: Record<string, string> = {
   "Gatefront: Whetstone Knife and first map": "At Gatefront Ruins, take the West Limgrave map from the roadside pillar. Go down the stairs in the southern camp, open the chest for the Whetstone Knife, then leave east along the main road.",
   "Third Church: Flask of Wondrous Physick": "Follow the road east through Mistwood to the Third Church of Marika. Take the Sacred Tear and Flask of Wondrous Physick, rest at the grace, then head west toward Agheel Lake.",
   "Limgrave Tunnels: early Smithing Stones": "Enter the mine in the cliff at the north-west corner of Agheel Lake. Collect the visible Smithing Stones from the walls, clear as much of the tunnel as the party needs, then continue to the next route card.",
+  "Collect Map: Caelid": "Take Map: Caelid from the roadside pillar beside the nomadic merchant near Caelid Highway South, then continue south toward Redmane Castle.",
+  "Sealed Tunnel: Smithing-Stone Miner's Bell Bearing [2]": "Enter Sealed Tunnel outside Leyndell. Strike the illusory wall beside the grace, then open the chest in the first chamber for Smithing-Stone Miner's Bell Bearing [2].",
+  "Collect two Scadutree Fragments at Church of Consolation": "Ride south-east from Gravesite Plain to the Church of Consolation and take both Scadutree Fragments from the altar.",
 };
 
 const ESSENTIAL_MAP_QUERIES: Record<string, string> = {
@@ -201,7 +204,7 @@ const ESSENTIAL_MAP_QUERIES: Record<string, string> = {
   "Collect Academy Glintstone Key": "Academy Glintstone Key (A)",
   "Speak to Ranni and all three retainers": "Ranni the Witch",
   "Meet Blaidd in Siofra": "Blaidd (Ranni's Quest - First Location)",
-  "Collect Caelid map fragments": "Map (Caelid)",
+  "Collect Map: Caelid": "Map (Caelid)",
   "Activate the festival": "Redmane Castle Plaza",
   "Finish selected contracts before Rykard": "Tanith",
   "Defeat Godfrey's golden shade": "Godfrey, First Elden Lord (Golden Shade)",
@@ -322,7 +325,6 @@ function essentialGuide(chapter: Chapter, label: string, index: number) {
 function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
   const tasks: Task[] = [];
   chapter.essentials.forEach((label, index) => {
-    if (/Collect three Sacred Tears|Collect Golden Seeds along the highway|Castle Morne weapon pickups|Collect key Altus build items|Collect early DLC build replacements|Collect Storehouse build items/i.test(label)) return;
     const isBoss = label.startsWith("Defeat");
     const isQuest = /speak|meet|quest|dialogue|decision|finish|resolve|ranni|fia|millicent|leda|ansbach|thiollier|moore|igon|varre/i.test(label);
     const individualPickup = /Sacred Tear|Golden Seed|collect|pickup|medallion|key/i.test(label);

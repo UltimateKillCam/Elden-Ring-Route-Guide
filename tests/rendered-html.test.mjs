@@ -89,6 +89,7 @@ test("ships the curated, complete wiki and sourced build catalogues with the ful
   assert.match(page, /Meme \/ cosplay/);
   assert.match(page, /Other guides/);
   assert.match(data, /closestPublishedStage/);
+  assert.doesNotMatch(data, /Clear Gael Tunnel if needed by a build|Castle Morne weapon pickups|Collect key Altus build items|Collect early DLC build replacements|Collect Storehouse build items/);
   assert.match(sourcedBuilds, /Wing Stance Milady/);
   assert.match(sourcedBuilds, /Finger Seal for buffs only; no shield/);
   assert.doesNotMatch(sourcedBuilds, /Guard counters/);
@@ -152,7 +153,6 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /marker\.x >= 57.*marker\.y >= 13/);
   assert.match(page, /Drainage Channel\/i, "haligtree"/);
   assert.match(page, /target === "weeping" \|\| target === "stormveil"/);
-  assert.match(page, /Castle Morne weapon pickups/);
   assert.match(page, /"Stonebarb Cracked Tear": "caelid"/);
   assert.match(page, /"Opaline Hardtear": "caelid"/);
   assert.match(page, /Skip this item/);
@@ -178,8 +178,7 @@ test("every ordered objective resolves to a sourced item or map marker", async (
     return name.length > 3 && (query.includes(name) || name.includes(query));
   };
   const labels = [...data.matchAll(/essentials: \[(.*?)\]/g)]
-    .flatMap((match) => [...match[1].matchAll(/"([^"]+)"/g)].map((entry) => entry[1]))
-    .filter((label) => !/Collect three Sacred Tears|Collect Golden Seeds along the highway|Castle Morne weapon pickups|Collect key Altus build items|Collect early DLC build replacements|Collect Storehouse build items/i.test(label));
+    .flatMap((match) => [...match[1].matchAll(/"([^"]+)"/g)].map((entry) => entry[1]));
   for (const label of labels) {
     if (mapItems.some((item) => matches(label, item.name))) continue;
     const query = aliases[label] || label.replace(/^Defeat\s+/i, "").replace(/^Speak (?:to|with)\s+/i, "").trim().split(":")[0].split(",")[0].trim();
