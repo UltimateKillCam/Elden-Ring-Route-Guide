@@ -240,8 +240,12 @@ const ESSENTIAL_GUIDES: Record<string, string> = {
   "Finish Seluvis and collect Magic Scorpion Charm before handing over the Fingerslayer Blade": "Give Seluvis's potion to the chosen recipient, find his puppet cellar in the ruins between Ranni's and Renna's rises, buy a puppet, reload and ask for another. Give him the Amber Starlight from north-east Altus and collect Magic Scorpion Charm. Giving Ranni the Fingerslayer Blade first ends this quest and loses the charm.",
   "Collect Amber Starlight north-east of Altus Highway Junction": "From Altus Highway Junction ride north-east through the narrow shaded ravine toward Sainted Hero's Grave. Take the Amber Starlight from the ground before the statue, then return to Seluvis; do not give his resulting draught to Ranni.",
   "Use the statue in Carian Study Hall and collect the Cursemark of Death": "Place the Carian Inverted Statue on the pedestal inside Carian Study Hall. Traverse the inverted hall to Liurnia Tower Bridge, defeat the Godskin Noble and climb the Divine Tower of Liurnia for the Cursemark needed by Fia.",
+  "Give Nepheli the Stormhawk King after her Village of the Albinaurics dialogue": "Speak to Nepheli below the stone bridge at Village of the Albinaurics and defeat the Omenkiller. After Gideon rejects her at Roundtable, give her the Stormhawk King from Chapel of Anticipation; do not give her Seluvis's potion if preserving her smithing-stone reward.",
+  "Give D the Weathered Dagger from Fia and reload Roundtable Hold": "After resting on Altus, let Fia hold you and accept the Weathered Dagger. Give it to D, reload, then enter the newly opened room past Hewg. Take the Twinned Set and exhaust Fia before she leaves for Deeproot.",
+  "Give Boc the Gold Sewing Needle and use You're Beautiful instead of a Larval Tear": "Give Boc the Gold Sewing Needle while carrying altered demigod armour, then use the You're Beautiful prattling pate beside him and affirm that he is beautiful. Do not give him a Larval Tear; rebirth kills him shortly afterward.",
   "Defeat Commander O'Neil in Aeonia Swamp and take the Unalloyed Gold Needle": "Ride into the eastern Aeonia Swamp and circle O'Neil on Torrent while clearing his summoned soldiers. Take the broken needle to Gowry's Shack south of Sellia; reload at a grace before returning for the repaired needle.",
   "Collect Valkyrie's Prosthesis from the Shaded Castle": "Enter the Shaded Castle from the north-west poison rampart and follow the inner wall to the room guarded by a Cleanrot Knight. Open the chest for the prosthesis; Elemer does not need to be defeated for this item.",
+  "Move Sellen's primal glintstone and resolve the Sellen or Jerren summon signs": "After finding Lusat, take Sellen's primal glintstone from Witchbane Ruins and place it in the puppet beneath the ruins near Ranni's Rise. Exhaust Jerren after Radahn and at Witchbane, then choose the gold sign outside Rennala for Sellen's spell rewards or the red sign for Jerren's Ancient Dragon Smithing Stone.",
   "Find Goldmask at the Forest-Spanning Greatbridge and reunite Corhyn with him": "Use the sending gate beside the Forest-Spanning Greatbridge grace to reach the broken northern span and speak to Goldmask. Tell Corhyn his location near the Altus map pillar, reload, then exhaust both together on the bridge.",
   "Complete Old Knight Istvan and Rileigh contracts": "Read the red letter in Volcano Manor's drawing room. Defeat Istvan at the red mark north of Warmaster's Shack, report to Tanith, then read the second letter and defeat Rileigh at the Altus red mark south of Bridge of Iniquity before reporting again.",
   "Do not defeat Rykard before the Mountaintops contract and Rya checks": "Stop before Tanith's audience chamber. Rykard's death makes the manor residents leave and can forfeit contract dialogue and rewards. Continue only after Juno Hoslow is defeated, Rya's choice is settled, and Bernahl and Patches have paid their rewards.",
@@ -253,11 +257,13 @@ const ESSENTIAL_GUIDES: Record<string, string> = {
   "Choose Millicent's gold summon sign and collect Rotten Winged Sword Insignia": "After killing the Drainage Channel Ulcerated Tree Spirit, reload the area and use the gold summon sign on the ledge above the rot pool. Help Millicent defeat her sisters; the red sign kills her and gives the different Prosthesis reward instead.",
   "Finish Varre's invasion and maiden-blood steps": "After speaking to the Two Fingers, meet Varre at Rose Church. Use three Festering Bloody Fingers or defeat Magnus at Writheblood Ruins, accept the Lord of Blood's Favor, soak it in maiden blood at the Church of Inhibition or Chapel of Anticipation, then return for the reusable finger and Pureblood Knight's Medal.",
   "Collect the Purifying Crystal Tear from Eleonora at the Second Church of Marika": "Advance Yura through the Ravenmount Assassin sign at Main Academy Gate, then visit the Second Church of Marika in Altus. Speak to the dying Yura and defeat Eleonora when she invades; she drops the Purifying Crystal Tear.",
+  "Release Dung Eater, defeat his moat invasion and choose the curse or puppet route": "Use a Seedbed Curse to receive the Sewer-Gaol Key, free Dung Eater below the Underground Roadside and read his Roundtable message. Buy prawn from Boggart first, then defeat Dung Eater at the outer-moat invasion. For his ending, feed the body five Seedbed Curses; for the puppet, delay Seluvis's potion and Fingerslayer hand-in until now and administer the potion before progressing Ranni.",
   "Trigger the great-rune break only after the follower check": "After revisiting every named follower, ride north from Highroad Cross toward Shadow Keep until the on-screen message says a great rune and powerful charm have broken. This opens Stone Coffin Fissure but changes Moore, Hornsent, Leda, Freyja, Ansbach and Thiollier dialogue, so do not trigger it early.",
   "Give Ansbach the Secret Rite Scroll before finishing Freyja's letter exchange": "In Specimen Storehouse, find the Secret Rite Scroll above Storehouse Fourth Floor and give it to Ansbach on the first floor. Speak to Freyja on the seventh floor, ask Ansbach for his letter, then deliver it to Freyja. Exhaust both before Messmer or the sealing tree advances them.",
   "Choose Moore's answer only after collecting the available Forager Brood cookbooks": "Moore's post-break question is irreversible. 'Put it behind you' sends him to Leda's final battle and lets you recover his gear and bell bearing there; 'remain sad forever' leaves his body and rewards near Church of the Crusade; 'I don't know' postpones the choice. Collect the living Forager Brood cookbooks before choosing.",
   "Resolve the Leda and Hornsent bridge summon signs before entering Messmer's arena": "At Shadow Keep's burning-boat bridge, choose one sign or deliberately ignore both before entering Messmer. Helping Hornsent awards Swift Slash and keeps his Messmer/Rauh route; helping Leda removes Hornsent and awards Lacerating Crossed-Tree after reporting to her. The signs disappear as soon as Messmer's arena is entered.",
   "Resolve the Leda and Ansbach Storehouse signs for the party's required reward": "If Leda targets Ansbach, red and gold signs appear in his Storehouse room. Use the gold sign to protect Ansbach, receive Ansbach's Longbow and keep him for Enir-Ilim and Obsidian Lamina. Use the red sign only if a selected build specifically needs Retaliatory Crossed-Tree; this kills Ansbach and ends his finale rewards. In normal co-op the alternate result can be taken in another player's world.",
+  "Find Queelign in Shadow Keep Prayer Room and choose the Iris reward": "After both Queelign invasions, open the Prayer Room with its key and speak to him. Iris of Grace gives Fire Knight Queelign spirit ashes; Iris of Occultation gives Queelign's Greatsword. The choice is permanent, so use the reward named by the selected build.",
   "Choose whether to summon Hornsent inside Messmer before crossing the fog": "If Hornsent survived the bridge choice, his gold sign is inside Messmer's arena. Summoning him and exhausting him afterward continues his Rauh invasion; defeating Messmer without summoning him changes his later placement. Decide now because crossing the fog also closes the bridge-sign event.",
   "Imbibe St. Trina's nectar four times until she speaks": "At Garden of Deep Purple, choose Imbibe Nectar and accept the death repeatedly. Return after each respawn; on the fourth imbibing St. Trina speaks. Continue until all dialogue repeats before reporting her words to Thiollier.",
   "Ring the Finger Ruins of Rhia bell": "From Cerulean Coast Cross, ride east into the Finger Ruins of Rhia. Stay around the outer rim to avoid the central enemies, reach the hanging finger at the northern centre and sound the bell while wearing Ymir's Hole-Laden Necklace.",
@@ -316,6 +322,16 @@ const ESSENTIAL_MAP_QUERIES: Record<string, string> = {
   "Choose Moore's answer only after collecting the available Forager Brood cookbooks": "Moore - Belurat Tower Settlement",
   "Do not enter Messmer's arena until every faction card is complete": "Messmer's Dark Chamber",
   "Resolve the Leda and Ansbach Storehouse signs for the party's required reward": "Storehouse, First Floor",
+  "Meet Rogier in the chapel and inspect the corpse below Stormveil": "Sorcerer Rogier (First Location)",
+  "Meet Nepheli before Godrick": "Nepheli Loux",
+  "Collect the second Academy Glintstone Key": "Academy Glintstone Key (B)",
+  "Exhaust Rogier before joining Ranni": "Sorcerer Rogier (First Location)",
+  "Move Sellen's primal glintstone and resolve the Sellen or Jerren summon signs": "Witch-Hunter Jerren (Third Location)",
+  "Buy prawn from Blackguard Boggart before releasing Dung Eater": "Blackguard Big Boggart",
+  "Release Dung Eater, defeat his moat invasion and choose the curse or puppet route": "Dung Eater",
+  "Finish Nepheli and Kenneth, then reload Godrick's throne room with Gostoc alive": "Godrick the Grafted",
+  "Defeat or pass Glintstone Dragon Adula": "Glintstone Dragon Adula",
+  "Collect Gideon's rewards for Mohg, Malenia, Haligtree and Mohgwyn before Maliketh": "Gideon Ofnir",
   "Confirm the Leda, Hornsent and Ansbach invasion choices are resolved": "Church of the Bud",
   "Confirm Moore's answer and resulting location are known": "Church of the Bud",
   "Advance Bernahl, Patches, Diallos and Rya dialogue": "Rya (Second Location)",
@@ -437,12 +453,13 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
     const individualPickup = /Sacred Tear|Golden Seed|collect|pickup|medallion|key/i.test(label);
     const perPlayer = expedition.mode === "standard" || individualPickup;
     const essentialItem = findMapItem(label, mapLayerForObjective(chapter, label));
+    const guide = essentialGuide(chapter, label, index);
     tasks.push({
       id: `${chapter.id}-essential-${index}`,
       label,
       detail: isBoss
-        ? `Fight at the end of this route segment. Target ${chapter.level} and ${chapter.upgrade}; stop upgrading once the party reaches the listed cap.`
-        : essentialGuide(chapter, label, index),
+        ? `${guide} Target ${chapter.level} and ${chapter.upgrade}; stop upgrading once the party reaches the listed cap.`
+        : guide,
       kind: isBoss ? "boss" : isQuest ? "quest" : "objective",
       perPlayer,
       scope: perPlayer ? "Each player" : expedition.mode === "seamless" ? "Shared session" : "Party",
@@ -884,6 +901,8 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly 
           {chapter.blessing && <div><span>Blessing target</span><strong>{chapter.blessing}</strong></div>}
           <div><span>Begin from</span><strong>{chapter.grace}</strong></div>
         </div>
+
+        {chapter.quest && <div className="quest-callout"><strong>Quest safety</strong><span>{chapter.quest}. Some rewards are mutually exclusive; follow the named choice needed by the selected build. In standard co-op, the alternate reward can be taken in another player&apos;s world.</span></div>}
 
         <MapPanel chapter={chapter} expedition={expedition} onSelect={setActiveId} />
 

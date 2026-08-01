@@ -107,12 +107,13 @@ test("uses plain product copy and the revised social card", async () => {
 });
 
 test("includes a read-only LAN follower and Elden Ring build filters", async () => {
-  const [page, progression, server, packageJson, mapItems] = await Promise.all([
+  const [page, progression, server, packageJson, mapItems, data] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/progression.ts", import.meta.url), "utf8"),
     readFile(new URL("../scripts/lan-server.mjs", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
     readFile(new URL("../app/map-items.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/data.ts", import.meta.url), "utf8"),
   ]);
   assert.match(page, /Complete and continue/);
   assert.match(page, /Updates from the host/);
@@ -167,6 +168,16 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(progression, /Retaliatory Crossed-Tree.*Resolve the Leda and Ansbach Storehouse signs/);
   assert.match(page, /Skip this item/);
   assert.match(page, /Restore item/);
+  assert.match(page, /const guide = essentialGuide/);
+  assert.match(page, /Some rewards are mutually exclusive/);
+  assert.match(data, /Keep Gatekeeper Gostoc alive/);
+  assert.match(data, /Give Irina's letter to Edgar before the boss/);
+  assert.match(data, /Give Nepheli the Stormhawk King/);
+  assert.match(data, /use You're Beautiful instead of a Larval Tear/);
+  assert.match(data, /resolve the Sellen or Jerren summon signs/);
+  assert.match(data, /choose the curse or puppet route/);
+  assert.match(data, /choose the Iris reward/);
+  assert.match(data, /Collect Gideon's rewards.*before Maliketh/);
   assert.match(mapItems, /Found in a cellar underneath the Mistwood Ruins/);
   assert.match(mapItems, /requires 1 Stonesword Key to unlock/);
 });
