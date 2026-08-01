@@ -22,7 +22,7 @@ test("server-renders the finished expedition setup", async () => {
   assert.match(html, /<title>Tarnished Together \| Elden Ring Co-op Route Planner<\/title>/i);
   assert.match(page, /Tarnished/);
   assert.match(page, /Together/);
-  assert.match(page, /Generate route/);
+  assert.match(page, /Create route/);
   assert.match(page, /Standard co-op/);
   assert.match(page, /Seamless Co-op/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Your site is taking shape/i);
@@ -64,6 +64,11 @@ test("ships all 75 builds and the full remembrance route", async () => {
   assert.match(page, /new Blob/);
   assert.match(page, /FileReader/);
   assert.match(page, /task\.perPlayer/);
+  assert.match(page, /setup-build-grid/);
+  assert.match(page, /Full loadout/);
+  assert.match(data, /stageLoadout/);
+  assert.match(data, /talismanSlots/);
+  assert.match(data, /Two-Headed Turtle Talisman/);
 });
 
 test("uses plain product copy and the revised social card", async () => {
@@ -72,6 +77,7 @@ test("uses plain product copy and the revised social card", async () => {
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
   ]);
   assert.doesNotMatch(page, /One company\. One balanced path|without turning anyone|Forge our route/);
+  assert.doesNotMatch(page, /Local\s*&\s*Private|75 evolving builds/i);
   assert.doesNotMatch(layout, /One company\. One balanced path/);
   assert.match(layout, /\/og\.png/);
 });

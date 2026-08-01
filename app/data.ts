@@ -113,6 +113,194 @@ export const builds: Build[] = [
   build("dragonslayer-bow", "Greatbow Dragonslayer", "STR / DEX", "Ranged", "A co-op back-line siege archer with a lightweight melee fallback.", ["Longbow", "Erdtree Greatbow", "Lion Greatbow", "Igon's Greatbow"], ["quality", "greatbow", "dragon"], "Advanced", "Igon quest"),
 ];
 
+export type StageLoadout = {
+  level: string;
+  weapon: string;
+  offhand: string;
+  skill: string;
+  talismanSlots: string;
+  talismans: string[];
+  armour: string;
+  spells: string[];
+  flask: string;
+  stats: string;
+};
+
+const includesAny = (build: Build, values: string[]) => {
+  const text = `${build.name} ${build.stats} ${build.role} ${build.tags.join(" ")} ${build.playstyle}`.toLowerCase();
+  return values.some((value) => text.includes(value));
+};
+
+const unique = (items: string[]) => Array.from(new Set(items));
+
+export function stageLoadout(build: Build, phase: PhaseKey): StageLoadout {
+  const casterInt = includesAny(build, ["intelligence", "sorcer", "magic", "spellblade", "gravity", "frost", "death"]);
+  const casterFaith = includesAny(build, ["faith", "holy", "fire", "lightning", "dragon", "bestial", "frenzy", "blackflame", "crucible"]);
+  const arcane = includesAny(build, ["arcane", "bleed", "poison", "rot", "dragon-communion"]);
+  const guard = includesAny(build, ["tank", "guard", "shield"]);
+  const ranged = includesAny(build, ["ranged", "bow", "crossbow", "artillerist", "throw"]);
+  const multihit = includesAny(build, ["multihit", "twinblade", "claw", "fist", "dancer", "backhand"]);
+  const charged = includesAny(build, ["strength", "hammer", "colossal", "charged", "roar", "breaker"]);
+  const critical = includesAny(build, ["critical", "parry", "assassin", "countermage"]);
+  const lightLoad = includesAny(build, ["light load", "blue dancer", "ascetic"]);
+
+  const levels: Record<PhaseKey, string> = { early: "RL 25–40", mid: "RL 60–90", late: "RL 120–150", dlc: "RL 150–170" };
+  const slots: Record<PhaseKey, string> = { early: "1 slot at start; 2 after Margit", mid: "3 slots after two Great Runes", late: "4 slots after Golden Godfrey", dlc: "4 slots" };
+
+  const earlyTalismans = guard
+    ? ["Curved Sword Talisman", "Green Turtle Talisman"]
+    : ranged
+      ? ["Arrow's Reach Talisman", "Green Turtle Talisman"]
+      : casterInt
+        ? ["Graven-School Talisman", "Radagon Icon"]
+        : casterFaith
+          ? ["Faithful's Canvas Talisman", "Two Fingers Heirloom"]
+          : charged
+            ? ["Axe Talisman", "Green Turtle Talisman"]
+            : ["Green Turtle Talisman", "Crimson Amber Medallion"];
+
+  const midTalismans = guard
+    ? ["Curved Sword Talisman", "Greatshield Talisman", "Arsenal Charm +1"]
+    : ranged
+      ? ["Arrow's Reach Talisman", "Arrow's Sting Talisman", "Green Turtle Talisman"]
+      : critical
+        ? ["Dagger Talisman", "Assassin's Cerulean Dagger", "Green Turtle Talisman"]
+        : casterInt
+          ? ["Graven-School Talisman", "Radagon Icon", "Cerulean Amber Medallion +1"]
+          : casterFaith
+            ? ["Faithful's Canvas Talisman", "Radagon Icon", "Fire or Lightning Scorpion Charm"]
+            : multihit
+              ? ["Winged Sword Insignia", "Green Turtle Talisman", "Claw Talisman"]
+              : charged
+                ? ["Axe Talisman", "Green Turtle Talisman", "Arsenal Charm +1"]
+                : ["Green Turtle Talisman", "Erdtree's Favor", "Dragoncrest Shield Talisman +1"];
+
+  const lateTalismans = guard
+    ? ["Greatshield Talisman", "Curved Sword Talisman", "Dragoncrest Greatshield Talisman", "Great-Jar's Arsenal"]
+    : ranged
+      ? ["Arrow's Sting Talisman", "Shard of Alexander", "Dragoncrest Greatshield Talisman", "Green Turtle Talisman"]
+      : critical
+        ? ["Dagger Talisman", "Shard of Alexander", "Assassin's Cerulean Dagger", "Dragoncrest Greatshield Talisman"]
+        : casterInt
+          ? ["Graven-Mass Talisman", "Radagon Icon", "Godfrey Icon", "Magic Scorpion Charm"]
+          : casterFaith
+            ? ["Flock's Canvas Talisman", "Radagon Icon", "Godfrey Icon", "Fire, Lightning or Sacred Scorpion Charm"]
+            : multihit
+              ? ["Rotten Winged Sword Insignia", "Millicent's Prosthesis", "Shard of Alexander", "Dragoncrest Greatshield Talisman"]
+              : charged
+                ? ["Axe Talisman", "Shard of Alexander", "Dragoncrest Greatshield Talisman", "Great-Jar's Arsenal"]
+                : ["Shard of Alexander", "Erdtree's Favor +2", "Dragoncrest Greatshield Talisman", "Green Turtle Talisman"];
+
+  let dlcTalismans = guard
+    ? ["Greatshield Talisman", "Pearl Shield Talisman", "Two-Headed Turtle Talisman", "Dragoncrest Greatshield Talisman"]
+    : ranged
+      ? ["Arrow's Soaring Sting Talisman", "Sharpshot Talisman", "Shard of Alexander", "Two-Headed Turtle Talisman"]
+      : critical
+        ? ["Blade of Mercy", "Dagger Talisman", "Shard of Alexander", "Two-Headed Turtle Talisman"]
+        : casterInt
+          ? ["Graven-Mass Talisman", "Beloved Stardust or Radagon Icon", "Godfrey Icon", "Dragoncrest Greatshield Talisman"]
+          : casterFaith
+            ? ["Flock's Canvas Talisman", "Talisman of the Dread or elemental charm", "Godfrey Icon", "Two-Headed Turtle Talisman"]
+            : multihit
+              ? ["Rotten Winged Sword Insignia", "Millicent's Prosthesis", "Retaliatory Crossed-Tree", "Two-Headed Turtle Talisman"]
+              : charged
+                ? ["Two-Handed Sword Talisman", "Axe Talisman", "Shard of Alexander", "Two-Headed Turtle Talisman"]
+                : ["Shard of Alexander", "Two-Headed Sword Talisman", "Two-Headed Turtle Talisman", "Dragoncrest Greatshield Talisman"];
+
+  if (arcane && includesAny(build, ["bleed", "blood"])) {
+    const sets: Record<PhaseKey, string[]> = {
+      early: ["Green Turtle Talisman", "Claw Talisman"],
+      mid: ["Lord of Blood's Exultation", "Winged Sword Insignia", "Green Turtle Talisman"],
+      late: ["Lord of Blood's Exultation", "Rotten Winged Sword Insignia", "Shard of Alexander", "Dragoncrest Greatshield Talisman"],
+      dlc: ["Lord of Blood's Exultation", "Retaliatory Crossed-Tree", "Two-Headed Turtle Talisman", "Dragoncrest Greatshield Talisman"],
+    };
+    dlcTalismans = sets.dlc;
+    if (phase === "early") earlyTalismans.splice(0, earlyTalismans.length, ...sets.early);
+    if (phase === "mid") midTalismans.splice(0, midTalismans.length, ...sets.mid);
+    if (phase === "late") lateTalismans.splice(0, lateTalismans.length, ...sets.late);
+  } else if (arcane && includesAny(build, ["poison", "rot", "venom"])) {
+    dlcTalismans = ["Kindred of Rot's Exultation", "Rotten Winged Sword Insignia", "Two-Headed Turtle Talisman", "Dragoncrest Greatshield Talisman"];
+  }
+
+  const talismanSets: Record<PhaseKey, string[]> = { early: earlyTalismans, mid: midTalismans, late: lateTalismans, dlc: dlcTalismans };
+  const skill = guard
+    ? "No Skill shield; Impaling Thrust, Square Off or Prayerful Strike on the weapon"
+    : ranged
+      ? "Barrage or Mighty Shot early; use the named weapon skill when the route changes"
+      : critical
+        ? "Parry or Carian Retaliation, with Determination on the critical weapon"
+        : charged
+          ? "Cragblade, Lion's Claw, Giant Hunt or War Cry according to weapon class"
+          : multihit
+            ? "Sword Dance, Repeating Thrust or the named weapon's multihit skill"
+            : casterInt
+              ? "Carian Grandeur, Glintblade Phalanx or the named magic weapon skill"
+              : casterFaith
+                ? "Sacred Blade, Flaming Strike or the named elemental weapon skill"
+                : "Keep the named skill; use Impaling Thrust or Sword Dance on infusible weapons";
+
+  const spells = unique([
+    ...(casterInt ? [phase === "early" ? "Glintstone Pebble" : "Great Glintstone Shard", "Carian Slicer", phase === "dlc" ? "Glintblade Trio or build-specific DLC sorcery" : "Scholar's Armament or build-specific sorcery"] : []),
+    ...(casterFaith ? [phase === "early" ? "Catch Flame" : "Golden Vow", "Flame, Grant Me Strength or build-specific body buff", phase === "dlc" ? "Knight's Lightning Spear or build-specific DLC incantation" : "Heal or ranged elemental incantation"] : []),
+    ...(arcane && includesAny(build, ["dragon"]) ? ["Dragonclaw", "Rotten Breath or the current dragon breath"] : []),
+  ]);
+
+  const offhand = guard
+    ? phase === "early" ? "100% physical medium shield" : "Medium or greatshield kept within medium load"
+    : casterInt && casterFaith
+      ? phase === "dlc" ? "Staff of the Great Beyond" : "Best available staff plus seal"
+      : casterInt
+        ? "Best available staff for the chosen sorcery school"
+        : casterFaith
+          ? "Seal that boosts the build's incantation school"
+          : ranged
+            ? "Light melee sidearm; carry the ammunition types the next area supports"
+            : "Second weapon only when the moveset benefits from paired attacks";
+
+  const armour = lightLoad
+    ? "Stay below 30% equip load; Blue Dancer Charm is optional only while physical damage remains high"
+    : guard || charged
+      ? phase === "early" ? "Medium roll; aim for 51 poise" : "Medium roll; 51–101 poise depending on Endurance and shield weight"
+      : casterInt || casterFaith || ranged
+        ? "Medium roll; use 51 poise when possible, otherwise prioritise casting or ammunition weight"
+        : "Medium roll and at least 51 poise; armour choice is cosmetic once the target is met";
+
+  const flask = guard
+    ? "Opaline Hardtear + Greenburst Crystal Tear"
+    : casterInt
+      ? "Magic-Shrouding Cracked Tear + Cerulean Hidden Tear"
+      : casterFaith && includesAny(build, ["fire", "blackflame", "frenzy"])
+        ? "Flame-Shrouding Cracked Tear + Opaline Hardtear"
+        : casterFaith && includesAny(build, ["lightning"])
+          ? "Lightning-Shrouding Cracked Tear + Greenburst Crystal Tear"
+          : multihit
+            ? "Thorny Cracked Tear + Greenburst Crystal Tear"
+            : charged
+              ? "Spiked Cracked Tear + Stonebarb Cracked Tear"
+              : "Opaline Hardtear + the elemental or stamina tear that fits the current weapon";
+
+  const mainStats = build.stats.replace("→", "then");
+  const stats: Record<PhaseKey, string> = {
+    early: `VIG 25 first; meet ${mainStats} weapon requirements; END or MND only as needed`,
+    mid: `VIG 40; raise the first listed damage stat toward 35–40; keep enough END for medium roll`,
+    late: `VIG 55–60; main damage stat 55–60; secondary stat 25–40; MND 20–30 for regular skill or spell use`,
+    dlc: `Keep VIG 60; finish the main scaling stat at 60–80; use remaining levels for END, MND and the listed secondary stat`,
+  };
+
+  return {
+    level: levels[phase],
+    weapon: build.phases[phase],
+    offhand,
+    skill,
+    talismanSlots: slots[phase],
+    talismans: unique(talismanSets[phase]),
+    armour,
+    spells,
+    flask,
+    stats: stats[phase],
+  };
+}
+
 export type Chapter = {
   id: string;
   act: "Base game" | "Shadow of the Erdtree";
@@ -194,6 +382,7 @@ export const sources = [
   ["Patch 1.16.1", "https://en.bandainamcoent.eu/elden-ring/news/elden-ring-patch-notes-version-1161"],
   ["Realm of Shadow access", "https://en.bandainamcoent.eu/elden-ring/news/elden-ring-how-enter-the-realm-of-shadow"],
   ["Shadow Realm Blessings", "https://en.bandainamcoent.eu/elden-ring/news/elden-ring-how-strengthen-your-character-shadow-of-the-erdtree"],
+  ["Talismans and pouch slots", "https://eldenring.wiki.gg/wiki/Talismans"],
   ["Seamless Co-op progression FAQ", "https://ersc-docs.github.io/faq/"],
   ["MapGenie interactive map", "https://mapgenie.io/elden-ring"],
   ["Elden Ring progression bands", "https://eldenringprogress.com/"],

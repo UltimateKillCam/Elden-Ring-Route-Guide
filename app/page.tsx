@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { builds, chapters, itemGuides, sources, type Build, type Chapter, type PhaseKey } from "./data";
+import { builds, chapters, itemGuides, sources, stageLoadout, type Build, type Chapter, type PhaseKey } from "./data";
 
 type Mode = "standard" | "seamless";
 type View = "route" | "codex" | "party";
@@ -78,6 +78,7 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
     expedition.players.forEach((player) => {
       const selected = builds.find((candidate) => candidate.id === player.buildId)!;
       const item = selected.phases[chapter.phase!];
+      const loadout = stageLoadout(selected, chapter.phase!);
       tasks.push({
         id: `${chapter.id}-gear-${player.id}`,
         label: `${item}`,
@@ -87,6 +88,16 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
         perPlayer: false,
         scope: player.name,
         item,
+      });
+      tasks.push({
+        id: `${chapter.id}-loadout-${player.id}`,
+        label: `${selected.name}: ${chapter.phase === "dlc" ? "DLC" : chapter.phase} loadout`,
+        detail: `For ${player.name}. Off-hand: ${loadout.offhand}. Skill: ${loadout.skill}. Talismans (${loadout.talismanSlots}): ${loadout.talismans.join(", ")}. Armour: ${loadout.armour}. Physick: ${loadout.flask}.${loadout.spells.length ? ` Spells: ${loadout.spells.join(", ")}.` : ""}`,
+        kind: "gear",
+        playerId: player.id,
+        perPlayer: false,
+        scope: player.name,
+        item: loadout.talismans[0],
       });
     });
   }
@@ -110,14 +121,62 @@ const taskKeys = (task: Task, expedition: Expedition) =>
 const taskDone = (task: Task, expedition: Expedition) =>
   taskKeys(task, expedition).every((key) => expedition.completed[key]);
 
+function FullBuildDetails({ build, onClose, assignLabel, onAssign }: { build: Build; onClose: () => void; assignLabel?: string; onAssign?: () => void }) {
+  return (
+    <div className="drawer-backdrop" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
+      <section className="loadout-dialog" role="dialog" aria-modal="true" aria-label={`${build.name} full build`}>
+        <button className="drawer-close" onClick={onClose} aria-label="Close build detail">×</button>
+        <div className="loadout-title">
+          <div><p className="eyebrow">Build {builds.indexOf(build) + 1} of 75</p><h2>{build.name}</h2><p>{build.playstyle}</p></div>
+          <div className="drawer-meta"><span>{build.stats}</span><span>{build.role}</span><span>{build.complexity}</span></div>
+        </div>
+        {build.quest && <div className="quest-callout"><strong>Quest dependency</strong><span>{build.quest}</span></div>}
+        <div className="loadout-stages">
+          {(["early", "mid", "late", "dlc"] as PhaseKey[]).map((phase) => {
+            const loadout = stageLoadout(build, phase);
+            return (
+              <article key={phase}>
+                <header><span>{phase === "dlc" ? "DLC" : phase}</span><small>{loadout.level}</small></header>
+                <div className="loadout-weapon"><small>Main weapon</small><strong>{loadout.weapon}</strong></div>
+                <dl>
+                  <div><dt>Off hand</dt><dd>{loadout.offhand}</dd></div>
+                  <div><dt>Skill plan</dt><dd>{loadout.skill}</dd></div>
+                  <div><dt>Talismans</dt><dd><small>{loadout.talismanSlots}</small>{loadout.talismans.map((talisman) => <span key={talisman}>{talisman}</span>)}</dd></div>
+                  <div><dt>Armour</dt><dd>{loadout.armour}</dd></div>
+                  <div><dt>Spells</dt><dd>{loadout.spells.length ? loadout.spells.map((spell) => <span key={spell}>{spell}</span>) : "No required spells; use consumables for ranged utility."}</dd></div>
+                  <div><dt>Physick</dt><dd>{loadout.flask}</dd></div>
+                  <div><dt>Stats</dt><dd>{loadout.stats}</dd></div>
+                </dl>
+              </article>
+            );
+          })}
+        </div>
+        <p className="loadout-note">Talismans are listed in slot order. Swap the defensive slot for the boss-specific elemental drake talisman when needed.</p>
+        {onAssign && <button type="button" className="assign-build-button" onClick={onAssign}>{assignLabel || "Choose this build"}</button>}
+      </section>
+    </div>
+  );
+}
+
 function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => void; imported: (event: React.ChangeEvent<HTMLInputElement>) => void }) {
   const [mode, setMode] = useState<Mode>("standard");
   const [count, setCount] = useState(2);
   const [name, setName] = useState("Our path to the Elden Ring");
   const [players, setPlayers] = useState<Player[]>(makePlayers(2));
+  const [activePlayer, setActivePlayer] = useState(0);
+  const [query, setQuery] = useState("");
+  const [role, setRole] = useState("All roles");
+  const [detail, setDetail] = useState<Build | null>(null);
+
+  const roles = ["All roles", ...Array.from(new Set(builds.map((candidate) => candidate.role))).sort()];
+  const visibleBuilds = builds.filter((candidate) => {
+    const text = `${candidate.name} ${candidate.stats} ${candidate.role} ${candidate.tags.join(" ")} ${candidate.playstyle}`.toLowerCase();
+    return text.includes(query.toLowerCase()) && (role === "All roles" || candidate.role === role);
+  });
 
   const changeCount = (value: number) => {
     setCount(value);
+    if (activePlayer >= value) setActivePlayer(0);
     setPlayers((current) => {
       if (value > current.length) return [...current, ...makePlayers(value).slice(current.length)];
       return current.slice(0, value);
@@ -128,58 +187,52 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
     setPlayers((current) => current.map((player, playerIndex) => (playerIndex === index ? { ...player, ...patch } : player)));
   };
 
+  const chooseBuild = (candidate: Build) => {
+    updatePlayer(activePlayer, { buildId: candidate.id });
+    setDetail(null);
+  };
+
   return (
-    <main className="setup-shell">
-      <div className="setup-ornament" aria-hidden="true"><span /><i /><span /></div>
-      <section className="setup-copy">
-        <p className="eyebrow">A co-op route planner for Elden Ring</p>
-        <h1>Tarnished<br /><em>Together</em></h1>
-        <p className="lede">Plan a 2–6 player run through the base game and Shadow of the Erdtree. The route assigns gear, bosses, quests and upgrades at an appropriate level.</p>
-        <div className="feature-line">
-          <span>75 evolving builds</span><span>Base game + Erdtree</span><span>Local & private</span>
+    <main className="setup-page">
+      <header className="setup-header">
+        <div><strong>Tarnished Together</strong><span>Elden Ring co-op route planner</span></div>
+        <label className="plain-import">Import saved run<input type="file" accept="application/json" onChange={imported} /></label>
+      </header>
+
+      <section className="run-settings" aria-label="Run settings">
+        <div className="settings-title"><span>1</span><div><h1>Set up the party</h1><p>Choose the multiplayer rules and name each player.</p></div></div>
+        <div className="settings-grid">
+          <label><span>Run name</span><input value={name} onChange={(event) => setName(event.target.value)} /></label>
+          <div><span className="settings-label">Mode</span><div className="plain-segmented"><button type="button" className={mode === "standard" ? "active" : ""} onClick={() => setMode("standard")}>Standard co-op</button><button type="button" className={mode === "seamless" ? "active" : ""} onClick={() => setMode("seamless")}>Seamless Co-op</button></div></div>
+          <div><span className="settings-label">Players</span><div className="plain-segmented count-buttons">{[2, 3, 4, 5, 6].map((size) => <button type="button" className={count === size ? "active" : ""} key={size} onClick={() => changeCount(size)}>{size}</button>)}</div></div>
+        </div>
+        <div className="player-setup-list">
+          {players.map((player, index) => {
+            const selected = builds.find((candidate) => candidate.id === player.buildId)!;
+            return <div className={activePlayer === index ? "active" : ""} key={player.id} style={{ "--player": player.color } as React.CSSProperties}><button type="button" onClick={() => setActivePlayer(index)}><i>{index + 1}</i><span><strong>{player.name}</strong><small>{selected.name}</small></span><b>{activePlayer === index ? "Choosing now" : "Edit build"}</b></button><input aria-label={`Player ${index + 1} name`} value={player.name} onChange={(event) => updatePlayer(index, { name: event.target.value })} /></div>;
+          })}
         </div>
       </section>
 
-      <section className="setup-card" aria-label="Create an expedition">
-        <div className="step-kicker">New expedition</div>
-        <label className="field-label" htmlFor="expedition-name">Name your run</label>
-        <input id="expedition-name" className="text-input" value={name} onChange={(event) => setName(event.target.value)} />
-
-        <fieldset className="mode-field">
-          <legend className="field-label">How are you playing?</legend>
-          <button className={mode === "standard" ? "mode-option selected" : "mode-option"} onClick={() => setMode("standard")} type="button">
-            <span className="mode-mark">PS</span><span><strong>Standard co-op</strong><small>PC & PlayStation · repeat world progress</small></span>
-          </button>
-          <button className={mode === "seamless" ? "mode-option selected" : "mode-option"} onClick={() => setMode("seamless")} type="button">
-            <span className="mode-mark">∞</span><span><strong>Seamless Co-op</strong><small>PC mod · host-aware shared progress</small></span>
-          </button>
-        </fieldset>
-
-        <div className="party-count">
-          <span className="field-label">Company size</span>
-          <div className="segmented" role="group" aria-label="Company size">
-            {[2, 3, 4, 5, 6].map((size) => <button type="button" className={count === size ? "active" : ""} key={size} onClick={() => changeCount(size)}>{size}</button>)}
-          </div>
+      <section className="build-picker">
+        <div className="picker-heading"><div className="settings-title"><span>2</span><div><h2>Choose a build for {players[activePlayer].name}</h2><p>Open any build to see the complete equipment plan before assigning it.</p></div></div><div className="selected-build-summary"><small>Currently selected</small><strong>{builds.find((candidate) => candidate.id === players[activePlayer].buildId)?.name}</strong></div></div>
+        <div className="picker-tools"><label><span>Search builds</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Weapon, damage type or playstyle" /></label><label><span>Role</span><select value={role} onChange={(event) => setRole(event.target.value)}>{roles.map((option) => <option key={option}>{option}</option>)}</select></label><p>{visibleBuilds.length} of 75 builds</p></div>
+        <div className="setup-build-grid">
+          {visibleBuilds.map((candidate) => {
+            const selected = candidate.id === players[activePlayer].buildId;
+            return <article className={selected ? "selected" : ""} key={candidate.id}>
+              <header><div><span>{String(builds.indexOf(candidate) + 1).padStart(2, "0")}</span><small>{candidate.complexity}</small></div><h3>{candidate.name}</h3><p>{candidate.stats} · {candidate.role}</p></header>
+              <p className="setup-playstyle">{candidate.playstyle}</p>
+              <div className="weapon-timeline">{(["early", "mid", "late", "dlc"] as PhaseKey[]).map((phase) => <div key={phase}><small>{phase}</small><span>{candidate.phases[phase]}</span></div>)}</div>
+              <footer><button type="button" onClick={() => setDetail(candidate)}>Full loadout</button><button type="button" className={selected ? "assigned" : ""} onClick={() => chooseBuild(candidate)}>{selected ? "Assigned" : `Assign to ${players[activePlayer].name}`}</button></footer>
+            </article>;
+          })}
         </div>
-
-        <div className="setup-players">
-          {players.map((player, index) => (
-            <div className="setup-player" key={player.id} style={{ "--player": player.color } as React.CSSProperties}>
-              <span className="player-rune">{index + 1}</span>
-              <input aria-label={`Player ${index + 1} name`} value={player.name} onChange={(event) => updatePlayer(index, { name: event.target.value })} />
-              <select aria-label={`${player.name} build`} value={player.buildId} onChange={(event) => updatePlayer(index, { buildId: event.target.value })}>
-                {builds.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name}</option>)}
-              </select>
-            </div>
-          ))}
-        </div>
-
-        <button className="forge-button" type="button" onClick={() => onCreate({ schema: 1, name: name.trim() || "Untitled expedition", mode, players, hostId: players[0].id, completed: {}, createdAt: new Date().toISOString() })}>
-          Generate route <span>→</span>
-        </button>
-        <label className="import-link">Or import a shared expedition<input type="file" accept="application/json" onChange={imported} /></label>
       </section>
-      <p className="setup-note">Unofficial fan companion · full spoilers · data baseline 1.16.1</p>
+
+      <div className="setup-actions"><div><strong>{players.length} players ready</strong><span>{mode === "standard" ? "Standard co-op; world steps will be repeated per player." : "Seamless Co-op; host and individual pickups are tracked separately."}</span></div><button type="button" onClick={() => onCreate({ schema: 1, name: name.trim() || "Untitled expedition", mode, players, hostId: players[0].id, completed: {}, createdAt: new Date().toISOString() })}>Create route</button></div>
+      <footer className="setup-footer">Unofficial fan project. Full spoilers. Data baseline: regulation 1.16.1.</footer>
+      {detail && <FullBuildDetails build={detail} onClose={() => setDetail(null)} assignLabel={`Assign to ${players[activePlayer].name}`} onAssign={() => chooseBuild(detail)} />}
     </main>
   );
 }
@@ -309,7 +362,7 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId }: { exped
   );
 }
 
-function CodexView({ expedition, setExpedition }: { expedition: Expedition; setExpedition: React.Dispatch<React.SetStateAction<Expedition | null>> }) {
+function CodexView({ expedition }: { expedition: Expedition }) {
   const [query, setQuery] = useState("");
   const [role, setRole] = useState("All roles");
   const [selected, setSelected] = useState<Build | null>(null);
@@ -318,8 +371,6 @@ function CodexView({ expedition, setExpedition }: { expedition: Expedition; setE
     const haystack = `${candidate.name} ${candidate.stats} ${candidate.role} ${candidate.tags.join(" ")}`.toLowerCase();
     return haystack.includes(query.toLowerCase()) && (role === "All roles" || candidate.role === role);
   });
-
-  const assign = (playerId: string, buildId: string) => setExpedition((current) => current ? { ...current, players: current.players.map((player) => player.id === playerId ? { ...player, buildId } : player) } : current);
 
   return (
     <section className="codex-page">
@@ -334,12 +385,12 @@ function CodexView({ expedition, setExpedition }: { expedition: Expedition; setE
             <div className="mini-phases"><span>{candidate.phases.early}</span><i>→</i><span>{candidate.phases.dlc}</span></div>
             <div className="tag-row">{candidate.tags.slice(0, 3).map((tag) => <span key={tag}>{tag}</span>)}</div>
             {owners.length > 0 && <div className="owners">Chosen by {owners.map((owner) => owner.name).join(", ")}</div>}
-            <button type="button">Inspect build <span>↗</span></button>
+            <button type="button">Full loadout <span>↗</span></button>
           </article>;
         })}
       </div>
 
-      {selected && <div className="drawer-backdrop" onMouseDown={(event) => { if (event.currentTarget === event.target) setSelected(null); }}><aside className="build-drawer" aria-modal="true" role="dialog"><button className="drawer-close" onClick={() => setSelected(null)} aria-label="Close build detail">×</button><p className="eyebrow">Build {builds.indexOf(selected) + 1} of 75</p><h2>{selected.name}</h2><div className="drawer-meta"><span>{selected.stats}</span><span>{selected.role}</span><span>{selected.complexity}</span></div><p className="drawer-playstyle">{selected.playstyle}</p>{selected.quest && <div className="quest-callout"><strong>Quest dependency</strong><span>{selected.quest}</span></div>}<div className="phase-list">{(["early", "mid", "late", "dlc"] as PhaseKey[]).map((phase, index) => <div key={phase}><i>{index + 1}</i><span><small>{phase === "dlc" ? "Shadow of the Erdtree" : `${phase} game`}</small><strong>{selected.phases[phase]}</strong><p>{phase === "early" ? "Core identity comes online with minimal travel." : phase === "mid" ? "A meaningful weapon or mechanic change at the Liurnia–Altus tier." : phase === "late" ? "Base-game form at endgame upgrade caps." : "Final expression using Realm of Shadow equipment."}</p></span></div>)}</div><label className="assign-label">Assign this build<select defaultValue="" onChange={(event) => { if (event.target.value) assign(event.target.value, selected.id); }}><option value="">Choose a player…</option>{expedition.players.map((player) => <option value={player.id} key={player.id}>{player.name}</option>)}</select></label></aside></div>}
+      {selected && <FullBuildDetails build={selected} onClose={() => setSelected(null)} />}
     </section>
   );
 }
@@ -424,7 +475,7 @@ export default function Home() {
         <div className="top-progress"><span><i style={{ width: `${progress}%` }} /></span><strong>{progress}%</strong><button type="button" onClick={handleExport} aria-label="Export expedition">⇩</button></div>
       </header>
       {view === "route" && <RouteView expedition={expedition} setExpedition={setExpedition} activeId={activeId} setActiveId={setActiveId} />}
-      {view === "codex" && <CodexView expedition={expedition} setExpedition={setExpedition} />}
+      {view === "codex" && <CodexView expedition={expedition} />}
       {view === "party" && <PartyView expedition={expedition} setExpedition={setExpedition} onExport={handleExport} onImport={handleImport} onReset={handleReset} />}
       {toast && <div className="toast" role="status">{toast}</div>}
     </main>
