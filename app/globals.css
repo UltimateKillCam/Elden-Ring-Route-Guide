@@ -337,7 +337,21 @@ body::before {
 .mode-note p { margin: 8px 0 0; color: #69655e; font-size: 9px; line-height: 1.5; }
 
 /* Codex */
-.codex-page, .party-page { max-width: 1480px; margin: 0 auto; padding: 52px clamp(24px, 5vw, 76px) 90px; }
+.codex-page, .party-page, .selected-builds-page { max-width: 1480px; margin: 0 auto; padding: 52px clamp(24px, 5vw, 76px) 90px; }
+.selected-build-tabs { display: flex; gap: 8px; margin: 24px 0; overflow-x: auto; }
+.selected-build-tabs button { min-width: 180px; padding: 12px 14px; border: 1px solid var(--line); border-top: 2px solid transparent; background: #151612; color: #817c73; text-align: left; cursor: pointer; }
+.selected-build-tabs button.active { border-top-color: var(--player); background: #1a1b17; color: var(--ink); }
+.selected-build-tabs span, .selected-build-tabs strong { display: block; }
+.selected-build-tabs span { margin-bottom: 4px; color: var(--player); font-size: 8px; text-transform: uppercase; }
+.selected-build-tabs strong { font-family: Georgia, serif; font-size: 14px; font-weight: 400; }
+.selected-build-heading { display: flex; justify-content: space-between; gap: 30px; margin: 28px 0 14px; padding: 24px; border: 1px solid var(--line); border-top: 2px solid var(--player); background: linear-gradient(135deg, #191a16, #131410); }
+.selected-build-heading h3 { margin: 4px 0 8px; font: 400 32px Georgia, serif; }
+.selected-build-heading p:last-child { max-width: 690px; margin: 0; color: #837e75; font-size: 11px; line-height: 1.55; }
+.selected-build-heading dl { display: grid; min-width: 390px; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 0; }
+.selected-build-heading dl div { padding: 9px; border: 1px solid var(--line); background: #11120f; }
+.selected-build-heading dt { color: #625e57; font-size: 7px; text-transform: uppercase; }
+.selected-build-heading dd { margin: 4px 0 0; color: #aaa294; font-size: 9px; }
+.selected-loadout-stages { margin-top: 18px; }
 .page-heading { display: flex; justify-content: space-between; align-items: end; gap: 40px; padding-bottom: 30px; border-bottom: 1px solid var(--line); }
 .page-heading > div > p:last-child { max-width: 660px; margin: 11px 0 0; color: #858178; line-height: 1.55; font-size: 12px; }
 .codex-count, .progress-medallion { display: grid; min-width: 105px; height: 105px; place-content: center; text-align: center; border: 1px solid rgba(201,164,95,.33); border-radius: 50%; }
@@ -601,7 +615,9 @@ body::before {
   .task-body { padding: 14px 12px; }
   .company-panel { grid-template-columns: 1fr; }
   .company-panel > .eyebrow, .mode-note { grid-column: 1; }
-  .codex-page, .party-page { padding: 35px 14px 65px; }
+  .codex-page, .party-page, .selected-builds-page { padding: 35px 14px 65px; }
+  .selected-build-heading { flex-direction: column; }
+  .selected-build-heading dl { min-width: 0; }
   .page-heading { align-items: start; }
   .codex-count, .progress-medallion { min-width: 75px; height: 75px; }
   .codex-count strong, .progress-medallion strong { font-size: 21px; }

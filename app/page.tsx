@@ -26,7 +26,7 @@ import {
 import { findWeaponUpgradeRecord, weaponUpgradePath } from "./weapon-upgrades";
 
 type Mode = "solo" | "standard" | "seamless";
-type View = "route" | "codex" | "party";
+type View = "route" | "selected" | "codex" | "party";
 type LanMode = "none" | "controller" | "follower";
 type Player = { id: string; name: string; buildId: string; color: string };
 type Expedition = {
@@ -1296,7 +1296,7 @@ function RuneCheckpointPanel({
   });
 
   return <section className="rune-checkpoint">
-    <header><div><p className="eyebrow">Rune checkpoint</p><h3>Enter what each player is holding</h3><p>Enter the rune counter before spending at this chapter. The result includes the level cost, the maximum stone purchase for the planned weapon ceiling and the protected merchant reserve. Boss targets follow the published location tiers, with a small increase for the harder fights. <a href="https://eldenring.wiki.gg/wiki/Recommended_Level_by_Location" target="_blank" rel="noreferrer">Level basis ↗</a></p></div>{!viewerPlayerId && expedition.runeBossSelections?.[chapter.id] && <button type="button" onClick={resetBosses}>Restore recommended bosses</button>}</header>
+    <header><div><p className="eyebrow">Start-of-chapter checkpoint</p><h3>Fill this in before spending anything</h3><p><strong>Complete this once when you arrive in the chapter, before levelling or reinforcing a weapon.</strong> Enter each player&apos;s current Status-screen values and the runes presently held. These are the starting values used by the chapter&apos;s level, weapon and optional-boss recommendations; do not wait until the end of the chapter. <a href="https://eldenring.wiki.gg/wiki/Recommended_Level_by_Location" target="_blank" rel="noreferrer">Level basis ↗</a></p></div>{!viewerPlayerId && expedition.runeBossSelections?.[chapter.id] && <button type="button" onClick={resetBosses}>Restore recommended bosses</button>}</header>
     <div className="rune-balance-grid">
       {expedition.players.map((player) => {
         const build = builds.find((candidate) => candidate.id === player.buildId)!;
@@ -1526,6 +1526,35 @@ function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, act
       </aside>
     </div>
   );
+}
+
+function SelectedBuildsView({ expedition, viewerPlayerId }: { expedition: Expedition; viewerPlayerId?: string }) {
+  const availablePlayers = viewerPlayerId ? expedition.players.filter((player) => player.id === viewerPlayerId) : expedition.players;
+  const [selectedPlayerId, setSelectedPlayerId] = useState(availablePlayers[0]?.id ?? "");
+  const player = availablePlayers.find((candidate) => candidate.id === selectedPlayerId) ?? availablePlayers[0];
+  const build = player ? builds.find((candidate) => candidate.id === player.buildId) : undefined;
+  if (!player || !build) return null;
+  const classification = buildClassification(build);
+  const plannedClass = plannerStartingClass(build);
+  const checkpointLevel: Record<PhaseKey, number> = { early: 40, mid: 90, late: 150, dlc: 170 };
+
+  return <section className="selected-builds-page">
+    <div className="page-heading"><div><p className="eyebrow">Assigned loadouts</p><h2>Selected builds</h2><p>The builds currently assigned to this run. Switch players below; this page only shows chosen builds, not the full catalogue.</p></div><div className="codex-count"><strong>{availablePlayers.length}</strong><span>{availablePlayers.length === 1 ? "build selected" : "builds selected"}</span></div></div>
+    {availablePlayers.length > 1 && <div className="selected-build-tabs">{availablePlayers.map((candidate) => { const candidateBuild = builds.find((entry) => entry.id === candidate.buildId); return <button type="button" className={candidate.id === player.id ? "active" : ""} style={{ "--player": candidate.color } as React.CSSProperties} key={candidate.id} onClick={() => setSelectedPlayerId(candidate.id)}><span>{candidate.name}</span><strong>{candidateBuild?.name}</strong></button>; })}</div>}
+    <div className="selected-build-heading" style={{ "--player": player.color } as React.CSSProperties}><div><p className="eyebrow">{player.name}&apos;s build</p><h3>{build.name}</h3><p>{build.playstyle}</p></div><dl><div><dt>Starting class</dt><dd>{plannedClass}{build.startingClass === "Not specified" ? " (calculated)" : ""}</dd></div><div><dt>Attributes</dt><dd>{classification.attributes}</dd></div><div><dt>Range</dt><dd>{classification.range}</dd></div><div><dt>Combat focus</dt><dd>{build.mechanic}</dd></div></dl></div>
+    <a className="build-source" href={build.source.url} target="_blank" rel="noreferrer">Source: {build.source.label} ↗</a>
+    {build.quest && <div className="quest-callout"><strong>Quest dependency</strong><span>{build.quest}</span></div>}
+    <div className="loadout-stages selected-loadout-stages">{(["early", "mid", "late", "dlc"] as PhaseKey[]).map((phase) => {
+      const loadout = stageLoadout(build, phase);
+      const weapon = findWeaponUpgradeRecord(loadout.weapon);
+      const statPlan = planBuildStatTarget({ ...build, startingClass: plannedClass }, checkpointLevel[phase], weaponRequirements(loadout.weapon));
+      const armourPieces = splitArmourSpecification(loadout.armour);
+      const armourWeight = armourPieces.reduce((sum, piece) => sum + piece.weight, 0);
+      const loadTier = /light load|below 30%|blue dancer/i.test(loadout.armour) ? "light" : "medium";
+      const loadLimit = maxWeightForTier(maxEquipLoad(statPlan.attributes.endurance), loadTier);
+      return <article key={phase}><header><span>{phase === "dlc" ? "DLC" : phase}</span><small>{loadout.level}</small></header><div className="loadout-weapon"><small>Main weapon</small><strong>{loadout.weapon}</strong><TimingNote value={loadout.weapon} phase={phase} /></div><dl><div><dt>Off hand</dt><dd>{loadout.offhand}</dd></div><div><dt>Skill plan</dt><dd>{loadout.skill}</dd></div><div><dt>Talismans</dt><dd><small>{loadout.talismanSlots}</small>{loadout.talismans.map((talisman) => <span key={talisman}>{talisman}<TimingNote value={talisman} phase={phase} /></span>)}</dd></div><div><dt>Armour</dt><dd>{loadout.armour}</dd></div><div><dt>Weight check</dt><dd>{armourPieces.length ? `${armourWeight.toFixed(1)} armour weight${weapon?.weight != null ? ` + ${weapon.weight} weapon weight` : ""}; stay below ${loadLimit.toFixed(1)} total weight for ${loadTier} load at END ${statPlan.attributes.endurance}.` : `Stay below ${loadLimit.toFixed(1)} total weight for ${loadTier} load at END ${statPlan.attributes.endurance}.`}</dd></div><div><dt>Spells</dt><dd>{loadout.spells.length ? loadout.spells.map((spell) => <span key={spell}>{spell}</span>) : "None required"}</dd></div><div><dt>Physick</dt><dd>{loadout.flask}</dd></div><div><dt>Recommended stats</dt><dd>{(Object.keys(STAT_LABELS) as StatKey[]).map((stat) => `${STAT_LABELS[stat]} ${statPlan.attributes[stat]}`).join(" · ")}<small>{loadout.stats}</small></dd></div></dl>{loadout.borrowedFrom && <a className="borrowed-source" href={loadout.borrowedFrom.url} target="_blank" rel="noreferrer">Temporary stage from {loadout.borrowedFrom.buildName} ↗</a>}</article>;
+    })}</div>
+  </section>;
 }
 
 function CodexView({ expedition, catalogueOnly = false }: { expedition?: Expedition; catalogueOnly?: boolean }) {
@@ -1781,10 +1810,11 @@ function Home() {
     <main className={`app-shell ${readOnly ? "follower-mode" : ""}`}>
       <header className="topbar">
         <button type="button" className="brand" onClick={() => { setView("route"); setActiveId(chapters[0].id); }}><span>✦</span><strong>Tarnished <em>Together</em></strong></button>
-        <nav aria-label="Primary"><button type="button" className={view === "route" ? "active" : ""} onClick={() => setView("route")}>Route</button>{readOnly && <button type="button" onClick={() => { window.location.href = "/?catalog=1"; }}>Build catalogue</button>}{!readOnly && <><button type="button" className={view === "codex" ? "active" : ""} onClick={() => setView("codex")}>Build codex</button><button type="button" className={view === "party" ? "active" : ""} onClick={() => setView("party")}>Company</button></>}</nav>
+        <nav aria-label="Primary"><button type="button" className={view === "route" ? "active" : ""} onClick={() => setView("route")}>Route</button><button type="button" className={view === "selected" ? "active" : ""} onClick={() => setView("selected")}>Selected builds</button>{readOnly && <button type="button" onClick={() => { window.location.href = "/?catalog=1"; }}>Build catalogue</button>}{!readOnly && <><button type="button" className={view === "codex" ? "active" : ""} onClick={() => setView("codex")}>Build codex</button><button type="button" className={view === "party" ? "active" : ""} onClick={() => setView("party")}>Company</button></>}</nav>
         <div className="top-progress"><span><i style={{ width: `${progress}%` }} /></span><strong>{progress}%</strong>{readOnly ? <b className="lan-badge">{expedition.players.find((player) => player.id === viewerPlayerId)?.name}</b> : <select className="save-switcher" aria-label="Current saved run" value={activeSaveId || expedition.saveId || ""} onChange={(event) => openSave(event.target.value)}>{Object.values(saveLibrary.saves).map((save) => <option value={save.saveId} key={save.saveId}>{save.name}</option>)}</select>}</div>
       </header>
-      {(view === "route" || readOnly) && <RouteView expedition={expedition} setExpedition={setExpedition} tasksByChapter={routeModel.tasksByChapter} runeSupport={routeModel.runeSupport} activeId={activeId} setActiveId={setActiveId} readOnly={readOnly} viewerPlayerId={viewerPlayerId} onViewerUpdate={viewerUpdate} />}
+      {view === "route" && <RouteView expedition={expedition} setExpedition={setExpedition} tasksByChapter={routeModel.tasksByChapter} runeSupport={routeModel.runeSupport} activeId={activeId} setActiveId={setActiveId} readOnly={readOnly} viewerPlayerId={viewerPlayerId} onViewerUpdate={viewerUpdate} />}
+      {view === "selected" && <SelectedBuildsView expedition={expedition} viewerPlayerId={readOnly ? viewerPlayerId : undefined} />}
       {!readOnly && view === "codex" && <CodexView expedition={expedition} />}
       {!readOnly && view === "party" && <PartyView expedition={expedition} setExpedition={setExpedition} saveLibrary={saveLibrary} activeSaveId={activeSaveId} onSelectSave={openSave} onNewSave={newRun} onDuplicateSave={duplicateRun} onDeleteSave={deleteRun} onExport={handleExport} onImport={handleImport} />}
       {toast && <div className="toast" role="status">{toast}</div>}

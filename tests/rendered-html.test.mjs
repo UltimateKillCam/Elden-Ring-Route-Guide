@@ -169,7 +169,12 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /weapon-upgrade ceilings are lowered together/);
   assert.match(page, /Rune top-up:/);
   assert.match(page, /only recommends a fully funded level/);
-  assert.match(page, /Rune checkpoint/);
+  assert.match(page, /Start-of-chapter checkpoint/);
+  assert.match(page, /before levelling or reinforcing a weapon/);
+  assert.match(page, /do not wait until the end of the chapter/);
+  assert.match(page, /Selected builds/);
+  assert.match(page, /this page only shows chosen builds/);
+  assert.match(page, /selected-loadout-stages/);
   assert.match(page, /Current RL/);
   assert.match(page, /checkpointLevels/);
   assert.match(page, /checkpointStats/);
