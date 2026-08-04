@@ -24419,11 +24419,20 @@ const cleanMapItem = <T extends MapItem | MapRoutePoint>(item: T): T => (
   item.description.includes("\uFFFD") ? { ...item, description: cleanImportedDescription(item.description) } as T : item
 );
 
+const searchableMapItems = mapItems
+  .map((item) => ({ item, name: clean(item.name) }))
+  .filter(({ name }) => name.length > 3);
+const searchableRoutePoints = mapRoutePoints.map((point) => ({ point, name: clean(point.name) }));
+const mapItemSearchCache = new Map<string, MapItem[]>();
+const routePointSearchCache = new Map<string, MapRoutePoint | undefined>();
+
 export function findMapItems(value: string, preferredLayer?: MapItem["layer"], categoryPattern?: RegExp) {
   const query = clean(value);
-  const candidates = mapItems
-    .filter((item) => !categoryPattern || categoryPattern.test(item.category))
-    .map((item) => ({ item, name: clean(item.name) }))
+  const cacheKey = `${query}\u0000${preferredLayer ?? ""}\u0000${categoryPattern?.source ?? ""}\u0000${categoryPattern?.flags ?? ""}`;
+  const cached = mapItemSearchCache.get(cacheKey);
+  if (cached) return cached;
+  const candidates = searchableMapItems
+    .filter(({ item }) => !categoryPattern || categoryPattern.test(item.category))
     .filter(({ name }) => name.length > 3 && (query.includes(name) || name.includes(query)))
     .sort((a, b) => Number(b.name === query) - Number(a.name === query) || Number(b.item.layer === preferredLayer) - Number(a.item.layer === preferredLayer) || b.name.length - a.name.length);
   const chosen: MapItem[] = [];
@@ -24438,6 +24447,7 @@ export function findMapItems(value: string, preferredLayer?: MapItem["layer"], c
     names.add(candidate.name);
     if (start >= 0) occupied.push([start, end]);
   }
+  mapItemSearchCache.set(cacheKey, chosen);
   return chosen;
 }
 
@@ -24448,11 +24458,15 @@ export function findMapItem(value: string, preferredLayer?: MapItem["layer"]) {
 export function findMapRoutePoint(value: string, preferredLayer?: MapItem["layer"]) {
   const query = clean(value);
   if (query.length < 3) return undefined;
+  const cacheKey = `${query}\u0000${preferredLayer ?? ""}`;
+  if (routePointSearchCache.has(cacheKey)) return routePointSearchCache.get(cacheKey);
   const categoryPriority = (category: string) => /locations/i.test(category) ? 0 : /grace/i.test(category) ? 1 : /boss/i.test(category) ? 2 : /npc/i.test(category) ? 3 : 4;
-  const ranked = mapRoutePoints
-    .map((point) => { const name = clean(point.name); const match = name === query ? 0 : name.startsWith(query) ? 1 : query.startsWith(name) ? 2 : name.includes(query) ? 3 : query.includes(name) ? 4 : 99; return { point, match }; })
+  const ranked = searchableRoutePoints
+    .map(({ point, name }) => { const match = name === query ? 0 : name.startsWith(query) ? 1 : query.startsWith(name) ? 2 : name.includes(query) ? 3 : query.includes(name) ? 4 : 99; return { point, match }; })
     .filter(({ match }) => match < 99)
     .sort((a, b) => a.match - b.match || categoryPriority(a.point.category) - categoryPriority(b.point.category) || a.point.name.length - b.point.name.length);
   const chosen = ranked.find(({ point }) => point.layer === preferredLayer)?.point || ranked[0]?.point;
-  return chosen ? cleanMapItem(chosen) : undefined;
+  const result = chosen ? cleanMapItem(chosen) : undefined;
+  routePointSearchCache.set(cacheKey, result);
+  return result;
 }

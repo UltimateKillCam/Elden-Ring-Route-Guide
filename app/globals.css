@@ -290,7 +290,7 @@ body::before {
 .objectives-heading h3, .save-panel h3, .source-panel h3 { margin: 0; font-family: Georgia, serif; font-size: 23px; font-weight: 400; }
 .objectives-heading > span { color: #777269; font-size: 10px; text-transform: uppercase; letter-spacing: .1em; }
 .task-list { display: grid; gap: 10px; }
-.task-card { position: relative; display: grid; grid-template-columns: 53px 1fr; border: 1px solid var(--line); background: linear-gradient(105deg, #191a16, #151612); transition: .2s ease; }
+.task-card { position: relative; display: grid; grid-template-columns: 53px 1fr; border: 1px solid var(--line); background: linear-gradient(105deg, #191a16, #151612); transition: .2s ease; content-visibility: auto; contain: layout paint style; contain-intrinsic-size: auto 160px; }
 .task-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--player, transparent); }
 .task-card.complete { opacity: .62; }
 .task-index { display: grid; place-content: center; border-right: 1px solid var(--line); color: #59574f; font-family: Georgia, serif; font-size: 13px; }

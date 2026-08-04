@@ -688,7 +688,7 @@ function runeSupportPlan(expedition: Expedition): Record<string, RuneSupportChap
   return result;
 }
 
-function progressionTasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
+function progressionTasksForChapter(chapter: Chapter, expedition: Expedition, support: Record<string, RuneSupportChapter> = runeSupportPlan(expedition)): Task[] {
   const economy = CHAPTER_ECONOMY_BY_ID[chapter.id];
   if (!economy) return [];
   const chapterIndex = chapters.indexOf(chapter);
@@ -697,7 +697,6 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition): T
   const previousPhase = chapterIndex > 0 ? phaseForChapter(chapters[chapterIndex - 1]) : phase;
   const expected = expectedRunesBeforeBoss(chapterIndex, expedition);
   const lossRate = expedition.lossRate ?? 20;
-  const support = runeSupportPlan(expedition);
   const chapterSupport = support[chapter.id];
   const levelOffset = expedition.levelOffset ?? 0;
   const targets = guideTargets(economy, levelOffset);
@@ -827,7 +826,7 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition): T
   return result;
 }
 
-function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
+function tasksForChapter(chapter: Chapter, expedition: Expedition, support?: Record<string, RuneSupportChapter>): Task[] {
   const tasks: Task[] = [];
   chapter.essentials.forEach((label, index) => {
     const isBoss = label.startsWith("Defeat");
@@ -940,7 +939,7 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
     insertGatedPickupTasks(tasks, deferredTasks, chapter);
   }
 
-  const planningTasks = progressionTasksForChapter(chapter, expedition);
+  const planningTasks = progressionTasksForChapter(chapter, expedition, support);
   if (planningTasks.length) {
     const lastBossIndex = tasks.reduce((found, task, index) => task.kind === "boss" ? index : found, -1);
     tasks.splice(lastBossIndex >= 0 ? lastBossIndex : tasks.length, 0, ...planningTasks);
@@ -965,9 +964,9 @@ const taskKeys = (task: Task, expedition: Expedition) =>
 const taskDone = (task: Task, expedition: Expedition) =>
   Boolean(expedition.completed[`${task.id}:skipped`]) || taskKeys(task, expedition).every((key) => expedition.completed[key]);
 
-function nextIncompleteTask(expedition: Expedition) {
+function nextIncompleteTask(expedition: Expedition, tasksByChapter?: Record<string, Task[]>) {
   for (const chapter of chapters) {
-    const task = tasksForChapter(chapter, expedition).find((candidate) => !taskDone(candidate, expedition));
+    const task = (tasksByChapter?.[chapter.id] ?? tasksForChapter(chapter, expedition)).find((candidate) => !taskDone(candidate, expedition));
     if (task) return { chapter, task };
   }
   return null;
@@ -1132,9 +1131,9 @@ function mapLayerForChapter(chapter: Chapter): MapLayer {
   return "surface";
 }
 
-function MapPanel({ chapter, expedition, onSelect }: { chapter: Chapter; expedition: Expedition; onSelect: (id: string) => void }) {
+function MapPanel({ chapter, expedition, chapterTasks, tasksByChapter, onSelect }: { chapter: Chapter; expedition: Expedition; chapterTasks: Task[]; tasksByChapter: Record<string, Task[]>; onSelect: (id: string) => void }) {
   const chapterMapLayer = mapLayerForChapter(chapter);
-  const currentTask = tasksForChapter(chapter, expedition).find((task) => !taskDone(task, expedition));
+  const currentTask = chapterTasks.find((task) => !taskDone(task, expedition));
   const objectiveLayer = currentTask ? mapLayerForObjective(chapter, currentTask.label) : chapterMapLayer;
   const mappedItem = currentTask?.item ? findMapItem(currentTask.item, objectiveLayer) : undefined;
   const mappedObjective = !mappedItem && currentTask ? findMapRoutePoint(objectiveMapQuery(currentTask.label), objectiveLayer) : undefined;
@@ -1153,10 +1152,10 @@ function MapPanel({ chapter, expedition, onSelect }: { chapter: Chapter; expedit
   const edge = 50 / zoom;
   const focusX = Math.max(edge, Math.min(100 - edge, rawFocusX));
   const focusY = Math.max(edge, Math.min(100 - edge, rawFocusY));
-  const tileStartX = Math.max(0, Math.floor(((focusX - edge) / 100) * tileCount) - 1);
-  const tileEndX = Math.min(tileCount - 1, Math.ceil(((focusX + edge) / 100) * tileCount) + 1);
-  const tileStartY = Math.max(0, Math.floor(((focusY - edge) / 100) * tileCount) - 1);
-  const tileEndY = Math.min(tileCount - 1, Math.ceil(((focusY + edge) / 100) * tileCount) + 1);
+  const tileStartX = Math.max(0, Math.floor(((focusX - edge) / 100) * tileCount));
+  const tileEndX = Math.min(tileCount - 1, Math.ceil(((focusX + edge) / 100) * tileCount));
+  const tileStartY = Math.max(0, Math.floor(((focusY - edge) / 100) * tileCount));
+  const tileEndY = Math.min(tileCount - 1, Math.ceil(((focusY + edge) / 100) * tileCount));
   const visibleTiles = [];
   for (let tileY = tileStartY; tileY <= tileEndY; tileY += 1) {
     for (let tileX = tileStartX; tileX <= tileEndX; tileX += 1) visibleTiles.push({ tileX, tileY });
@@ -1173,7 +1172,7 @@ function MapPanel({ chapter, expedition, onSelect }: { chapter: Chapter; expedit
           {visibleTiles.map(({ tileX, tileY }) => <span className="map-tile" key={`tile-${tileX}-${tileY}`} style={{ left: `${(tileX / tileCount) * 100}%`, top: `${(tileY / tileCount) * 100}%`, width: `${100 / tileCount}%`, height: `${100 / tileCount}%`, backgroundImage: `url(${MAP_TILE_ROOTS[mapLayer]}/${tileLevel}/${tileX}/${tileY}.jpg)` }} />)}
         </div>
         {mapChapters.map((pin) => {
-          const tasks = tasksForChapter(pin, expedition);
+          const tasks = tasksByChapter[pin.id] ?? [];
           const done = tasks.every((task) => taskDone(task, expedition));
           const position = viewPosition(pin.x, pin.y);
           const visible = Number.parseFloat(position.left) >= -5 && Number.parseFloat(position.left) <= 105 && Number.parseFloat(position.top) >= -5 && Number.parseFloat(position.top) <= 105;
@@ -1213,12 +1212,14 @@ function BossMapThumbnail({ boss }: { boss: OptionalRuneBoss }) {
 function RuneCheckpointPanel({
   chapter,
   expedition,
+  support,
   setExpedition,
   viewerPlayerId,
   onViewerUpdate,
 }: {
   chapter: Chapter;
   expedition: Expedition;
+  support: Record<string, RuneSupportChapter>;
   setExpedition: React.Dispatch<React.SetStateAction<Expedition | null>>;
   viewerPlayerId?: string;
   onViewerUpdate?: (kind: "completed" | "runes" | "levels" | "stats" | "weapons", key: string, value: boolean | number | Partial<AttributeBlock>) => void;
@@ -1226,7 +1227,6 @@ function RuneCheckpointPanel({
   const economy = CHAPTER_ECONOMY_BY_ID[chapter.id];
   if (!economy) return null;
   const chapterIndex = chapters.indexOf(chapter);
-  const support = runeSupportPlan(expedition);
   const currentSupport = support[chapter.id];
   const previousSupport = chapterIndex > 0 ? support[chapters[chapterIndex - 1].id] : undefined;
   const selectedBosses = currentSupport?.bosses ?? [];
@@ -1358,12 +1358,12 @@ function RuneCheckpointPanel({
   </section>;
 }
 
-function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly = false, viewerPlayerId, onViewerUpdate }: { expedition: Expedition; setExpedition: React.Dispatch<React.SetStateAction<Expedition | null>>; activeId: string; setActiveId: (id: string) => void; readOnly?: boolean; viewerPlayerId?: string; onViewerUpdate?: (kind: "completed" | "runes" | "levels" | "stats" | "weapons", key: string, value: boolean | number | Partial<AttributeBlock>) => void }) {
+function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, activeId, setActiveId, readOnly = false, viewerPlayerId, onViewerUpdate }: { expedition: Expedition; setExpedition: React.Dispatch<React.SetStateAction<Expedition | null>>; tasksByChapter: Record<string, Task[]>; runeSupport: Record<string, RuneSupportChapter>; activeId: string; setActiveId: (id: string) => void; readOnly?: boolean; viewerPlayerId?: string; onViewerUpdate?: (kind: "completed" | "runes" | "levels" | "stats" | "weapons", key: string, value: boolean | number | Partial<AttributeBlock>) => void }) {
   const chapter = chapters.find((candidate) => candidate.id === activeId) || chapters[0];
-  const tasks = tasksForChapter(chapter, expedition);
+  const tasks = tasksByChapter[chapter.id] ?? [];
   const completedTasks = tasks.filter((task) => taskDone(task, expedition)).length;
   const chapterIndex = chapters.indexOf(chapter);
-  const nextStep = nextIncompleteTask(expedition);
+  const nextStep = nextIncompleteTask(expedition, tasksByChapter);
 
   const toggle = (key: string) => {
     if (readOnly) {
@@ -1388,7 +1388,7 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly 
     taskKeys(nextStep.task, expedition).forEach((key) => { completed[key] = true; });
     const updated = { ...expedition, completed };
     setExpedition(updated);
-    const following = nextIncompleteTask(updated);
+    const following = nextIncompleteTask(updated, tasksByChapter);
     if (following) setActiveId(following.chapter.id);
   };
 
@@ -1397,7 +1397,7 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly 
     const completed = { ...expedition.completed, [`${nextStep.task.id}:skipped`]: true };
     const updated = { ...expedition, completed };
     setExpedition(updated);
-    const following = nextIncompleteTask(updated);
+    const following = nextIncompleteTask(updated, tasksByChapter);
     if (following) setActiveId(following.chapter.id);
   };
 
@@ -1414,7 +1414,7 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly 
   };
 
   const goNextIncomplete = () => {
-    const next = chapters.find((candidate, index) => index > chapterIndex && !tasksForChapter(candidate, expedition).every((task) => taskDone(task, expedition)));
+    const next = chapters.find((candidate, index) => index > chapterIndex && !(tasksByChapter[candidate.id] ?? []).every((task) => taskDone(task, expedition)));
     if (next) setActiveId(next.id);
   };
 
@@ -1426,7 +1426,7 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly 
           <div key={act} className="act-group">
             <p>{act}</p>
             {chapters.filter((candidate) => candidate.act === act).map((candidate) => {
-              const candidateTasks = tasksForChapter(candidate, expedition);
+              const candidateTasks = tasksByChapter[candidate.id] ?? [];
               const done = candidateTasks.every((task) => taskDone(task, expedition));
               const current = candidate.id === chapter.id;
               return <button type="button" onClick={() => setActiveId(candidate.id)} className={`${current ? "active" : ""} ${done ? "done" : ""}`} key={candidate.id}><i>{done ? "✓" : chapters.indexOf(candidate) + 1}</i><span><strong>{candidate.title}</strong><small>{candidate.region}</small></span></button>;
@@ -1472,9 +1472,9 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly 
 
         {chapter.quest && <div className="quest-callout"><strong>Quest safety</strong><span>{chapter.quest}. Some rewards are mutually exclusive; follow the named choice needed by the selected build. In standard co-op, the alternate reward can be taken in another player&apos;s world.</span></div>}
 
-        <MapPanel chapter={chapter} expedition={expedition} onSelect={setActiveId} />
+        <MapPanel chapter={chapter} expedition={expedition} chapterTasks={tasks} tasksByChapter={tasksByChapter} onSelect={setActiveId} />
 
-        <RuneCheckpointPanel chapter={chapter} expedition={expedition} setExpedition={setExpedition} viewerPlayerId={viewerPlayerId} onViewerUpdate={onViewerUpdate} />
+        <RuneCheckpointPanel chapter={chapter} expedition={expedition} support={runeSupport} setExpedition={setExpedition} viewerPlayerId={viewerPlayerId} onViewerUpdate={onViewerUpdate} />
 
         <div className="objectives-heading"><div><p className="eyebrow">Ordered stops</p><h3>Do these before moving on</h3></div><span>{Math.round((completedTasks / Math.max(tasks.length, 1)) * 100)}% complete</span></div>
         <div className="task-list">
@@ -1710,11 +1710,15 @@ function Home() {
     return () => { active = false; window.clearInterval(interval); };
   }, [hydrated, lanMode]);
 
-  const progress = useMemo(() => {
-    if (!expedition) return 0;
-    const keys = chapters.flatMap((chapter) => tasksForChapter(chapter, expedition)).flatMap((task) => taskKeys(task, expedition));
-    return Math.round((keys.filter((key) => expedition.completed[key]).length / Math.max(keys.length, 1)) * 100);
+  const routeModel = useMemo(() => {
+    if (!expedition) return { runeSupport: {} as Record<string, RuneSupportChapter>, tasksByChapter: {} as Record<string, Task[]>, progress: 0 };
+    const runeSupport = runeSupportPlan(expedition);
+    const tasksByChapter = Object.fromEntries(chapters.map((chapter) => [chapter.id, tasksForChapter(chapter, expedition, runeSupport)]));
+    const keys = Object.values(tasksByChapter).flatMap((tasks) => tasks.flatMap((task) => taskKeys(task, expedition)));
+    const progress = Math.round((keys.filter((key) => expedition.completed[key]).length / Math.max(keys.length, 1)) * 100);
+    return { runeSupport, tasksByChapter, progress };
   }, [expedition]);
+  const progress = routeModel.progress;
 
   const notify = (message: string) => { setToast(message); window.setTimeout(() => setToast(""), 2600); };
   const openSave = (id: string) => {
@@ -1780,7 +1784,7 @@ function Home() {
         <nav aria-label="Primary"><button type="button" className={view === "route" ? "active" : ""} onClick={() => setView("route")}>Route</button>{readOnly && <button type="button" onClick={() => { window.location.href = "/?catalog=1"; }}>Build catalogue</button>}{!readOnly && <><button type="button" className={view === "codex" ? "active" : ""} onClick={() => setView("codex")}>Build codex</button><button type="button" className={view === "party" ? "active" : ""} onClick={() => setView("party")}>Company</button></>}</nav>
         <div className="top-progress"><span><i style={{ width: `${progress}%` }} /></span><strong>{progress}%</strong>{readOnly ? <b className="lan-badge">{expedition.players.find((player) => player.id === viewerPlayerId)?.name}</b> : <select className="save-switcher" aria-label="Current saved run" value={activeSaveId || expedition.saveId || ""} onChange={(event) => openSave(event.target.value)}>{Object.values(saveLibrary.saves).map((save) => <option value={save.saveId} key={save.saveId}>{save.name}</option>)}</select>}</div>
       </header>
-      {(view === "route" || readOnly) && <RouteView expedition={expedition} setExpedition={setExpedition} activeId={activeId} setActiveId={setActiveId} readOnly={readOnly} viewerPlayerId={viewerPlayerId} onViewerUpdate={viewerUpdate} />}
+      {(view === "route" || readOnly) && <RouteView expedition={expedition} setExpedition={setExpedition} tasksByChapter={routeModel.tasksByChapter} runeSupport={routeModel.runeSupport} activeId={activeId} setActiveId={setActiveId} readOnly={readOnly} viewerPlayerId={viewerPlayerId} onViewerUpdate={viewerUpdate} />}
       {!readOnly && view === "codex" && <CodexView expedition={expedition} />}
       {!readOnly && view === "party" && <PartyView expedition={expedition} setExpedition={setExpedition} saveLibrary={saveLibrary} activeSaveId={activeSaveId} onSelectSave={openSave} onNewSave={newRun} onDuplicateSave={duplicateRun} onDeleteSave={deleteRun} onExport={handleExport} onImport={handleImport} />}
       {toast && <div className="toast" role="status">{toast}</div>}

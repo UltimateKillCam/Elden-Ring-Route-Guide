@@ -112,13 +112,14 @@ test("uses plain product copy and the revised social card", async () => {
 });
 
 test("includes a read-only LAN follower and Elden Ring build filters", async () => {
-  const [page, progression, server, packageJson, mapItems, data] = await Promise.all([
+  const [page, progression, server, packageJson, mapItems, data, styles] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/progression.ts", import.meta.url), "utf8"),
     readFile(new URL("../scripts/lan-server.mjs", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
     readFile(new URL("../app/map-items.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/data.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
   assert.match(page, /Complete and continue/);
   assert.match(page, /Updates from the host/);
@@ -181,6 +182,9 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /Active weapon/);
   assert.match(page, /The stone budget below now starts from the entered/);
   assert.match(page, /safeDesiredUpgrade/);
+  assert.match(page, /const routeModel = useMemo/);
+  assert.match(page, /tasksByChapter/);
+  assert.match(styles, /content-visibility: auto/);
   assert.match(page, /previousUpgradePaths\[player\.id\] === path/);
   assert.match(page, /previousUpgradePath === upgradePath/);
   assert.match(page, /Replace with/);
