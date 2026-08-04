@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Component, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from "react";
 import { builds, chapters, itemGuides, sources, stageLoadout, type Build, type Chapter, type PhaseKey } from "./data";
 import { findMapItem, findMapItems, findMapRoutePoint, type MapItem } from "./map-items";
 import { deferredPickupGate, literalItemName, PHASE_START, type PickupGate } from "./progression";
@@ -64,6 +64,16 @@ const STORAGE_KEY = "tarnished-together-expedition-v1";
 const SAVE_LIBRARY_KEY = "tarnished-together-save-library-v2";
 
 const newSaveId = () => `run-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+class RouteErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(error: Error, info: ErrorInfo) { console.error("Route render failed", error, info.componentStack); }
+  render() {
+    if (this.state.failed) return <main className="route-error"><div><strong>Tarnished Together</strong><h1>The route could not be displayed</h1><p>Your saved run has not been deleted. Restart the LAN guide, then reload this page. If the problem remains, export the terminal text when reporting it.</p><button type="button" onClick={() => window.location.reload()}>Reload route</button></div></main>;
+    return this.props.children;
+  }
+}
 
 const makePlayers = (count: number): Player[] =>
   Array.from({ length: count }, (_, index) => ({
@@ -554,15 +564,18 @@ function affordableLevelAndUpgrade({
   path?: UpgradePath;
   availableRunes: number;
 }) {
+  const maximumUpgrade = path === "somber" ? 10 : 25;
+  const safeDesiredUpgrade = path ? Math.max(0, Math.min(maximumUpgrade, desiredUpgrade)) : 0;
+  const safeMinimumUpgrade = path ? Math.max(0, Math.min(safeDesiredUpgrade, minimumUpgrade)) : 0;
   for (let level = desiredLevel; level >= Math.max(originLevel, minimumLevel); level -= 1) {
     const levelGap = desiredLevel - level;
     const upgradeReduction = path === "somber" ? Math.ceil(levelGap / 10) : Math.ceil(levelGap / 5);
-    const upgrade = path ? Math.max(minimumUpgrade, desiredUpgrade - upgradeReduction) : 0;
+    const upgrade = path ? Math.max(safeMinimumUpgrade, safeDesiredUpgrade - upgradeReduction) : 0;
     const materialRunes = path ? planWeaponUpgrade(path, 0, upgrade).materialPurchaseRunes : 0;
     const levelRunes = runesBetweenLevels(originLevel, level);
     if (levelRunes + materialRunes <= availableRunes) return { level, upgrade, levelRunes, materialRunes };
   }
-  return { level: Math.max(originLevel, minimumLevel), upgrade: minimumUpgrade, levelRunes: 0, materialRunes: 0 };
+  return { level: Math.max(originLevel, minimumLevel), upgrade: safeMinimumUpgrade, levelRunes: 0, materialRunes: 0 };
 }
 
 type RuneSupportChapter = {
@@ -580,6 +593,7 @@ function runeSupportPlan(expedition: Expedition): Record<string, RuneSupportChap
   const economyMode = expedition.mode === "solo" ? "seamless" : expedition.mode;
   const previousLevels: Record<string, number> = {};
   const previousUpgrades: Record<string, number> = {};
+  const previousUpgradePaths: Record<string, UpgradePath | undefined> = {};
 
   for (let chapterIndex = 0; chapterIndex < chapters.length; chapterIndex += 1) {
     const chapter = chapters[chapterIndex];
@@ -628,7 +642,7 @@ function runeSupportPlan(expedition: Expedition): Record<string, RuneSupportChap
         originLevel: plan.origin.level,
         minimumLevel: previousLevels[player.id] ?? plan.origin.level,
         desiredLevel: targets.runeLevel,
-        minimumUpgrade: previousUpgrades[player.id] ?? 0,
+        minimumUpgrade: previousUpgradePaths[player.id] === path ? (previousUpgrades[player.id] ?? 0) : 0,
         desiredUpgrade,
         path,
         availableRunes: spendable,
@@ -637,6 +651,7 @@ function runeSupportPlan(expedition: Expedition): Record<string, RuneSupportChap
       upgrades[player.id] = funded.upgrade;
       previousLevels[player.id] = funded.level;
       previousUpgrades[player.id] = funded.upgrade;
+      previousUpgradePaths[player.id] = path;
     }
     result[chapter.id] = {
       bosses: recovery.bosses,
@@ -695,7 +710,9 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition): T
     const pathResult = weaponUpgradePath(currentLoadout.weapon);
     const upgradePath: UpgradePath | undefined = pathResult === "none" ? undefined : pathResult;
     const currentUpgrade = chapterSupport?.upgrades[player.id] ?? (upgradePath === "somber" ? targets.somberUpgrade : targets.standardUpgrade);
-    const previousUpgrade = previousEconomy
+    const previousPathResult = weaponUpgradePath(previousLoadout.weapon);
+    const previousUpgradePath: UpgradePath | undefined = previousPathResult === "none" ? undefined : previousPathResult;
+    const previousUpgrade = previousEconomy && previousUpgradePath === upgradePath
       ? (support[chapters[chapterIndex - 1]?.id]?.upgrades[player.id] ?? 0)
       : 0;
     const cumulativeMaterials = upgradePath ? planWeaponUpgrade(upgradePath, 0, currentUpgrade).materialPurchaseRunes : 0;
@@ -1220,7 +1237,11 @@ function RuneCheckpointPanel({
         const level = currentSupport?.levels[player.id] ?? guideTargets(economy, expedition.levelOffset ?? 0).runeLevel;
         const previousLevel = previousSupport?.levels[player.id] ?? planBuildStatTarget(build, level).origin.level;
         const upgrade = currentSupport?.upgrades[player.id] ?? 0;
-        const previousUpgrade = previousSupport?.upgrades[player.id] ?? 0;
+        const previousChapter = chapterIndex > 0 ? chapters[chapterIndex - 1] : undefined;
+        const previousLoadout = previousChapter ? stageLoadout(build, phaseForChapter(previousChapter)) : undefined;
+        const previousPathResult = previousLoadout ? weaponUpgradePath(previousLoadout.weapon) : "none";
+        const previousPath: UpgradePath | undefined = previousPathResult === "none" ? undefined : previousPathResult;
+        const previousUpgrade = previousPath === path ? (previousSupport?.upgrades[player.id] ?? 0) : 0;
         const levelCost = runesBetweenLevels(Math.min(previousLevel, level), level);
         const materialCost = path ? planWeaponUpgrade(path, Math.min(previousUpgrade, upgrade), upgrade).materialPurchaseRunes : 0;
         const required = levelCost + materialCost + economy.purchaseReserve;
@@ -1473,7 +1494,7 @@ function PartyView({ expedition, setExpedition, saveLibrary, activeSaveId, onSel
   </section>;
 }
 
-export default function Home() {
+function Home() {
   const [expedition, setExpedition] = useState<Expedition | null>(null);
   const [saveLibrary, setSaveLibrary] = useState<SaveLibrary>({ activeId: null, saves: {} });
   const [activeSaveId, setActiveSaveId] = useState<string | null>(null);
@@ -1670,4 +1691,8 @@ export default function Home() {
       {toast && <div className="toast" role="status">{toast}</div>}
     </main>
   );
+}
+
+export default function PlannerPage() {
+  return <RouteErrorBoundary><Home /></RouteErrorBoundary>;
 }

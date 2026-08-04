@@ -164,6 +164,9 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /Rune top-up:/);
   assert.match(page, /only recommends a fully funded level/);
   assert.match(page, /Rune checkpoint/);
+  assert.match(page, /safeDesiredUpgrade/);
+  assert.match(page, /previousUpgradePaths\[player\.id\] === path/);
+  assert.match(page, /previousUpgradePath === upgradePath/);
   assert.match(page, /Replace with/);
   assert.match(page, /Skip this boss/);
   assert.match(page, /SAVE_LIBRARY_KEY/);

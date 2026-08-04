@@ -433,6 +433,12 @@ body::before {
 .viewer-chooser button { width: 100%; display: flex; justify-content: space-between; gap: 15px; padding: 14px; margin-top: 8px; border: 1px solid var(--line); background: #11120f; color: var(--ink); text-align: left; cursor: pointer; }
 .viewer-chooser button:hover { border-color: #806c45; }
 .viewer-chooser button span { color: #817b71; font-size: 9px; }
+.route-error { min-height: 100vh; display: grid; place-content: center; padding: 25px; background: #10110e; }
+.route-error > div { width: min(560px, 92vw); padding: 32px; border: 1px solid #614b32; background: #171713; }
+.route-error strong { color: var(--gold); font: 400 17px Georgia, serif; }
+.route-error h1 { margin: 18px 0 10px; font: 400 clamp(30px, 6vw, 48px)/1.05 Georgia, serif; }
+.route-error p { color: #8b857a; font-size: 11px; line-height: 1.6; }
+.route-error button { margin-top: 12px; padding: 11px 15px; border: 1px solid #8b6c3e; background: #b58d49; color: #17130d; font-weight: 700; cursor: pointer; }
 .save-library-list { display: grid; grid-template-columns: repeat(2, minmax(150px, 1fr)); gap: 7px; margin-top: 17px; }
 .save-library-list button { padding: 10px; border: 1px solid var(--line); background: #11120f; color: #a9a195; text-align: left; cursor: pointer; }
 .save-library-list button.active { border-color: #806c45; background: #1b1a14; }

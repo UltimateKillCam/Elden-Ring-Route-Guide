@@ -267,7 +267,7 @@ async function main() {
     console.log("");
   }
   console.log("\nIf Windows asks, allow Node.js on Private networks only. Press Ctrl+C to stop.\n");
-  await openController(controllerUrl);
+  if (process.env.ELDEN_RING_NO_BROWSER !== "1") await openController(controllerUrl);
 
   const stop = () => {
     server.close();
