@@ -226,6 +226,10 @@ async function main() {
           if (!key.endsWith(`:${playerId}`)) throw new Error("Players can only update their own rune balance");
           expedition.checkpointRunes ||= {};
           expedition.checkpointRunes[key] = Math.max(0, Math.floor(Number(body.value) || 0));
+        } else if (body.kind === "levels") {
+          if (!key.endsWith(`:${playerId}`)) throw new Error("Players can only update their own level");
+          expedition.checkpointLevels ||= {};
+          expedition.checkpointLevels[key] = Math.max(1, Math.min(713, Math.floor(Number(body.value) || 1)));
         } else {
           throw new Error("Unknown progress update");
         }

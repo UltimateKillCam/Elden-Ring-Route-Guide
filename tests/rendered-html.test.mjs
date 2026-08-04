@@ -129,6 +129,7 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(server, /Only the controller can change expedition settings/);
   assert.match(server, /\/api\/player-progress/);
   assert.match(server, /Players can only update their own checklist/);
+  assert.match(server, /Players can only update their own level/);
   assert.match(server, /Build catalogue/);
   assert.match(server, /\?catalog=1/);
   assert.match(server, /x-control-token/);
@@ -164,6 +165,10 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /Rune top-up:/);
   assert.match(page, /only recommends a fully funded level/);
   assert.match(page, /Rune checkpoint/);
+  assert.match(page, /Current RL/);
+  assert.match(page, /checkpointLevels/);
+  assert.match(page, /statScheduleText/);
+  assert.match(page, /Apply them exactly as follows/);
   assert.match(page, /safeDesiredUpgrade/);
   assert.match(page, /previousUpgradePaths\[player\.id\] === path/);
   assert.match(page, /previousUpgradePath === upgradePath/);
