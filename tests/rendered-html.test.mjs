@@ -130,6 +130,10 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(server, /\/api\/player-progress/);
   assert.match(server, /Players can only update their own checklist/);
   assert.match(server, /Players can only update their own level/);
+  assert.match(server, /Players can only update their own stats/);
+  assert.match(server, /Stats must be integers from 1 to 99/);
+  assert.match(server, /Players can only update their own weapon level/);
+  assert.match(server, /Weapon level must be an integer from 0 to 25/);
   assert.match(server, /Build catalogue/);
   assert.match(server, /\?catalog=1/);
   assert.match(server, /x-control-token/);
@@ -167,8 +171,15 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /Rune checkpoint/);
   assert.match(page, /Current RL/);
   assert.match(page, /checkpointLevels/);
+  assert.match(page, /checkpointStats/);
+  assert.match(page, /checkpointWeaponLevels/);
   assert.match(page, /statScheduleText/);
   assert.match(page, /Apply them exactly as follows/);
+  assert.match(page, /Chapter target/);
+  assert.match(page, /Enter all eight current stats/);
+  assert.match(page, /Current stats match the number of levels/);
+  assert.match(page, /Active weapon/);
+  assert.match(page, /The stone budget below now starts from the entered/);
   assert.match(page, /safeDesiredUpgrade/);
   assert.match(page, /previousUpgradePaths\[player\.id\] === path/);
   assert.match(page, /previousUpgradePath === upgradePath/);

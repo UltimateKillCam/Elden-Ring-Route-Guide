@@ -42,6 +42,8 @@ type Expedition = {
   levelOffset?: number;
   checkpointRunes?: Record<string, number>;
   checkpointLevels?: Record<string, number>;
+  checkpointStats?: Record<string, Partial<AttributeBlock>>;
+  checkpointWeaponLevels?: Record<string, number>;
   runeBossSelections?: Record<string, string[]>;
 };
 type SaveLibrary = { activeId: string | null; saves: Record<string, Expedition> };
@@ -518,7 +520,12 @@ function weaponRequirements(value: string): Partial<AttributeBlock> {
   };
 }
 
-function statScheduleText(previous: AttributeBlock, current: AttributeBlock, fromLevel: number, priorities: readonly StatKey[], requirements: Partial<AttributeBlock> = {}) {
+function completeCheckpointStats(value?: Partial<AttributeBlock>): AttributeBlock | undefined {
+  if (!value || !(Object.keys(STAT_LABELS) as StatKey[]).every((stat) => Number.isInteger(value[stat]) && Number(value[stat]) >= 1 && Number(value[stat]) <= 99)) return undefined;
+  return value as AttributeBlock;
+}
+
+function statScheduleText(previous: AttributeBlock, current: AttributeBlock, fromLevel: number, priorities: readonly StatKey[], requirements: Partial<AttributeBlock> = {}, maximumPoints = Number.POSITIVE_INFINITY) {
   const priorityOrder = (Object.keys(STAT_LABELS) as StatKey[]).sort((a, b) => {
     const requirementA = previous[a] < (requirements[a] ?? 0) ? 0 : 1;
     const requirementB = previous[b] < (requirements[b] ?? 0) ? 0 : 1;
@@ -526,16 +533,22 @@ function statScheduleText(previous: AttributeBlock, current: AttributeBlock, fro
     return requirementA - requirementB || routeOrder(a) - routeOrder(b);
   });
   let nextLevel = fromLevel + 1;
+  let pointsLeft = maximumPoints;
+  const scheduled = { ...previous };
   const steps: string[] = [];
   for (const stat of priorityOrder) {
-    const amount = Math.max(0, current[stat] - previous[stat]);
+    const amount = Math.min(pointsLeft, Math.max(0, current[stat] - previous[stat]));
     if (!amount) continue;
     const first = nextLevel;
     const last = nextLevel + amount - 1;
-    steps.push(`${first === last ? `RL${first}` : `RL${first}–${last}`}: ${STAT_LABELS[stat]} to ${current[stat]} (${amount} ${amount === 1 ? "point" : "points"})`);
+    scheduled[stat] += amount;
+    steps.push(`${first === last ? `RL${first}` : `RL${first}–${last}`}: ${STAT_LABELS[stat]} to ${scheduled[stat]} (${amount} ${amount === 1 ? "point" : "points"})`);
     nextLevel = last + 1;
+    pointsLeft -= amount;
   }
-  return steps.length ? steps.join("; ") : "No levels are due at this checkpoint";
+  const unfilled = priorityOrder.filter((stat) => scheduled[stat] < current[stat]);
+  const warning = unfilled.length ? ` Remaining target deficits carry into the next checkpoint: ${unfilled.map((stat) => STAT_LABELS[stat]).join(", ")}` : "";
+  return steps.length ? `${steps.join("; ")}${warning}` : "No levels are due at this checkpoint";
 }
 
 function expectedRunesBeforeBoss(chapterIndex: number, expedition: Expedition) {
@@ -715,6 +728,7 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition): T
     const previousLoadout = stageLoadout(selected, previousPhase);
     const enteredLevel = expedition.checkpointLevels?.[`${chapter.id}:${player.id}`];
     const levelingFrom = Math.min(fundedTargetLevel, Math.max(currentPlan.origin.level, enteredLevel ?? previousTargetLevel));
+    const enteredStats = completeCheckpointStats(expedition.checkpointStats?.[`${chapter.id}:${player.id}`]);
     const previousPlan = enteredLevel !== undefined
       ? planBuildStatTarget(planningBuild, levelingFrom, weaponRequirements(currentLoadout.weapon))
       : previousEconomy
@@ -727,14 +741,18 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition): T
     const currentUpgrade = chapterSupport?.upgrades[player.id] ?? (upgradePath === "somber" ? targets.somberUpgrade : targets.standardUpgrade);
     const previousPathResult = weaponUpgradePath(previousLoadout.weapon);
     const previousUpgradePath: UpgradePath | undefined = previousPathResult === "none" ? undefined : previousPathResult;
-    const previousUpgrade = previousEconomy && previousUpgradePath === upgradePath
+    const plannedPreviousUpgrade = previousEconomy && previousUpgradePath === upgradePath
       ? (support[chapters[chapterIndex - 1]?.id]?.upgrades[player.id] ?? 0)
       : 0;
+    const enteredWeaponLevel = expedition.checkpointWeaponLevels?.[`${chapter.id}:${player.id}`];
+    const previousUpgrade = enteredWeaponLevel === undefined
+      ? plannedPreviousUpgrade
+      : Math.min(currentUpgrade, enteredWeaponLevel);
     const cumulativeMaterials = upgradePath ? planWeaponUpgrade(upgradePath, 0, currentUpgrade).materialPurchaseRunes : 0;
     const supplementalRunes = chapterSupport?.cumulativeBossRunes ?? 0;
     const projectedLow = expected.low + supplementalRunes - cumulativeLevelRunes - cumulativeMaterials - economy.purchaseReserve;
     const projectedHigh = expected.high + supplementalRunes - cumulativeLevelRunes - cumulativeMaterials - economy.purchaseReserve;
-    const changes = statScheduleText(previousPlan.attributes, currentPlan.attributes, levelingFrom, currentPlan.priorities, weaponRequirements(currentLoadout.weapon));
+    const changes = statScheduleText(enteredStats ?? previousPlan.attributes, currentPlan.attributes, levelingFrom, currentPlan.priorities, weaponRequirements(currentLoadout.weapon), fundedTargetLevel - levelingFrom);
     const requirementText = currentWeapon
       ? ` Weapon requirements: ${[["STR", currentWeapon.reqStr], ["DEX", currentWeapon.reqDex], ["INT", currentWeapon.reqInt], ["FAI", currentWeapon.reqFai], ["ARC", currentWeapon.reqArc]].filter(([, value]) => Number(value) > 0).map(([stat, value]) => `${stat} ${value}`).join(", ") || "none"}.`
       : "";
@@ -1085,7 +1103,7 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
         </div>
       </section>
 
-      <div className="setup-actions"><div><strong>{players.length} {players.length === 1 ? "player" : "players"} ready</strong><span>{mode === "solo" ? "Solo route with no co-op rune reduction." : mode === "standard" ? "Standard co-op; world steps will be repeated per player." : "Seamless Co-op; host and individual pickups are tracked separately."} Rune plans keep a {lossRate}% loss allowance and run {levelOffset ? `${levelOffset} levels below guide pace` : "at guide pace"}.</span></div><button type="button" onClick={() => onCreate({ schema: 1, saveId: newSaveId(), name: name.trim() || "Untitled expedition", mode, players, hostId: players[0].id, completed: {}, createdAt: new Date().toISOString(), lossRate, levelOffset, checkpointRunes: {}, checkpointLevels: {}, runeBossSelections: {} })}>Create route</button></div>
+      <div className="setup-actions"><div><strong>{players.length} {players.length === 1 ? "player" : "players"} ready</strong><span>{mode === "solo" ? "Solo route with no co-op rune reduction." : mode === "standard" ? "Standard co-op; world steps will be repeated per player." : "Seamless Co-op; host and individual pickups are tracked separately."} Rune plans keep a {lossRate}% loss allowance and run {levelOffset ? `${levelOffset} levels below guide pace` : "at guide pace"}.</span></div><button type="button" onClick={() => onCreate({ schema: 1, saveId: newSaveId(), name: name.trim() || "Untitled expedition", mode, players, hostId: players[0].id, completed: {}, createdAt: new Date().toISOString(), lossRate, levelOffset, checkpointRunes: {}, checkpointLevels: {}, checkpointStats: {}, checkpointWeaponLevels: {}, runeBossSelections: {} })}>Create route</button></div>
       <footer className="setup-footer">Unofficial fan project. Full spoilers. Data baseline: regulation 1.16.1.</footer>
       {detail && <FullBuildDetails build={detail} onClose={() => setDetail(null)} assignLabel={`Assign to ${players[activePlayer].name}`} onAssign={() => chooseBuild(detail)} />}
     </main>
@@ -1203,7 +1221,7 @@ function RuneCheckpointPanel({
   expedition: Expedition;
   setExpedition: React.Dispatch<React.SetStateAction<Expedition | null>>;
   viewerPlayerId?: string;
-  onViewerUpdate?: (kind: "completed" | "runes" | "levels", key: string, value: boolean | number) => void;
+  onViewerUpdate?: (kind: "completed" | "runes" | "levels" | "stats" | "weapons", key: string, value: boolean | number | Partial<AttributeBlock>) => void;
 }) {
   const economy = CHAPTER_ECONOMY_BY_ID[chapter.id];
   if (!economy) return null;
@@ -1234,6 +1252,31 @@ function RuneCheckpointPanel({
       return;
     }
     setExpedition((current) => current ? { ...current, checkpointLevels: { ...(current.checkpointLevels || {}), [key]: level } } : current);
+  };
+  const setStat = (playerId: string, stat: StatKey, value: number) => {
+    const key = `${chapter.id}:${playerId}`;
+    const statValue = Math.max(1, Math.min(99, Math.floor(value || 1)));
+    const update = (current: Expedition) => ({ ...current, checkpointStats: { ...(current.checkpointStats || {}), [key]: { ...(current.checkpointStats?.[key] || {}), [stat]: statValue } } });
+    if (viewerPlayerId) {
+      if (viewerPlayerId !== playerId) return;
+      const stats = { ...(expedition.checkpointStats?.[key] || {}), [stat]: statValue };
+      setExpedition((current) => current ? update(current) : current);
+      onViewerUpdate?.("stats", key, stats);
+      return;
+    }
+    setExpedition((current) => current ? update(current) : current);
+  };
+  const setWeaponLevel = (playerId: string, value: number, maximum: number) => {
+    const key = `${chapter.id}:${playerId}`;
+    const weaponLevel = Math.max(0, Math.min(maximum, Math.floor(value || 0)));
+    const update = (current: Expedition) => ({ ...current, checkpointWeaponLevels: { ...(current.checkpointWeaponLevels || {}), [key]: weaponLevel } });
+    if (viewerPlayerId) {
+      if (viewerPlayerId !== playerId) return;
+      setExpedition((current) => current ? update(current) : current);
+      onViewerUpdate?.("weapons", key, weaponLevel);
+      return;
+    }
+    setExpedition((current) => current ? update(current) : current);
   };
 
   const setBosses = (ids: string[]) => setExpedition((current) => current ? {
@@ -1269,22 +1312,42 @@ function RuneCheckpointPanel({
         const previousPath: UpgradePath | undefined = previousPathResult === "none" ? undefined : previousPathResult;
         const previousUpgrade = previousPath === path ? (previousSupport?.upgrades[player.id] ?? 0) : 0;
         const levelCost = runesBetweenLevels(Math.min(previousLevel, level), level);
-        const materialCost = path ? planWeaponUpgrade(path, Math.min(previousUpgrade, upgrade), upgrade).materialPurchaseRunes : 0;
-        const required = levelCost + materialCost + economy.purchaseReserve;
         const key = `${chapter.id}:${player.id}`;
         const held = expedition.checkpointRunes?.[key];
         const currentLevel = expedition.checkpointLevels?.[key];
+        const savedStats = expedition.checkpointStats?.[key] || {};
+        const savedWeaponLevel = expedition.checkpointWeaponLevels?.[key];
+        const maximumWeaponLevel = path === "somber" ? 10 : 25;
+        const enteredWeaponLevel = path && savedWeaponLevel !== undefined ? Math.min(maximumWeaponLevel, savedWeaponLevel) : undefined;
+        const upgradeFrom = enteredWeaponLevel ?? previousUpgrade;
+        const materialCost = path ? planWeaponUpgrade(path, Math.min(upgradeFrom, upgrade), upgrade).materialPurchaseRunes : 0;
+        const required = levelCost + materialCost + economy.purchaseReserve;
+        const actualStats = completeCheckpointStats(savedStats);
         const levelingFrom = Math.min(level, Math.max(planBuildStatTarget(build, level).origin.level, currentLevel ?? previousLevel));
         const exactLevelPlan = planBuildStatTarget(build, level, weaponRequirements(loadout.weapon));
         const exactStartPlan = planBuildStatTarget(build, levelingFrom, weaponRequirements(loadout.weapon));
-        const exactChanges = statScheduleText(exactStartPlan.attributes, exactLevelPlan.attributes, levelingFrom, exactLevelPlan.priorities, weaponRequirements(loadout.weapon));
+        const recommendedNow = planBuildStatTarget(build, currentLevel ?? previousLevel, weaponRequirements(loadout.weapon));
+        const originLevel = recommendedNow.origin.level;
+        const currentLevelForWeapon = currentLevel ?? previousLevel;
+        const previousSpan = Math.max(1, previousLevel - originLevel);
+        const chapterSpan = Math.max(1, level - previousLevel);
+        const recommendedWeaponNow = !path ? 0 : currentLevelForWeapon <= previousLevel
+          ? Math.max(0, Math.min(previousUpgrade, Math.floor(previousUpgrade * Math.max(0, currentLevelForWeapon - originLevel) / previousSpan)))
+          : Math.max(previousUpgrade, Math.min(upgrade, Math.floor(previousUpgrade + (upgrade - previousUpgrade) * Math.min(1, (currentLevelForWeapon - previousLevel) / chapterSpan))));
+        const exactChanges = statScheduleText(actualStats ?? exactStartPlan.attributes, exactLevelPlan.attributes, levelingFrom, exactLevelPlan.priorities, weaponRequirements(loadout.weapon), level - levelingFrom);
+        const enteredPointTotal = actualStats ? (Object.keys(STAT_LABELS) as StatKey[]).reduce((sum, stat) => sum + actualStats[stat] - recommendedNow.origin.attributes[stat], 0) : undefined;
+        const expectedPointTotal = currentLevel !== undefined ? currentLevel - recommendedNow.origin.level : undefined;
         const withBosses = (held ?? 0) + (currentSupport?.chapterBossRunes ?? 0);
         const gap = Math.max(0, required - withBosses);
         const editable = !viewerPlayerId || viewerPlayerId === player.id;
         return <article key={player.id} style={{ "--player": player.color } as React.CSSProperties}>
           <div><strong>{player.name}</strong><span>RL{previousLevel} → RL{level}</span></div>
           <div className="checkpoint-inputs"><label>Current RL<input type="number" min="1" max="713" step="1" disabled={!editable} value={currentLevel ?? ""} placeholder={`Expected ${previousLevel}`} onChange={(event) => setLevel(player.id, Number(event.target.value))} /></label><label>Runes held<input type="number" min="0" step="100" disabled={!editable} value={held ?? ""} placeholder="Enter current runes" onChange={(event) => setRunes(player.id, Math.max(0, Number(event.target.value) || 0))} /></label></div>
+          <div className="checkpoint-stats"><div className="stat-grid-heading"><span>Stat</span><span>Current</span><span>At this RL</span><span>Chapter target</span></div>{(Object.keys(STAT_LABELS) as StatKey[]).map((stat) => { const actual = savedStats[stat]; const now = recommendedNow.attributes[stat]; const target = exactLevelPlan.attributes[stat]; return <label key={stat}><span>{STAT_LABELS[stat]}</span><input aria-label={`${player.name} ${STAT_LABELS[stat]}`} type="number" min="1" max="99" disabled={!editable} value={actual ?? ""} placeholder={String(now)} onChange={(event) => setStat(player.id, stat, Number(event.target.value))} /><b className={actual === undefined ? "" : actual < now ? "behind" : actual > now ? "ahead" : "matched"}>{now}</b><b>{target}</b></label>; })}</div>
+          {path && <div className="weapon-checkpoint"><div><span>Active weapon</span><strong>{loadout.weapon}</strong><small>{path === "somber" ? "Somber" : "Regular"} reinforcement</small></div><label>Current +<input aria-label={`${player.name} current weapon level`} type="number" min="0" max={maximumWeaponLevel} disabled={!editable} value={enteredWeaponLevel ?? ""} placeholder={String(recommendedWeaponNow)} onChange={(event) => setWeaponLevel(player.id, Number(event.target.value), maximumWeaponLevel)} /></label><div><span>At this RL</span><b className={enteredWeaponLevel === undefined ? "" : enteredWeaponLevel < recommendedWeaponNow ? "behind" : enteredWeaponLevel > recommendedWeaponNow ? "ahead" : "matched"}>+{recommendedWeaponNow}</b></div><div><span>Chapter target</span><b>+{upgrade}</b></div></div>}
+          {currentLevel === undefined ? <p className="stat-check waiting">Enter the current RL and all eight stats from the Status screen.</p> : !actualStats ? <p className="stat-check waiting">Enter all eight current stats to base the level plan on the real character.</p> : enteredPointTotal !== expectedPointTotal ? <p className="stat-check warning">The entered stats account for {enteredPointTotal} allocated levels, but RL{currentLevel} should account for {expectedPointTotal}. Recheck the character Status screen.</p> : <p className="stat-check ready">Current stats match the number of levels available at RL{currentLevel}.</p>}
           <p className="level-instruction">{currentLevel !== undefined && currentLevel >= level ? `No levels needed; RL${currentLevel} already meets the RL${level} target.` : `Next: buy ${Math.max(0, level - levelingFrom)} levels to reach RL${level}. ${exactChanges}.`}</p>
+          {path && <p className="weapon-instruction">{upgradeFrom >= upgrade ? `${loadout.weapon} is already at or above this chapter's +${upgrade} ceiling. Do not reinforce it further yet.` : `Reinforce ${loadout.weapon} from +${upgradeFrom} to +${upgrade}. The stone budget below now starts from the entered +${upgradeFrom} level.`}</p>}
           <dl><div><dt>Levels</dt><dd>{formatRunes(levelCost)}</dd></div><div><dt>Stone ceiling</dt><dd>{formatRunes(materialCost)}</dd></div><div><dt>Reserve</dt><dd>{formatRunes(economy.purchaseReserve)}</dd></div><div><dt>Boss top-up</dt><dd>+{formatRunes(currentSupport?.chapterBossRunes ?? 0)}</dd></div></dl>
           {held === undefined ? <p className="rune-status waiting">Enter the current counter for an exact check.</p> : gap > 0 ? <p className="rune-status short">Need {formatRunes(gap)} more. Choose a higher-value replacement below, or skip optional fights and accept the planner’s lower funded target.</p> : <p className="rune-status ready">Funded with {formatRunes(withBosses - required)} left after the reserve.</p>}
         </article>;
@@ -1295,7 +1358,7 @@ function RuneCheckpointPanel({
   </section>;
 }
 
-function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly = false, viewerPlayerId, onViewerUpdate }: { expedition: Expedition; setExpedition: React.Dispatch<React.SetStateAction<Expedition | null>>; activeId: string; setActiveId: (id: string) => void; readOnly?: boolean; viewerPlayerId?: string; onViewerUpdate?: (kind: "completed" | "runes" | "levels", key: string, value: boolean | number) => void }) {
+function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly = false, viewerPlayerId, onViewerUpdate }: { expedition: Expedition; setExpedition: React.Dispatch<React.SetStateAction<Expedition | null>>; activeId: string; setActiveId: (id: string) => void; readOnly?: boolean; viewerPlayerId?: string; onViewerUpdate?: (kind: "completed" | "runes" | "levels" | "stats" | "weapons", key: string, value: boolean | number | Partial<AttributeBlock>) => void }) {
   const chapter = chapters.find((candidate) => candidate.id === activeId) || chapters[0];
   const tasks = tasksForChapter(chapter, expedition);
   const completedTasks = tasks.filter((task) => taskDone(task, expedition)).length;
@@ -1663,7 +1726,7 @@ function Home() {
   const duplicateRun = () => {
     if (!expedition) return;
     const saveId = newSaveId();
-    const copy: Expedition = { ...expedition, saveId, name: `${expedition.name} copy`, completed: { ...expedition.completed }, checkpointRunes: { ...expedition.checkpointRunes }, checkpointLevels: { ...expedition.checkpointLevels }, runeBossSelections: { ...expedition.runeBossSelections }, createdAt: new Date().toISOString() };
+    const copy: Expedition = { ...expedition, saveId, name: `${expedition.name} copy`, completed: { ...expedition.completed }, checkpointRunes: { ...expedition.checkpointRunes }, checkpointLevels: { ...expedition.checkpointLevels }, checkpointStats: Object.fromEntries(Object.entries(expedition.checkpointStats || {}).map(([key, stats]) => [key, { ...stats }])), checkpointWeaponLevels: { ...expedition.checkpointWeaponLevels }, runeBossSelections: { ...expedition.runeBossSelections }, createdAt: new Date().toISOString() };
     setSaveLibrary((current) => ({ activeId: saveId, saves: { ...current.saves, [saveId]: copy } })); setActiveSaveId(saveId); setExpedition(copy); notify("Run duplicated");
   };
   const deleteRun = () => {
@@ -1693,7 +1756,7 @@ function Home() {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a"); anchor.href = url; anchor.download = `${expedition.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "expedition"}.json`; anchor.click(); URL.revokeObjectURL(url); notify("Expedition exported");
   };
-  const viewerUpdate = (kind: "completed" | "runes" | "levels", key: string, value: boolean | number) => {
+  const viewerUpdate = (kind: "completed" | "runes" | "levels" | "stats" | "weapons", key: string, value: boolean | number | Partial<AttributeBlock>) => {
     if (!viewerPlayerId) return;
     void fetch("/api/player-progress", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ playerId: viewerPlayerId, kind, key, value }) }).then(async (response) => {
       const body = await response.json();

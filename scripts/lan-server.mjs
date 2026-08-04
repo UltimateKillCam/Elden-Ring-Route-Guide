@@ -230,6 +230,25 @@ async function main() {
           if (!key.endsWith(`:${playerId}`)) throw new Error("Players can only update their own level");
           expedition.checkpointLevels ||= {};
           expedition.checkpointLevels[key] = Math.max(1, Math.min(713, Math.floor(Number(body.value) || 1)));
+        } else if (body.kind === "stats") {
+          if (!key.endsWith(`:${playerId}`)) throw new Error("Players can only update their own stats");
+          const statKeys = ["vigor", "mind", "endurance", "strength", "dexterity", "intelligence", "faith", "arcane"];
+          if (!body.value || typeof body.value !== "object" || Array.isArray(body.value)) throw new Error("Invalid stat checkpoint");
+          const stats = {};
+          for (const stat of statKeys) {
+            if (body.value[stat] === undefined) continue;
+            const number = Number(body.value[stat]);
+            if (!Number.isInteger(number) || number < 1 || number > 99) throw new Error("Stats must be integers from 1 to 99");
+            stats[stat] = number;
+          }
+          expedition.checkpointStats ||= {};
+          expedition.checkpointStats[key] = stats;
+        } else if (body.kind === "weapons") {
+          if (!key.endsWith(`:${playerId}`)) throw new Error("Players can only update their own weapon level");
+          const weaponLevel = Number(body.value);
+          if (!Number.isInteger(weaponLevel) || weaponLevel < 0 || weaponLevel > 25) throw new Error("Weapon level must be an integer from 0 to 25");
+          expedition.checkpointWeaponLevels ||= {};
+          expedition.checkpointWeaponLevels[key] = weaponLevel;
         } else {
           throw new Error("Unknown progress update");
         }
