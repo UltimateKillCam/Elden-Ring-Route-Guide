@@ -174,7 +174,10 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /do not wait until the end of the chapter/);
   assert.match(page, /Selected builds/);
   assert.match(page, /this page only shows chosen builds/);
-  assert.match(page, /selected-loadout-stages/);
+  assert.match(page, /EquipmentTimeline/);
+  assert.match(page, /Stats at this point/);
+  assert.match(page, /Talismans equipped/);
+  assert.match(page, /From \$\{snapshot\.chapter\.title\}/);
   assert.match(page, /Current RL/);
   assert.match(page, /checkpointLevels/);
   assert.match(page, /checkpointStats/);
@@ -206,7 +209,7 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(progression, /export function deferredPickupGate/);
   assert.match(progression, /Sacred Relic Sword.*ashen/);
   assert.match(progression, /Greatsword of Radahn \(Lord\).*enir/);
-  assert.match(page, /TimingNote/);
+  assert.doesNotMatch(page, /TimingNote|Use the previous-stage setup until/);
   assert.match(page, /afterObjective/);
   assert.match(page, /const embeddedMatches = allMatches/);
   assert.match(page, /OBJECTIVE_MAP_LAYERS/);
@@ -216,6 +219,9 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.equal((page.match(/slot: pickup\.slot/g) || []).length, 2);
   assert.match(progression, /marker\.x >= 32.*marker\.y >= 68\.5/);
   assert.match(progression, /marker\.x >= 57.*marker\.y >= 13/);
+  assert.match(progression, /function broadCoordinateGate/);
+  assert.match(progression, /marker\.x >= 49.*marker\.y >= 57.*gate\("caelid"\)/);
+  assert.match(progression, /\^Cuckoo Knight.*gate\("liurnia-south"\)/);
   assert.match(progression, /Drainage Channel\/i, gate\("haligtree"/);
   assert.match(progression, /"Stonebarb Cracked Tear": "caelid"/);
   assert.match(progression, /"Opaline Hardtear": "caelid"/);

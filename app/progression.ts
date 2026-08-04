@@ -160,9 +160,26 @@ function coordinateGate(marker?: MapItem): PickupGate | undefined {
   return undefined;
 }
 
+function broadCoordinateGate(marker?: MapItem): PickupGate | undefined {
+  if (marker?.layer !== "surface") return undefined;
+  if (marker.x >= 75) return gate("farum");
+  if (marker.x >= 55 && marker.y <= 21) return gate("haligtree");
+  if (marker.x >= 50 && marker.y <= 35) return gate("mountaintops");
+  if (marker.x >= 49 && marker.y >= 57) return gate("caelid");
+  if (marker.y >= 80) return gate("weeping");
+  if (marker.x <= 27 && marker.y >= 28 && marker.y < 39) return gate("gelmir");
+  if (marker.x <= 28 && marker.y >= 39 && marker.y < 45) return gate("caria");
+  if (marker.x <= 32 && marker.y >= 45 && marker.y <= 66) return gate("liurnia-south");
+  if (marker.x >= 27 && marker.x <= 40 && marker.y >= 28 && marker.y <= 45) return gate("altus");
+  if (marker.x > 40 && marker.y >= 32 && marker.y <= 45) return gate("leyndell");
+  return undefined;
+}
+
 export function pickupGate(item: string): PickupGate | undefined {
   const exact = EXACT_GATES.get(literalItemName(item));
   if (exact) return exact;
+  if (/^Cuckoo Knight/i.test(item)) return gate("liurnia-south");
+  if (/^Gelmir Knight/i.test(item)) return gate("gelmir");
   const physick = PHYSICK_GATES[item];
   if (physick) return gate(physick, undefined, "waiting until the route reaches the Erdtree Avatar's intended region and level band");
   const mapMatches = findMapItems(item);
@@ -171,7 +188,7 @@ export function pickupGate(item: string): PickupGate | undefined {
   const byCoordinate = coordinateGate(marker);
   if (byCoordinate) return byCoordinate;
   const text = `${marker?.name || item} ${marker?.description || ""} ${itemGuides[item] || ""}`;
-  return REGION_GATES.find(([pattern]) => pattern.test(text))?.[1];
+  return REGION_GATES.find(([pattern]) => pattern.test(text))?.[1] || broadCoordinateGate(marker);
 }
 
 export function deferredPickupGate(item: string): PickupGate | undefined {

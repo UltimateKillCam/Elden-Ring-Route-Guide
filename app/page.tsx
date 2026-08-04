@@ -229,11 +229,143 @@ function routeTiming(value: string, phase: PhaseKey): PickupGate | undefined {
     .sort((a, b) => chapters.findIndex((chapter) => chapter.id === b!.chapterId) - chapters.findIndex((chapter) => chapter.id === a!.chapterId))[0];
 }
 
-function TimingNote({ value, phase }: { value: string; phase: PhaseKey }) {
-  const timing = routeTiming(value, phase);
-  if (!timing) return null;
-  const chapter = chapters.find((candidate) => candidate.id === timing.chapterId);
-  return <small className="route-timing">Use the previous-stage setup until {chapter?.title || timing.chapterId}{timing.after ? ` — after ${timing.after.replace(/^Defeat\s+/i, "")}` : ""}.</small>;
+type EquipmentSnapshot = {
+  chapter: Chapter;
+  phase: PhaseKey;
+  after: string[];
+  weapon: string;
+  offhand: string;
+  skill: string;
+  talismans: string[];
+  armour: string[];
+  spells: string[];
+  physick: string[];
+  stats: string;
+  weight: string;
+  source?: ReturnType<typeof stageLoadout>["borrowedFrom"];
+};
+
+const isEmptyEquipmentValue = (value: string) => {
+  const cleaned = cleanItemName(value);
+  return !cleaned || /^(?:none|n a|na|not specified|not specified by source|source stats|any|any weapon)$/.test(cleaned);
+};
+
+function talismanSlotsForChapter(chapterIndex: number) {
+  const stormveil = chapters.findIndex((chapter) => chapter.id === "stormveil");
+  const academy = chapters.findIndex((chapter) => chapter.id === "academy");
+  const leyndell = chapters.findIndex((chapter) => chapter.id === "leyndell");
+  return chapterIndex >= leyndell ? 4 : chapterIndex >= academy ? 3 : chapterIndex >= stormveil ? 2 : 1;
+}
+
+function mainWeaponOptions(value: string) {
+  if (!/\bor\b/i.test(value)) return [value];
+  return value.split(/\s+(?:or|&)\s+/i).map((option) => option.trim()).filter(Boolean);
+}
+
+function armourNames(value: string) {
+  const names = value.split(/,|\n/).map((part) => part.trim()).filter(Boolean).filter((part) => !/^(?:medium|light|heavy) (?:roll|load)|aim for|not specified/i.test(part));
+  return names.length ? names : splitArmourSpecification(value).map((piece) => piece.name);
+}
+
+function normalizedSpells(values: string[]) {
+  const spells: string[] = [];
+  for (let index = 0; index < values.length; index += 1) {
+    if (/^flame$/i.test(values[index]) && /^grant me strength$/i.test(values[index + 1] || "")) {
+      spells.push("Flame, Grant Me Strength");
+      index += 1;
+    } else spells.push(values[index]);
+  }
+  return spells;
+}
+
+function equipmentTimeline(build: Build, plannedClass: Build["startingClass"], levelOffset = 0): EquipmentSnapshot[] {
+  const snapshots: EquipmentSnapshot[] = [];
+  let previous: EquipmentSnapshot | undefined;
+  let previousSignature = "";
+
+  chapters.forEach((chapter, chapterIndex) => {
+    const phase = phaseForChapter(chapter);
+    const loadout = stageLoadout(build, phase);
+    const timingFor = (value: string) => isEmptyEquipmentValue(value) ? undefined : routeTiming(value, phase);
+    const isAvailable = (value: string, allowUngatedAtStart = true) => {
+      const timing = timingFor(value);
+      if (!timing && chapterIndex === 0 && !allowUngatedAtStart) return false;
+      return !timing || chapters.findIndex((candidate) => candidate.id === timing.chapterId) <= chapterIndex;
+    };
+    const activeValue = (value: string, fallback: string) => !isEmptyEquipmentValue(value) && isAvailable(value) ? value : fallback;
+
+    const weaponOptions = mainWeaponOptions(loadout.weapon);
+    const availableWeaponIndex = weaponOptions.findIndex((value) => !isEmptyEquipmentValue(value) && isAvailable(value));
+    const weapon = availableWeaponIndex >= 0 ? weaponOptions[availableWeaponIndex] : previous?.weapon || weaponOptions[0];
+    const offhand = activeValue(loadout.offhand, previous?.offhand || "None");
+    const skillOptions = /\bor\b|&/i.test(loadout.skill) ? loadout.skill.split(/\s+(?:or|&)\s+/i).map((option) => option.trim()).filter(Boolean) : [loadout.skill];
+    const matchingSkill = availableWeaponIndex >= 0 && skillOptions[availableWeaponIndex] ? skillOptions[availableWeaponIndex] : skillOptions.find((value) => isAvailable(value)) || loadout.skill;
+    const skill = !previous && chapterIndex === 0
+      ? loadout.skill
+      : availableWeaponIndex < 0 && previous
+        ? previous.skill
+        : activeValue(matchingSkill, previous?.skill || "Use the weapon's default skill");
+    const availableTalismans = loadout.talismans.filter((value) => !isEmptyEquipmentValue(value) && isAvailable(value, false));
+    const retainedTalismans = (previous?.talismans || []).filter((value) => !availableTalismans.includes(value));
+    const talismans = [...availableTalismans, ...retainedTalismans].slice(0, talismanSlotsForChapter(chapterIndex));
+    const availableArmour = armourNames(loadout.armour).filter((value) => isAvailable(value, false));
+    const armour = availableArmour.length ? availableArmour : previous?.armour || [`${plannedClass} starting armour`];
+    const availableSpells = normalizedSpells(loadout.spells).filter((value) => !isEmptyEquipmentValue(value) && isAvailable(value, false));
+    const spells = availableSpells.length ? availableSpells : previous?.spells || [];
+    const physickItems = findMapItems(loadout.flask, undefined, /flask/i).map((item) => item.name).filter((value, index, values) => values.indexOf(value) === index);
+    const availablePhysick = physickItems.filter((value) => !isEmptyEquipmentValue(value) && isAvailable(value, false));
+    const physick = availablePhysick.length ? availablePhysick : previous?.physick || [];
+
+    const economy = CHAPTER_ECONOMY_BY_ID[chapter.id];
+    const targetLevel = economy ? guideTargets(economy, levelOffset).runeLevel : Number(chapter.level.match(/\d+/)?.[0] || 150);
+    const statPlan = planBuildStatTarget({ ...build, startingClass: plannedClass }, targetLevel, weaponRequirements(weapon));
+    const armourWeight = splitArmourSpecification(armour.join(", ")).reduce((sum, piece) => sum + piece.weight, 0);
+    const weaponWeight = findWeaponUpgradeRecord(weapon)?.weight || 0;
+    const offhandWeight = findWeaponUpgradeRecord(offhand)?.weight || 0;
+    const loadTier = /light load|below 30%|blue dancer/i.test(loadout.armour) ? "light" : "medium";
+    const loadLimit = maxWeightForTier(maxEquipLoad(statPlan.attributes.endurance), loadTier);
+    const weight = `${(armourWeight + weaponWeight + offhandWeight).toFixed(1)} equipped / ${loadLimit.toFixed(1)} ${loadTier}-load limit at END ${statPlan.attributes.endurance}`;
+    const stats = (Object.keys(STAT_LABELS) as StatKey[]).map((stat) => `${STAT_LABELS[stat]} ${statPlan.attributes[stat]}`).join(" · ");
+
+    const signature = JSON.stringify({ weapon, offhand, skill, talismans, armour, spells, physick });
+    if (signature === previousSignature) return;
+    const activeValues = [weapon, offhand, skill, ...talismans, ...armour, ...spells, ...physick];
+    const after = Array.from(new Set(activeValues.map(timingFor).filter((timing): timing is PickupGate => timing?.chapterId === chapter.id && Boolean(timing.after)).map((timing) => timing.requires || timing.after!)));
+    if (talismans.length > (previous?.talismans.length || 0)) {
+      if (chapter.id === "stormveil") after.unshift("Defeat Margit");
+      if (chapter.id === "academy") after.unshift("Defeat Rennala");
+      if (chapter.id === "leyndell") after.unshift("Defeat Godfrey's golden shade");
+    }
+    const snapshot: EquipmentSnapshot = { chapter, phase, after, weapon, offhand, skill, talismans, armour, spells, physick, stats, weight, source: loadout.borrowedFrom };
+    snapshots.push(snapshot);
+    previous = snapshot;
+    previousSignature = signature;
+  });
+
+  return snapshots;
+}
+
+function EquipmentTimeline({ build, plannedClass, levelOffset = 0 }: { build: Build; plannedClass: Build["startingClass"]; levelOffset?: number }) {
+  return <div className="equipment-timeline">{equipmentTimeline(build, plannedClass, levelOffset).map((snapshot) => (
+    <article key={`${snapshot.chapter.id}-${snapshot.weapon}`}>
+      <header>
+        <div><span>{snapshot.after.length ? `After ${snapshot.after.map((value) => value.replace(/^Defeat\s+/i, "")).join(" + ")}` : `From ${snapshot.chapter.title}`}</span><small>{snapshot.chapter.region}</small></div>
+        <strong>{snapshot.chapter.level}</strong>
+      </header>
+      <div className="timeline-primary"><small>Main weapon</small><strong>{snapshot.weapon}</strong></div>
+      <dl>
+        <div><dt>Off hand</dt><dd>{snapshot.offhand}</dd></div>
+        <div><dt>Weapon skill</dt><dd>{snapshot.skill}</dd></div>
+        <div><dt>Talismans equipped</dt><dd>{snapshot.talismans.length ? snapshot.talismans.map((value) => <span key={value}>{value}</span>) : "No talisman yet"}</dd></div>
+        <div><dt>Armour equipped</dt><dd>{snapshot.armour.map((value) => <span key={value}>{value}</span>)}</dd></div>
+        <div><dt>Equip load</dt><dd>{snapshot.weight}</dd></div>
+        <div><dt>Spells equipped</dt><dd>{snapshot.spells.length ? snapshot.spells.map((value) => <span key={value}>{value}</span>) : "None"}</dd></div>
+        <div><dt>Physick equipped</dt><dd>{snapshot.physick.length ? snapshot.physick.map((value) => <span key={value}>{value}</span>) : "No required mix yet"}</dd></div>
+        <div><dt>Stats at this point</dt><dd>{snapshot.stats}</dd></div>
+      </dl>
+      {snapshot.source && <a className="borrowed-source" href={snapshot.source.url} target="_blank" rel="noreferrer">Loadout reference: {snapshot.source.buildName} ↗</a>}
+    </article>
+  ))}</div>;
 }
 
 function orderPickupTasks(tasks: Task[], chapter: Chapter) {
@@ -987,37 +1119,7 @@ function FullBuildDetails({ build, onClose, assignLabel, onAssign }: { build: Bu
         </div>
         <a className="build-source" href={build.source.url} target="_blank" rel="noreferrer">Source: {build.source.label} ↗</a>
         {build.quest && <div className="quest-callout"><strong>Quest dependency</strong><span>{build.quest}</span></div>}
-        <div className="loadout-stages">
-          {(["early", "mid", "late", "dlc"] as PhaseKey[]).map((phase) => {
-            const loadout = stageLoadout(build, phase);
-            const checkpointLevel: Record<PhaseKey, number> = { early: 40, mid: 90, late: 150, dlc: 170 };
-            const weapon = findWeaponUpgradeRecord(loadout.weapon);
-            const statPlan = planBuildStatTarget({ ...build, startingClass: plannedClass }, checkpointLevel[phase], weaponRequirements(loadout.weapon));
-            const parsedArmour = splitArmourSpecification(loadout.armour);
-            const armourPieces = parsedArmour.length ? parsedArmour : splitArmourSpecification(`${plannedClass} starting armour`);
-            const armourWeight = armourPieces.reduce((sum, piece) => sum + piece.weight, 0);
-            const mediumLimit = maxWeightForTier(maxEquipLoad(statPlan.attributes.endurance), /light load|below 30%|blue dancer/i.test(loadout.armour) ? "light" : "medium");
-            return (
-              <article key={phase}>
-                <header><span>{phase === "dlc" ? "DLC" : phase}</span><small>{loadout.level}</small></header>
-                <div className="loadout-weapon"><small>Main weapon</small><strong>{loadout.weapon}</strong><TimingNote value={loadout.weapon} phase={phase} /></div>
-                <dl>
-                  <div><dt>Off hand</dt><dd>{loadout.offhand}</dd></div>
-                  <div><dt>Skill plan</dt><dd>{loadout.skill}</dd></div>
-                  <div><dt>Talismans</dt><dd><small>{loadout.talismanSlots}</small>{loadout.talismans.map((talisman) => <span key={talisman}>{talisman}<TimingNote value={talisman} phase={phase} /></span>)}</dd></div>
-                  <div><dt>Armour</dt><dd>{loadout.armour}</dd></div>
-                  <div><dt>Weight check</dt><dd>{armourPieces.length ? `${armourWeight.toFixed(1)} armour weight; ${weapon?.weight != null ? `${weapon.weight} main-weapon weight; ` : ""}${mediumLimit.toFixed(1)} total-load limit at END ${statPlan.attributes.endurance}.` : `Use the Status screen limit of ${mediumLimit.toFixed(1)} total weight at END ${statPlan.attributes.endurance}; the source does not name individual pieces for this stage.`}</dd></div>
-                  <div><dt>Spells</dt><dd>{loadout.spells.length ? loadout.spells.map((spell) => <span key={spell}>{spell}</span>) : build.publishedLoadout ? "Not specified by source" : "No required spells; use consumables for ranged utility."}</dd></div>
-                  <div><dt>Physick</dt><dd>{loadout.flask}</dd></div>
-                  <div><dt>Stats</dt><dd>{(Object.keys(STAT_LABELS) as StatKey[]).map((stat) => `${STAT_LABELS[stat]} ${statPlan.attributes[stat]}`).join(" · ")}<small>{loadout.stats}</small></dd></div>
-                </dl>
-                {loadout.borrowedFrom && <a className="borrowed-source" href={loadout.borrowedFrom.url} target="_blank" rel="noreferrer">{loadout.sourceUse === "curated-baseline" ? "Sourced baseline" : "Temporary stage"} from {loadout.borrowedFrom.buildName} ↗</a>}
-                {loadout.weaponChoice && <div className="weapon-choice-source"><strong>Why this named option</strong><p>{loadout.weaponChoice.rationale}</p><div>{loadout.weaponChoice.sources.map((source) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.label} ↗</a>)}</div></div>}
-              </article>
-            );
-          })}
-        </div>
-        <p className="loadout-note">{build.publishedStages ? "Every stage is taken from the linked progression guide. A named weapon remains in use until the guide’s actual replacement is obtainable." : build.publishedLoadout ? "The published stage is reproduced from its linked source. Earlier stages stay in the same stat and combat-style lane, and each temporary source is shown." : "This curated progression keeps its named weapon path and uses a compatible published build as the baseline for each stage. Open the baseline link to compare the original setup."}</p>
+        <EquipmentTimeline build={build} plannedClass={plannedClass} />
         {onAssign && <button type="button" className="assign-build-button" onClick={onAssign}>{assignLabel || "Choose this build"}</button>}
       </section>
     </div>
@@ -1538,7 +1640,6 @@ function SelectedBuildsView({ expedition, viewerPlayerId }: { expedition: Expedi
   if (!player || !build) return null;
   const classification = buildClassification(build);
   const plannedClass = plannerStartingClass(build);
-  const checkpointLevel: Record<PhaseKey, number> = { early: 40, mid: 90, late: 150, dlc: 170 };
 
   return <section className="selected-builds-page">
     <div className="page-heading"><div><p className="eyebrow">Assigned loadouts</p><h2>Selected builds</h2><p>The builds currently assigned to this run. Switch players below; this page only shows chosen builds, not the full catalogue.</p></div><div className="codex-count"><strong>{availablePlayers.length}</strong><span>{availablePlayers.length === 1 ? "build selected" : "builds selected"}</span></div></div>
@@ -1546,16 +1647,7 @@ function SelectedBuildsView({ expedition, viewerPlayerId }: { expedition: Expedi
     <div className="selected-build-heading" style={{ "--player": player.color } as React.CSSProperties}><div><p className="eyebrow">{player.name}&apos;s build</p><h3>{build.name}</h3><p>{build.playstyle}</p></div><dl><div><dt>Starting class</dt><dd>{plannedClass}{build.startingClass === "Not specified" ? " (calculated)" : ""}</dd></div><div><dt>Attributes</dt><dd>{classification.attributes}</dd></div><div><dt>Range</dt><dd>{classification.range}</dd></div><div><dt>Combat focus</dt><dd>{build.mechanic}</dd></div></dl></div>
     <a className="build-source" href={build.source.url} target="_blank" rel="noreferrer">Source: {build.source.label} ↗</a>
     {build.quest && <div className="quest-callout"><strong>Quest dependency</strong><span>{build.quest}</span></div>}
-    <div className="loadout-stages selected-loadout-stages">{(["early", "mid", "late", "dlc"] as PhaseKey[]).map((phase) => {
-      const loadout = stageLoadout(build, phase);
-      const weapon = findWeaponUpgradeRecord(loadout.weapon);
-      const statPlan = planBuildStatTarget({ ...build, startingClass: plannedClass }, checkpointLevel[phase], weaponRequirements(loadout.weapon));
-      const armourPieces = splitArmourSpecification(loadout.armour);
-      const armourWeight = armourPieces.reduce((sum, piece) => sum + piece.weight, 0);
-      const loadTier = /light load|below 30%|blue dancer/i.test(loadout.armour) ? "light" : "medium";
-      const loadLimit = maxWeightForTier(maxEquipLoad(statPlan.attributes.endurance), loadTier);
-      return <article key={phase}><header><span>{phase === "dlc" ? "DLC" : phase}</span><small>{loadout.level}</small></header><div className="loadout-weapon"><small>Main weapon</small><strong>{loadout.weapon}</strong><TimingNote value={loadout.weapon} phase={phase} /></div><dl><div><dt>Off hand</dt><dd>{loadout.offhand}</dd></div><div><dt>Skill plan</dt><dd>{loadout.skill}</dd></div><div><dt>Talismans</dt><dd><small>{loadout.talismanSlots}</small>{loadout.talismans.map((talisman) => <span key={talisman}>{talisman}<TimingNote value={talisman} phase={phase} /></span>)}</dd></div><div><dt>Armour</dt><dd>{loadout.armour}</dd></div><div><dt>Weight check</dt><dd>{armourPieces.length ? `${armourWeight.toFixed(1)} armour weight${weapon?.weight != null ? ` + ${weapon.weight} weapon weight` : ""}; stay below ${loadLimit.toFixed(1)} total weight for ${loadTier} load at END ${statPlan.attributes.endurance}.` : `Stay below ${loadLimit.toFixed(1)} total weight for ${loadTier} load at END ${statPlan.attributes.endurance}.`}</dd></div><div><dt>Spells</dt><dd>{loadout.spells.length ? loadout.spells.map((spell) => <span key={spell}>{spell}</span>) : "None required"}</dd></div><div><dt>Physick</dt><dd>{loadout.flask}</dd></div><div><dt>Recommended stats</dt><dd>{(Object.keys(STAT_LABELS) as StatKey[]).map((stat) => `${STAT_LABELS[stat]} ${statPlan.attributes[stat]}`).join(" · ")}<small>{loadout.stats}</small></dd></div></dl>{loadout.borrowedFrom && <a className="borrowed-source" href={loadout.borrowedFrom.url} target="_blank" rel="noreferrer">{loadout.sourceUse === "curated-baseline" ? "Sourced baseline" : "Temporary stage"} from {loadout.borrowedFrom.buildName} ↗</a>}</article>;
-    })}</div>
+    <EquipmentTimeline build={build} plannedClass={plannedClass} levelOffset={expedition.levelOffset ?? 0} />
   </section>;
 }
 

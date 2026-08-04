@@ -331,6 +331,22 @@ function earlyStarterWeapon(build: Build, eventualWeapon: string) {
   return build.startingClass === "Hero" ? "Battle Axe" : build.startingClass === "Samurai" ? "Uchigatana" : "Longsword";
 }
 
+function earlyStarterSkill(starter: string) {
+  const weapon = normalWords(starter);
+  if (weapon.includes("halberd")) return "Charge Forth";
+  if (weapon.includes("short spear") || weapon.includes("estoc")) return "Impaling Thrust";
+  if (weapon.includes("large club") || weapon === "club") return "Barbaric Roar";
+  if (weapon.includes("lordsworn's greatsword")) return "Stamp (Upward Cut)";
+  if (weapon.includes("dagger")) return "Quickstep";
+  if (weapon.includes("uchigatana")) return "Unsheathe";
+  if (weapon.includes("longsword") || weapon.includes("broadsword")) return "Square Off";
+  if (weapon.includes("battle axe")) return "Wild Strikes";
+  if (weapon.includes("shortbow")) return "Barrage";
+  if (weapon.includes("light crossbow")) return "Kick";
+  if (weapon.includes("staff") || weapon.includes("finger seal")) return "No Skill";
+  return "Use the weapon's default skill";
+}
+
 function applyEarlyStarter(build: Build, phase: PhaseKey, loadout: StageLoadout): StageLoadout {
   if (phase !== "early") return loadout;
   const starter = earlyStarterWeapon(build, loadout.weapon);
@@ -338,6 +354,7 @@ function applyEarlyStarter(build: Build, phase: PhaseKey, loadout: StageLoadout)
   return {
     ...loadout,
     weapon: starter,
+    skill: earlyStarterSkill(starter),
     weaponChoice: {
       rationale: `Start with ${starter} so the build uses its intended damage stats and combat rhythm immediately. Keep it until the route creates the card for ${loadout.weapon}; no respec is needed for that replacement.`,
       sources: [loadout.borrowedFrom || build.source, build.source].map(({ label, url }) => ({ label, url })),
