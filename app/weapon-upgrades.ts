@@ -5013,9 +5013,10 @@ export const DLC_SOMBER_WEAPONS = [
   "Velvet Sword of St. Trina"
 ] as const;
 const normal = (value: string) => value.normalize("NFKD").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const SORTED_WEAPON_UPGRADE_RECORDS = [...WEAPON_UPGRADE_RECORDS].sort((a, b) => b.name.length - a.name.length);
 export function findWeaponUpgradeRecord(value: string): WeaponUpgradeRecord | undefined {
   const source = ` ${normal(value)} `;
-  return [...WEAPON_UPGRADE_RECORDS].sort((a, b) => b.name.length - a.name.length).find((entry) => source.includes(` ${normal(entry.name)} `));
+  return SORTED_WEAPON_UPGRADE_RECORDS.find((entry) => source.includes(` ${normal(entry.name)} `));
 }
 export function weaponUpgradePath(value: string): "standard" | "somber" | "none" {
   const record = findWeaponUpgradeRecord(value);

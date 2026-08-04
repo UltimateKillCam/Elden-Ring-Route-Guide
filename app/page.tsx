@@ -185,6 +185,8 @@ function loadoutPickups(loadout: ReturnType<typeof stageLoadout>, chapter: Chapt
   const pickups: LoadoutPickup[] = [];
   for (const field of fields) {
     for (const value of field.values) {
+      const cleanedValue = cleanItemName(value);
+      if (!cleanedValue || /^(?:none|n a|na|not specified|not specified by source|source stats|any|any weapon)$/.test(cleanedValue)) continue;
       const layerMatches = findMapItems(value, layer, field.categories);
       const allMatches = findMapItems(value, undefined, field.categories);
       const exactMatches = allMatches.filter((match) => literalItemName(match.name) === literalItemName(value));
@@ -194,7 +196,7 @@ function loadoutPickups(loadout: ReturnType<typeof stageLoadout>, chapter: Chapt
           return name.split(" ").length > 1 && literalItemName(value).includes(name);
         })
         .filter((match, _, candidates) => !candidates.some((other) => other !== match && literalItemName(other.name).includes(literalItemName(match.name))));
-      const candidateMatches = exactMatches.length ? exactMatches : embeddedMatches.length ? embeddedMatches : layerMatches;
+      const candidateMatches = exactMatches.length ? exactMatches : embeddedMatches.length ? embeddedMatches : layerMatches.length === 1 ? layerMatches : [];
       const isChoice = /\bor\b|according to|best available|build-specific|named weapon/i.test(value) && ["off-hand", "skill", "talisman", "armour", "spell"].includes(field.slot);
       const selectedMatches = isChoice && candidateMatches.length > 1
         ? [...candidateMatches].sort((a, b) => cleanItemName(value).indexOf(cleanItemName(a.name)) - cleanItemName(value).indexOf(cleanItemName(b.name))).slice(0, 1)
@@ -1009,13 +1011,13 @@ function FullBuildDetails({ build, onClose, assignLabel, onAssign }: { build: Bu
                   <div><dt>Physick</dt><dd>{loadout.flask}</dd></div>
                   <div><dt>Stats</dt><dd>{(Object.keys(STAT_LABELS) as StatKey[]).map((stat) => `${STAT_LABELS[stat]} ${statPlan.attributes[stat]}`).join(" · ")}<small>{loadout.stats}</small></dd></div>
                 </dl>
-                {loadout.borrowedFrom && <a className="borrowed-source" href={loadout.borrowedFrom.url} target="_blank" rel="noreferrer">Temporary stage from {loadout.borrowedFrom.buildName} ↗</a>}
+                {loadout.borrowedFrom && <a className="borrowed-source" href={loadout.borrowedFrom.url} target="_blank" rel="noreferrer">{loadout.sourceUse === "curated-baseline" ? "Sourced baseline" : "Temporary stage"} from {loadout.borrowedFrom.buildName} ↗</a>}
                 {loadout.weaponChoice && <div className="weapon-choice-source"><strong>Why this named option</strong><p>{loadout.weaponChoice.rationale}</p><div>{loadout.weaponChoice.sources.map((source) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.label} ↗</a>)}</div></div>}
               </article>
             );
           })}
         </div>
-        <p className="loadout-note">{build.publishedStages ? "Every stage is taken from the linked progression guide. A named weapon remains in use until the guide’s actual replacement is obtainable." : build.publishedLoadout ? "The build's published stage is reproduced from its linked source. Earlier gaps use the closest matching Fextralife stage and show that source on the stage; once the build's own weapon is available it is carried forward." : "Talismans are listed in slot order. Swap the defensive slot for the boss-specific elemental drake talisman when needed."}</p>
+        <p className="loadout-note">{build.publishedStages ? "Every stage is taken from the linked progression guide. A named weapon remains in use until the guide’s actual replacement is obtainable." : build.publishedLoadout ? "The published stage is reproduced from its linked source. Earlier stages stay in the same stat and combat-style lane, and each temporary source is shown." : "This curated progression keeps its named weapon path and uses a compatible published build as the baseline for each stage. Open the baseline link to compare the original setup."}</p>
         {onAssign && <button type="button" className="assign-build-button" onClick={onAssign}>{assignLabel || "Choose this build"}</button>}
       </section>
     </div>
@@ -1552,7 +1554,7 @@ function SelectedBuildsView({ expedition, viewerPlayerId }: { expedition: Expedi
       const armourWeight = armourPieces.reduce((sum, piece) => sum + piece.weight, 0);
       const loadTier = /light load|below 30%|blue dancer/i.test(loadout.armour) ? "light" : "medium";
       const loadLimit = maxWeightForTier(maxEquipLoad(statPlan.attributes.endurance), loadTier);
-      return <article key={phase}><header><span>{phase === "dlc" ? "DLC" : phase}</span><small>{loadout.level}</small></header><div className="loadout-weapon"><small>Main weapon</small><strong>{loadout.weapon}</strong><TimingNote value={loadout.weapon} phase={phase} /></div><dl><div><dt>Off hand</dt><dd>{loadout.offhand}</dd></div><div><dt>Skill plan</dt><dd>{loadout.skill}</dd></div><div><dt>Talismans</dt><dd><small>{loadout.talismanSlots}</small>{loadout.talismans.map((talisman) => <span key={talisman}>{talisman}<TimingNote value={talisman} phase={phase} /></span>)}</dd></div><div><dt>Armour</dt><dd>{loadout.armour}</dd></div><div><dt>Weight check</dt><dd>{armourPieces.length ? `${armourWeight.toFixed(1)} armour weight${weapon?.weight != null ? ` + ${weapon.weight} weapon weight` : ""}; stay below ${loadLimit.toFixed(1)} total weight for ${loadTier} load at END ${statPlan.attributes.endurance}.` : `Stay below ${loadLimit.toFixed(1)} total weight for ${loadTier} load at END ${statPlan.attributes.endurance}.`}</dd></div><div><dt>Spells</dt><dd>{loadout.spells.length ? loadout.spells.map((spell) => <span key={spell}>{spell}</span>) : "None required"}</dd></div><div><dt>Physick</dt><dd>{loadout.flask}</dd></div><div><dt>Recommended stats</dt><dd>{(Object.keys(STAT_LABELS) as StatKey[]).map((stat) => `${STAT_LABELS[stat]} ${statPlan.attributes[stat]}`).join(" · ")}<small>{loadout.stats}</small></dd></div></dl>{loadout.borrowedFrom && <a className="borrowed-source" href={loadout.borrowedFrom.url} target="_blank" rel="noreferrer">Temporary stage from {loadout.borrowedFrom.buildName} ↗</a>}</article>;
+      return <article key={phase}><header><span>{phase === "dlc" ? "DLC" : phase}</span><small>{loadout.level}</small></header><div className="loadout-weapon"><small>Main weapon</small><strong>{loadout.weapon}</strong><TimingNote value={loadout.weapon} phase={phase} /></div><dl><div><dt>Off hand</dt><dd>{loadout.offhand}</dd></div><div><dt>Skill plan</dt><dd>{loadout.skill}</dd></div><div><dt>Talismans</dt><dd><small>{loadout.talismanSlots}</small>{loadout.talismans.map((talisman) => <span key={talisman}>{talisman}<TimingNote value={talisman} phase={phase} /></span>)}</dd></div><div><dt>Armour</dt><dd>{loadout.armour}</dd></div><div><dt>Weight check</dt><dd>{armourPieces.length ? `${armourWeight.toFixed(1)} armour weight${weapon?.weight != null ? ` + ${weapon.weight} weapon weight` : ""}; stay below ${loadLimit.toFixed(1)} total weight for ${loadTier} load at END ${statPlan.attributes.endurance}.` : `Stay below ${loadLimit.toFixed(1)} total weight for ${loadTier} load at END ${statPlan.attributes.endurance}.`}</dd></div><div><dt>Spells</dt><dd>{loadout.spells.length ? loadout.spells.map((spell) => <span key={spell}>{spell}</span>) : "None required"}</dd></div><div><dt>Physick</dt><dd>{loadout.flask}</dd></div><div><dt>Recommended stats</dt><dd>{(Object.keys(STAT_LABELS) as StatKey[]).map((stat) => `${STAT_LABELS[stat]} ${statPlan.attributes[stat]}`).join(" · ")}<small>{loadout.stats}</small></dd></div></dl>{loadout.borrowedFrom && <a className="borrowed-source" href={loadout.borrowedFrom.url} target="_blank" rel="noreferrer">{loadout.sourceUse === "curated-baseline" ? "Sourced baseline" : "Temporary stage"} from {loadout.borrowedFrom.buildName} ↗</a>}</article>;
     })}</div>
   </section>;
 }

@@ -2,6 +2,7 @@ import { wikiBuilds } from "./wiki-builds";
 import { sourcedMemeBuilds } from "./meme-builds";
 import { additionalSourcedBuilds } from "./sourced-builds";
 import { weaponResolutions } from "./weapon-resolutions";
+import { findWeaponUpgradeRecord } from "./weapon-upgrades";
 
 export type PhaseKey = "early" | "mid" | "late" | "dlc";
 
@@ -102,7 +103,7 @@ const build = (
 const curatedBuilds: Build[] = [
   build("quality-knight", "Quality Knight", "STR / DEX", "Frontline", "A flexible knight using stance-breaking skills and a quicker DLC finish.", ["Longsword", "Claymore", "Quality Great Épée", "Milady + Wing Stance"], ["quality", "sword", "guard"], "Easy"),
   build("heavy-greatsword", "Heavy Greatsword Knight", "STR", "Frontline", "Measured colossal swings, high poise and reliable stance damage.", ["Lordsworn's Greatsword", "Claymore", "Greatsword", "Greatsword of Solitude"], ["strength", "greatsword", "stance"], "Easy"),
-  build("colossal-wanderer", "Colossal Wandering Swordsman", "STR → STR / ARC", "Breaker", "Charged heavies and crouch pokes with one purposeful DLC respec.", ["Zweihander", "Grafted Blade Greatsword", "Ruins Greatsword", "Ancient Meteoric Ore Greatsword"], ["strength", "colossal", "respec"], "Advanced"),
+  build("colossal-wanderer", "Colossal Wandering Swordsman", "STR / ARC", "Breaker", "Heavy-infused colossal swords establish the moveset; after Nokron, an Occult affinity adds Arcane scaling without changing the stat plan.", ["Heavy Zweihander", "Heavy Greatsword", "Occult Greatsword", "Ancient Meteoric Ore Greatsword"], ["strength", "arcane", "colossal"], "Advanced"),
   build("lightning-greataxe", "Lightning Greataxe", "STR / FAI", "Bruiser", "Heavy axe blows backed by buffs and late-game lightning mobility.", ["Greataxe", "Axe of Godrick", "Great Stars", "Death Knight's Longhaft Axe"], ["strength", "faith", "lightning"]),
   build("guard-hammer", "Guard-Counter Great Hammer", "STR / FAI", "Tank", "Blocks, counters and heals through pressure without becoming a shield exploit.", ["Morning Star", "Brick Hammer", "Great Stars + Prayerful Strike", "Black Steel Greathammer"], ["strength", "guard", "holy"], "Easy"),
   build("colossal-hammer", "Colossal Hammer", "STR", "Breaker", "War cries and charged heavies with enormous stagger potential.", ["Large Club", "Great Club", "Giant-Crusher", "Anvil Hammer"], ["strength", "hammer", "stance"], "Easy"),
@@ -122,16 +123,16 @@ const curatedBuilds: Build[] = [
   build("curved-dancer", "Curved-Sword Dancer", "DEX", "Striker", "Flowing multihit strings with deliberately restrained buff stacking.", ["Shamshir", "Scavenger's Curved Sword", "Flowing Curved Sword", "Dancing Blade of Ranah"], ["dexterity", "curved", "multihit"]),
   build("backhand", "Backhand Skirmisher", "DEX", "Skirmisher", "Dodges through attacks and answers from blind angles.", ["Shamshir", "Mantis Blade", "Flowing Curved Sword", "Backhand Blade + Blind Spot"], ["dexterity", "mobile", "curved"]),
   build("whip", "Whip Controller", "DEX", "Controller", "Long-range sweeps, charged Urumi heavies and measured status buildup.", ["Whip", "Urumi", "Hoslow's Petal Whip", "Tooth Whip"], ["dexterity", "whip", "control"], "Moderate", "Volcano Manor contracts"),
-  build("reaper", "Reaper Pilgrim", "DEX / FAI → ARC", "Striker", "Wide scythe control that finishes as a flowing arcane duelist.", ["Scythe", "Winged Scythe", "Grave Scythe + Stormcaller", "Obsidian Lamina"], ["reaper", "faith", "arcane"], "Advanced", "Ansbach quest"),
+  build("reaper", "Reaper Pilgrim", "DEX / ARC", "Striker", "Wide scythe sweeps use Dexterity first, then Blood and Occult affinities add Arcane scaling before the flowing DLC finale.", ["Keen Scythe", "Blood Grave Scythe + Stormcaller", "Occult Grave Scythe + Stormcaller", "Obsidian Lamina"], ["reaper", "dexterity", "arcane"], "Advanced", "Ansbach quest"),
   build("lightning-spear", "Lightning Spear Thrower", "DEX / FAI", "Ranged striker", "Thrusts in melee and throws lightning at priority targets.", ["Short Spear", "Cross-Naginata", "Bolt of Gransax", "Spear of the Impaler"], ["dexterity", "faith", "lightning"]),
   build("mobile-archer", "Mobile Archer", "DEX", "Ranged", "Jump shots, Barrage and agile bow play with a light melee backup.", ["Shortbow", "Horn Bow", "Black Bow", "Ansbach's Longbow"], ["dexterity", "bow", "ranged"], "Advanced", "Ansbach quest choice"),
-  build("crossbow", "Crossbow Engineer", "VIG / END", "Ranged", "Ammunition choice matters more than damage stats; carries a practical sidearm.", ["Light Crossbow", "Arbalest", "Pulley Crossbow", "Repeating Crossbow"], ["crossbow", "ranged", "utility"], "Moderate"),
+  build("crossbow", "Crossbow Engineer", "STR / DEX", "Ranged", "Meet Strength and Dexterity requirements first; ammunition choice then matters more than further damage-stat investment.", ["Light Crossbow", "Arbalest", "Pulley Crossbow", "Repeating Crossbow"], ["crossbow", "ranged", "utility"], "Moderate"),
   build("critical-assassin", "Critical-Hit Assassin", "DEX / FAI", "Specialist", "Parries and stance breaks convert into high-value critical attacks.", ["Misericorde", "Erdsteel Dagger", "Black Knife", "Main-gauche"], ["dexterity", "dagger", "critical"], "Advanced", "Kenneth Haight reward"),
   build("throwing-assassin", "Throwing-Blade Assassin", "DEX", "Ranged", "Starts with consumable throws and becomes a true ranged-dagger build.", ["Dagger + Kukri", "Black Knife", "Black Knife + utility dagger", "Smithscript Dagger"], ["dexterity", "dagger", "ranged"]),
   build("pure-sorcerer", "Pure Sorcerer", "INT", "Caster", "Efficient ranged sorcery with an optional finger-magic pivot in the DLC.", ["Demi-Human Queen's Staff", "Academy Glintstone Staff", "Carian Regal Scepter", "Maternal Staff"], ["intelligence", "sorcery", "ranged"], "Easy", "Thops and Ranni progression"),
-  build("carian-greatsword", "Carian Greatsword Mage", "INT → INT / FAI", "Spellblade", "Sword sorceries and magical greatswords become a paired elemental style.", ["Magic Longsword", "Carian Knight's Sword", "Dark Moon Greatsword", "Rellana's Twin Blades"], ["intelligence", "spellblade", "quest"], "Advanced", "Ranni quest"),
+  build("carian-greatsword", "Carian Greatsword Mage", "INT / FAI", "Spellblade", "Magic swordplay develops into a dual-school spellblade; Intelligence leads early while Faith is raised steadily for the same final setup.", ["Magic Longsword", "Sword of Night and Flame", "Sword of Night and Flame + Carian sword sorceries", "Rellana's Twin Blades"], ["intelligence", "faith", "spellblade", "quest"], "Advanced", "Caria Manor and Rellana progression"),
   build("dex-spellblade", "Dexterity Spellblade", "DEX / INT", "Spellblade", "Fast melee weapons with large-area magical weapon skills.", ["Magic Estoc", "Wing of Astel", "Death Ritual Spear", "Star-Lined Sword"], ["dexterity", "intelligence", "magic"]),
-  build("gravity-knight", "Gravity Knight", "STR / INT → STR / ARC", "Breaker", "Gravity pulls and heavy weapons with one clean DLC respec.", ["Lordsworn's Greatsword + Gravitas", "Meteoric Ore Blade", "Fallingstar Beast Jaw", "Ancient Meteoric Ore Greatsword"], ["strength", "gravity", "respec"], "Advanced"),
+  build("gravity-knight", "Gravity Knight", "STR / INT", "Breaker", "Gravity pulls and heavy weapons stay on Strength and Intelligence from Limgrave onward; the late weapon remains effective throughout the DLC.", ["Lordsworn's Greatsword + Gravitas", "Meteoric Ore Blade", "Fallingstar Beast Jaw", "Fallingstar Beast Jaw + gravity sorceries"], ["strength", "intelligence", "gravity"], "Advanced"),
   build("frost-knight", "Frost Knight", "DEX / INT", "Controller", "Reliable physical damage with frostbite as a secondary payoff.", ["Cold Uchigatana", "Frozen Needle", "Zamor Curved Sword", "Cold Milady"], ["dexterity", "intelligence", "frost"]),
   build("death-knight", "Death Knight Sorcerer", "STR / INT", "Spellblade", "Summoned skeletons, ghostflame and mobile rancor pressure.", ["Sacrificial Axe", "Rosus' Axe", "Helphen's Steeple", "Spirit Sword"], ["intelligence", "death", "spellblade"]),
   build("magic-polearm", "Magic Polearm Scholar", "DEX / INT", "Spellblade", "Long-reaching weapon skills and a weapon that doubles as a catalyst.", ["Magic Great Épée", "Death Ritual Spear", "Loretta's War Sickle", "Carian Sorcery Sword"], ["dexterity", "intelligence", "polearm"]),
@@ -159,18 +160,18 @@ const curatedBuilds: Build[] = [
   build("nightblade", "Nightblade Fencer", "DEX", "Duelist", "Fast duelling with feints, flowing attacks and guard-piercing darkness.", ["Estoc", "Ornamental Straight Sword", "Nox Flowing Sword", "Sword of Night"], ["dexterity", "duelist", "night"]),
   build("blood-dancer", "Twinblade Blood Dancer", "DEX / ARC", "Striker", "Mobile multihit pressure without dual jump-attack spam.", ["Twinblade", "Eleonora's Poleblade", "Blood Godskin Peeler", "Falx"], ["dexterity", "arcane", "twinblade"]),
   build("bonebow", "Bonebow Beastmaster", "DEX / ARC", "Ranged", "Status arrows and spirit-assisted volleys with a light melee sidearm.", ["Shortbow", "Serpent Bow", "Pulley Bow", "Bone Bow"], ["dexterity", "arcane", "bow"], "Advanced"),
-  build("artillerist", "Full Moon Artillerist", "DEX / INT", "Ranged", "A deliberate artillery character built around bolts, pots and cannons.", ["Light Crossbow", "Full Moon Crossbow", "Jar Cannon", "Rabbath's Cannon"], ["intelligence", "crossbow", "ranged"]),
+  build("artillerist", "Full Moon Artillerist", "STR / DEX / INT", "Ranged", "A viable novelty artillery route: meet the cannon's Strength requirement gradually while Dexterity and Intelligence support the Full Moon Crossbow.", ["Light Crossbow", "Full Moon Crossbow", "Jar Cannon", "Rabbath's Cannon"], ["strength", "dexterity", "intelligence", "crossbow", "ranged", "novelty"]),
   build("ice-dragoon", "Ice-Lightning Dragoon", "STR / DEX", "Skirmisher", "Frost-lightning buffs, long reach and an aggressive blink finish.", ["Short Spear", "Dragon Halberd", "Dragonscale Blade", "Death Knight's Twin Axes"], ["quality", "lightning", "frost"]),
   build("eochaid", "Eochaid Drill Knight", "STR / ARC", "Bruiser", "Charged corkscrew attacks give way to a mobile frost/arcane cleaver.", ["Broadsword", "Regalia of Eochaid", "Marais Executioner's Sword", "Putrescence Cleaver"], ["strength", "arcane", "charged"]),
-  build("finger-oracle", "Finger Oracle", "STR / INT / FAI", "Novelty caster", "A strange but viable finger-themed caster with one late respec.", ["Club + mixed catalysts", "Ringed Finger", "Prince of Death's Staff", "Great Beyond Staff + Gazing Finger"], ["novelty", "caster", "respec"], "Advanced", "Ymir quest"),
+  build("finger-oracle", "Finger Oracle", "STR / INT / FAI", "Novelty caster", "A strange but viable mixed caster that raises Intelligence and Faith throughout, using Strength only to meet its finger-weapon requirements.", ["Club + mixed catalysts", "Ringed Finger", "Prince of Death's Staff", "Staff of the Great Beyond + Gazing Finger"], ["novelty", "caster"], "Advanced", "Ymir quest"),
   build("liturgist", "Golden Order Liturgist", "INT / FAI", "Caster support", "Ranged holy discs, buffs and a dependable sword fallback.", ["Sacred Blade weapon", "Golden Order Seal + Discus", "Golden Order Greatsword", "Leda's Sword"], ["intelligence", "faith", "holy"], "Advanced"),
   build("first-lord", "Roar of the First Lord", "STR", "Breaker", "Roars, charged heavies and hyper-armour recreate the First Lord's rhythm.", ["Highland Axe", "Grafted Blade Greatsword", "Axe of Godfrey", "Greatsword of Radahn (Lord)"], ["strength", "roar", "stance"]),
   build("bloodfiend", "Bloodfiend Juggernaut", "STR / ARC", "Breaker", "Slow, punishing blood attacks deliberately held behind progression caps.", ["Club", "Rusted Anchor", "Occult Great Stars", "Bloodfiend's Arm"], ["strength", "arcane", "bleed"], "Easy"),
   build("ghostflame", "Ghostflame Hexer", "INT / FAI", "Caster", "Frost, lingering ghostflame and putrescence control whole arenas.", ["Glintstone Staff + Magic Sword", "Death's Poker", "Helphen's Steeple + death sorceries", "Spirit Glaive + putrescence sorceries"], ["intelligence", "faith", "frost"], "Advanced", "Fia quest"),
   build("storm-perfumer", "Storm-Painter Perfumer", "DEX / FAI", "Elementalist", "Precise lightning thrusts alternate with wide elemental clouds.", ["Erdsteel Dagger + pots", "Lightning incantations + Aromatics", "Bolt of Gransax", "Lightning Perfume Bottle"], ["dexterity", "faith", "perfume"]),
   build("venom-alchemist", "Venom Alchemist", "DEX / ARC", "Controller", "Layered poison pressure with a physical backup for immune enemies.", ["Dagger + Poisonous Mist", "Coil Shield + Serpent Bow", "Venomous Fang", "Deadly Poison Perfume Bottle"], ["dexterity", "arcane", "poison"]),
-  build("destined-templar", "Destined Death Templar", "STR / FAI", "Bruiser", "Health reduction and heavy holy/fire damage with a deliberate late respec.", ["Winged Scythe", "Black Knife", "Maliketh's Black Blade", "Greatsword of Damnation"], ["strength", "faith", "destined death"], "Advanced"),
-  build("grafted-scion", "Grafted Scion", "STR / DEX", "Trophy fighter", "Changes identity after each major lord by wielding boss trophies.", ["Battle Axe", "Grafted Dragon", "Axe of Godrick", "Greatsword of Radahn (Light)"], ["quality", "remembrance", "respec"], "Advanced"),
+  build("destined-templar", "Destined Death Templar", "STR / FAI", "Bruiser", "Sacred great-weapon fundamentals lead directly into Destined Death and the same Strength/Faith pressure in the DLC.", ["Sacred Claymore", "Golden Halberd", "Maliketh's Black Blade", "Greatsword of Damnation"], ["strength", "faith", "greatsword", "destined death"], "Advanced"),
+  build("grafted-scion", "Grafted Scion", "STR / DEX", "Trophy fighter", "A viable novelty route that invests in Strength and Dexterity throughout while changing boss-trophy weapons after major victories.", ["Battle Axe", "Grafted Dragon", "Axe of Godrick", "Greatsword of Radahn (Light)"], ["quality", "remembrance", "novelty"], "Advanced"),
   build("torch-saint", "Torch Saint", "DEX / FAI", "Novelty support", "Utility torches and fire pressure with a conventional Flame Art sidearm.", ["Steel-Wire Torch + Spear", "Sentry's Torch", "St. Trina's Torch", "Nanaya's Torch"], ["novelty", "faith", "fire"], "Advanced"),
   build("blue-dancer", "Blue Dancer Ascetic", "DEX", "Duelist", "Low equipment load rewards clean spacing and disciplined aggression.", ["Shamshir", "Katar", "Ornamental Straight Sword", "Pata"], ["dexterity", "light load", "duelist"], "Advanced"),
   build("trollsmith", "Trollsmith Thrower", "STR", "Breaker", "Classic charged-heavy play gains a spectacular thrown hammer in the DLC.", ["Large Club", "Brick Hammer", "Giant-Crusher", "Smithscript Greathammer"], ["strength", "hammer", "ranged"]),
@@ -218,6 +219,7 @@ export type StageLoadout = {
   flask: string;
   stats: string;
   borrowedFrom?: BuildSource & { buildName: string };
+  sourceUse?: "temporary-stage" | "curated-baseline";
   weaponChoice?: {
     rationale: string;
     sources: BuildSource[];
@@ -235,37 +237,200 @@ const PHASES: PhaseKey[] = ["early", "mid", "late", "dlc"];
 
 const statCodes = (build: Build) => ["STR", "DEX", "INT", "FAI", "ARC"].filter((stat) => build.stats.toUpperCase().includes(stat));
 
-const weaponKinds = (weapon: string) => {
-  const text = weapon.toLowerCase();
-  return [
-    "colossal sword", "colossal weapon", "curved greatsword", "greatsword", "straight sword", "curved sword",
-    "great katana", "katana", "twinblade", "great spear", "spear", "halberd", "great hammer", "hammer",
-    "greataxe", "axe", "fist", "claw", "katar", "dagger", "rapier", "thrusting sword", "light greatsword",
-    "flail", "reaper", "whip", "bow", "crossbow", "staff", "seal", "shield", "torch",
-  ].filter((kind) => text.includes(kind));
+const normalWords = (value: string) => value.normalize("NFKD").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const weaponClassCache = new Map<string, string>();
+
+function weaponClass(weapon: string) {
+  const cacheKey = normalWords(weapon);
+  const cached = weaponClassCache.get(cacheKey);
+  if (cached) return cached;
+  const recorded = findWeaponUpgradeRecord(weapon)?.weaponClass;
+  if (recorded) {
+    const result = recorded.toLowerCase();
+    weaponClassCache.set(cacheKey, result);
+    return result;
+  }
+  const text = cacheKey;
+  const aliases: [RegExp, string][] = [
+    [/glintstone staff|\bstaff\b/, "glintstone staff"], [/sacred seal|\bseal\b/, "sacred seal"],
+    [/hand to hand|dryleaf|danes footwork/, "hand-to-hand"], [/beast claw/, "beast claw"],
+    [/backhand blade/, "backhand blade"], [/throwing blade|smithscript dagger/, "throwing blade"],
+    [/perfume bottle/, "perfume bottle"], [/light greatsword|\bmilady\b/, "light greatsword"],
+    [/heavy thrusting|great epee|godskin stitcher/, "heavy thrusting sword"], [/thrusting sword|\brapier\b|\bestoc\b/, "thrusting sword"],
+    [/colossal sword/, "colossal sword"], [/colossal weapon/, "colossal weapon"], [/curved greatsword/, "curved greatsword"],
+    [/great katana/, "great katana"], [/great spear/, "great spear"], [/great hammer/, "great hammer"],
+    [/straight sword|longsword|broadsword/, "straight sword"], [/curved sword/, "curved sword"], [/greatsword/, "greatsword"],
+    [/twinblade/, "twinblade"], [/halberd/, "halberd"], [/spear|lance/, "spear"], [/greatbow/, "greatbow"],
+    [/crossbow|ballista|cannon/, "crossbow"], [/shortbow|longbow|\bbow\b/, "bow"], [/greataxe/, "greataxe"],
+    [/greatshield/, "greatshield"], [/shield/, "shield"], [/katana/, "katana"], [/reaper|scythe/, "reaper"],
+    [/\bclaw|talons/, "claw"], [/\bfist|caestus|katar/, "fist"], [/dagger|misericorde/, "dagger"],
+    [/\bflail/, "flail"], [/\bwhip|urumi/, "whip"], [/\bhammer|club/, "hammer"], [/\baxe/, "axe"],
+  ];
+  const result = aliases.find(([pattern]) => pattern.test(text))?.[1] || "unknown";
+  weaponClassCache.set(cacheKey, result);
+  return result;
+}
+
+const weaponFamily = (value: string) => {
+  const kind = weaponClass(value);
+  if (["glintstone staff", "sacred seal"].includes(kind)) return "catalyst";
+  if (["bow", "greatbow", "crossbow", "throwing blade"].includes(kind)) return "ranged";
+  if (["spear", "great spear", "halberd", "reaper"].includes(kind)) return "polearm";
+  if (["colossal sword", "colossal weapon", "great hammer", "greataxe", "greatsword", "curved greatsword", "hammer"].includes(kind)) return "heavy";
+  if (["katana", "great katana", "straight sword", "curved sword", "light greatsword", "thrusting sword", "heavy thrusting sword"].includes(kind)) return "blade";
+  if (["twinblade", "claw", "beast claw", "fist", "hand-to-hand", "backhand blade"].includes(kind)) return "rapid";
+  if (["shield", "greatshield"].includes(kind)) return "shield";
+  return kind;
 };
 
-function closestPublishedStage(build: Build, phase: PhaseKey) {
+const combatStyle = (build: Build, weapon: string) => {
+  const family = weaponFamily(weapon);
+  if (family === "catalyst") return "caster";
+  if (family === "ranged") return "ranged";
+  if (build.mechanic === "Spell damage") return "spellblade";
+  if (build.mechanic === "Ranged attacks") return "ranged-melee";
+  if (build.mechanic === "Guard counters") return "guard";
+  if (["Light attacks", "Status buildup"].includes(build.mechanic)) return "rapid";
+  if (["Charged attacks", "Jump attacks", "Stance damage"].includes(build.mechanic)) return "heavy";
+  return "melee";
+};
+
+const compatibleMechanic = (left: string, right: string) => {
+  if (left === right) return true;
+  const groups = [
+    ["Charged attacks", "Jump attacks", "Stance damage", "Skill damage"],
+    ["Light attacks", "Status buildup", "Critical attacks", "Skill damage"],
+    ["Spell damage", "Ranged attacks", "Skill damage"],
+    ["Guard counters", "Stance damage", "Skill damage"],
+  ];
+  return groups.some((group) => group.includes(left) && group.includes(right));
+};
+
+function desiredWeapon(build: Build, phase: PhaseKey) {
+  return build.publishedLoadout?.weapon || build.phases[phase];
+}
+
+function earlyStarterWeapon(build: Build, eventualWeapon: string) {
+  const family = weaponFamily(eventualWeapon);
+  const stats = statCodes(build);
+  if (family === "catalyst") {
+    if (stats.includes("FAI") && !stats.includes("INT")) return build.mechanic === "Guard counters" ? "Broadsword + Finger Seal" : "Finger Seal";
+    return build.startingClass === "Prisoner" ? "Glintstone Staff" : "Astrologer's Staff";
+  }
+  if (family === "ranged") return build.startingClass === "Bandit" ? "Shortbow" : "Light Crossbow";
+  if (family === "polearm") return stats.includes("STR") ? "Halberd" : "Short Spear";
+  if (family === "heavy") return stats.includes("STR") ? "Large Club" : "Lordsworn's Greatsword";
+  if (family === "rapid") return stats.includes("STR") ? "Club" : "Dagger";
+  if (family === "shield") return "Longsword + Heater Shield";
+  if (family === "blade") {
+    if (build.startingClass === "Samurai") return "Uchigatana";
+    if (build.startingClass === "Prisoner") return "Estoc";
+    if (build.startingClass === "Confessor") return "Broadsword";
+    return "Longsword";
+  }
+  return build.startingClass === "Hero" ? "Battle Axe" : build.startingClass === "Samurai" ? "Uchigatana" : "Longsword";
+}
+
+function applyEarlyStarter(build: Build, phase: PhaseKey, loadout: StageLoadout): StageLoadout {
+  if (phase !== "early") return loadout;
+  const starter = earlyStarterWeapon(build, loadout.weapon);
+  if (normalWords(loadout.weapon) === normalWords(starter)) return loadout;
+  return {
+    ...loadout,
+    weapon: starter,
+    weaponChoice: {
+      rationale: `Start with ${starter} so the build uses its intended damage stats and combat rhythm immediately. Keep it until the route creates the card for ${loadout.weapon}; no respec is needed for that replacement.`,
+      sources: [loadout.borrowedFrom || build.source, build.source].map(({ label, url }) => ({ label, url })),
+    },
+  };
+}
+
+function offPathRequirement(build: Build, weapon: string) {
+  const targetStats = statCodes(build);
+  const requirements = findWeaponUpgradeRecord(weapon);
+  const requirementStats: [string, number][] = requirements ? [
+    ["STR", requirements.reqStr], ["DEX", requirements.reqDex], ["INT", requirements.reqInt],
+    ["FAI", requirements.reqFai], ["ARC", requirements.reqArc],
+  ] : [];
+  return requirementStats.reduce((total, [stat, value]) => total + (!targetStats.includes(stat) && value > 12 ? value - 12 : 0), 0);
+}
+
+function scorePublishedStage(build: Build, phase: PhaseKey, candidate: Build, previous?: Build) {
+  const targetWeapon = desiredWeapon(build, phase);
+  const candidateWeapon = candidate.publishedLoadout?.weapon || "";
+  const targetClass = weaponClass(targetWeapon);
+  const candidateClass = weaponClass(candidateWeapon);
+  const targetFamily = weaponFamily(targetWeapon);
+  const candidateFamily = weaponFamily(candidateWeapon);
+  const targetStats = statCodes(build);
+  const candidateStats = statCodes(candidate);
+  const sharedStats = candidateStats.filter((stat) => targetStats.includes(stat)).length;
+  const targetStyle = combatStyle(build, targetWeapon);
+  const candidateStyle = combatStyle(candidate, candidateWeapon);
+  const sourcePhase = candidate.availableFrom || "early";
+  const requirementTax = offPathRequirement(build, candidateWeapon);
+  let score = 0;
+  score += targetClass !== "unknown" && targetClass === candidateClass ? 90 : targetFamily !== "unknown" && targetFamily === candidateFamily ? 48 : 0;
+  score += targetStats.length ? (sharedStats / targetStats.length) * 45 : 10;
+  score -= Math.max(0, candidateStats.length - sharedStats) * 16;
+  score += candidateStats.length > 0 && candidateStats.every((stat) => targetStats.includes(stat)) ? 18 : 0;
+  score += candidate.mechanic === build.mechanic ? 32 : compatibleMechanic(candidate.mechanic, build.mechanic) ? 13 : -12;
+  const casterOrRangedMismatch = [candidateStyle, targetStyle].some((style) => style === "caster" || style === "ranged");
+  score += candidateStyle === targetStyle ? 24 : casterOrRangedMismatch ? -42 : candidateFamily === targetFamily ? 7 : -10;
+  score -= requirementTax * 7;
+  score += sourcePhase === phase ? 5 : 0;
+  if (previous) {
+    const previousWeapon = previous.publishedLoadout?.weapon || "";
+    score += previous.id === candidate.id ? 34 : weaponClass(previousWeapon) === candidateClass ? 18 : weaponFamily(previousWeapon) === candidateFamily ? 9 : -8;
+    const previousStats = statCodes(previous);
+    score += previousStats.some((stat) => candidateStats.includes(stat)) ? 6 : -12;
+  }
+  return score;
+}
+
+function closestPublishedStage(build: Build, phase: PhaseKey, previous?: Build) {
   const explicitBridge = build.phaseBridges?.[phase];
   if (explicitBridge) return builds.find((candidate) => candidate.id === explicitBridge && candidate.publishedLoadout);
-  const targetKinds = weaponKinds(build.publishedLoadout?.weapon || "");
   const targetStats = statCodes(build);
-  const candidates = builds.filter((candidate) =>
+  const phaseIndex = PHASES.indexOf(phase);
+  let candidates = builds.filter((candidate) =>
     candidate.id !== build.id &&
     candidate.collection === "Fextralife" &&
     candidate.publishedLoadout &&
-    (candidate.availableFrom || "early") === phase,
+    PHASES.indexOf(candidate.availableFrom || "early") <= phaseIndex,
   );
+  const withSharedStats = candidates.filter((candidate) => !targetStats.length || statCodes(candidate).some((stat) => targetStats.includes(stat)));
+  if (withSharedStats.length) candidates = withSharedStats;
+  const targetFamily = weaponFamily(desiredWeapon(build, phase));
+  const inFamily = candidates.filter((candidate) => weaponFamily(candidate.publishedLoadout?.weapon || "") === targetFamily);
+  const globallyCleanStats = candidates.filter((candidate) => statCodes(candidate).every((stat) => targetStats.includes(stat)));
+  const cleanFamily = inFamily.filter((candidate) => statCodes(candidate).every((stat) => targetStats.includes(stat)));
+  if (cleanFamily.length) candidates = cleanFamily;
+  else if (globallyCleanStats.length) candidates = globallyCleanStats;
+  else if (inFamily.length) candidates = inFamily;
+  const cleanRequirements = candidates.filter((candidate) => offPathRequirement(build, candidate.publishedLoadout?.weapon || "") <= 4);
+  if (cleanRequirements.length) candidates = cleanRequirements;
+  return candidates.sort((a, b) => scorePublishedStage(build, phase, b, previous) - scorePublishedStage(build, phase, a, previous) || a.name.localeCompare(b.name))[0];
+}
 
-  return candidates.sort((a, b) => {
-    const score = (candidate: Build) => {
-      const candidateKinds = weaponKinds(candidate.publishedLoadout?.weapon || "");
-      const sharedStats = statCodes(candidate).filter((stat) => targetStats.includes(stat)).length;
-      const sharedKinds = candidateKinds.filter((kind) => targetKinds.includes(kind)).length;
-      return sharedKinds * 12 + sharedStats * 6 + Number(candidate.mechanic === build.mechanic) * 8 + Number(candidate.role === build.role) * 4 + Number(candidate.startingClass === build.startingClass) * 2;
-    };
-    return score(b) - score(a) || a.name.localeCompare(b.name);
-  })[0];
+const bridgePlanCache = new Map<string, Partial<Record<PhaseKey, Build>>>();
+
+function bridgePlan(build: Build) {
+  const cached = bridgePlanCache.get(build.id);
+  if (cached) return cached;
+  const plan: Partial<Record<PhaseKey, Build>> = {};
+  const availableIndex = build.publishedLoadout ? PHASES.indexOf(build.availableFrom || "early") : PHASES.length;
+  let previous: Build | undefined;
+  for (const [index, phase] of PHASES.entries()) {
+    if (index >= availableIndex) break;
+    const candidate = closestPublishedStage(build, phase, previous);
+    if (candidate) {
+      plan[phase] = candidate;
+      previous = candidate;
+    }
+  }
+  bridgePlanCache.set(build.id, plan);
+  return plan;
 }
 
 export function stageLoadout(build: Build, phase: PhaseKey): StageLoadout {
@@ -274,26 +439,26 @@ export function stageLoadout(build: Build, phase: PhaseKey): StageLoadout {
   if (build.publishedLoadout) {
     const available = build.availableFrom || "early";
     if (PHASES.indexOf(phase) < PHASES.indexOf(available)) {
-      const immediatelyBeforeMainWeapon = PHASES.indexOf(phase) === PHASES.indexOf(available) - 1 && PHASES.indexOf(phase) > 0 && !build.phaseBridges?.[phase];
-      const borrowed = closestPublishedStage(build, immediatelyBeforeMainWeapon ? PHASES[PHASES.indexOf(phase) - 1] : phase);
+      const borrowed = bridgePlan(build)[phase];
       if (borrowed?.publishedLoadout) {
         const resolution = weaponResolutions[borrowed.id];
-        return {
+        return applyEarlyStarter(build, phase, {
           ...borrowed.publishedLoadout,
           weapon: resolution?.weapon || borrowed.publishedLoadout.weapon,
           talismanSlots: `${borrowed.publishedLoadout.talismans.length} listed by source`,
           borrowedFrom: { ...borrowed.source, buildName: borrowed.name },
+          sourceUse: "temporary-stage",
           weaponChoice: resolution && { rationale: resolution.rationale, sources: resolution.sources },
-        };
+        });
       }
     }
     const resolution = weaponResolutions[build.id];
-    return {
+    return applyEarlyStarter(build, phase, {
       ...build.publishedLoadout,
       weapon: resolution?.weapon || build.publishedLoadout.weapon,
       talismanSlots: `${build.publishedLoadout.talismans.length} listed by source`,
       weaponChoice: resolution && { rationale: resolution.rationale, sources: resolution.sources },
-    };
+    });
   }
 
   const casterInt = includesAny(build, ["intelligence", "sorcer", "magic", "spellblade", "gravity", "frost", "death"]);
@@ -452,7 +617,8 @@ export function stageLoadout(build: Build, phase: PhaseKey): StageLoadout {
     dlc: `Keep VIG 60; finish the main scaling stat at 60–80; use remaining levels for END, MND and the listed secondary stat`,
   };
 
-  return {
+  const curatedBaseline = build.collection === "Curated" ? bridgePlan(build)[phase] : undefined;
+  return applyEarlyStarter(build, phase, {
     level: levels[phase],
     weapon: build.phases[phase],
     offhand,
@@ -463,7 +629,13 @@ export function stageLoadout(build: Build, phase: PhaseKey): StageLoadout {
     spells,
     flask,
     stats: stats[phase],
-  };
+    borrowedFrom: curatedBaseline ? { ...curatedBaseline.source, buildName: curatedBaseline.name } : undefined,
+    sourceUse: curatedBaseline ? "curated-baseline" : undefined,
+    weaponChoice: curatedBaseline ? {
+      rationale: `${build.name} is a curated progression variant built on the sourced ${curatedBaseline.name} ${phase} setup. Its named weapon stays in the same damage-stat and combat-style lane while the route advances toward the final build.`,
+      sources: [curatedBaseline.source, build.source],
+    } : undefined,
+  });
 }
 
 export type Chapter = {
@@ -557,6 +729,19 @@ export const chapters: Chapter[] = chapterData.map((chapter) => ({ ...chapter, .
 export const itemGuides: Record<string, string> = {
   "Golden Seed (Ordina Liturgical Town)": "From the Ordina, Liturgical Town grace, ride west-northwest beyond the buildings, then turn north toward the riverbank. The seed is beneath the small illusory tree on the rocks above the river.",
   Longsword: "Purchase from the Twin Maiden Husks after reaching Roundtable Hold.",
+  Halberd: "Buy it from the Nomadic Merchant beside the campfire east of Saintsbridge in north Limgrave. A Vagabond can instead keep the Halberd from their starting equipment.",
+  "Astrologer's Staff": "Use the staff included in the Astrologer's starting equipment; this starter is only assigned when the recommended origin begins with it.",
+  "Glintstone Staff": "Use the staff included in the Prisoner's starting equipment; this starter is only assigned when the recommended origin begins with it.",
+  "Finger Seal": "Buy it from the Twin Maiden Husks at Roundtable Hold after accepting Melina's invitation. A Confessor or Prophet already starts with one.",
+  Shortbow: "Use the Bandit's starting Shortbow, or buy one from the Nomadic Merchant on the west Limgrave beach beneath the Coastal Cave approach.",
+  "Light Crossbow": "Buy it from the Nomadic Merchant on the west side of the Weeping Peninsula before entering Castle Morne.",
+  "Short Spear": "Buy it from the Twin Maiden Husks at Roundtable Hold after accepting Melina's invitation.",
+  Dagger: "Buy it from the Twin Maiden Husks at Roundtable Hold; it is only a fast starter until the sourced fist, claw or backhand weapon is unlocked.",
+  Club: "Use the Wretch's starting Club, or buy one from the Nomadic Merchant on the west Limgrave beach near Coastal Cave.",
+  "Battle Axe": "Use the Hero's starting Battle Axe; this starter is assigned to Hero-based paths and is replaced by the first sourced weapon card.",
+  Estoc: "Use the Estoc included in the Prisoner's starting equipment.",
+  Broadsword: "Use the Broadsword included in the Confessor's starting equipment.",
+  "Heater Shield": "Use the Heater Shield from the Vagabond's starting equipment, or buy it from the Twin Maiden Husks at Roundtable Hold.",
   "Knight Set": "Purchase all four pieces from the Twin Maiden Husks at Roundtable Hold after the hold opens.",
   "Carian Knight Set": "Inside Raya Lucaria, pass the graveyard and cross the narrow wooden bridge. Before the large rotating lift, turn right, drop to the ledge and follow the path to the worshipped tombstone; loot all four pieces from the corpse.",
   "Scaled Set": "Join Volcano Manor, take the first drawing-room assassination letter, defeat Old Knight Istvan at the red sign north of Warmaster's Shack, then receive the complete set from Tanith.",
