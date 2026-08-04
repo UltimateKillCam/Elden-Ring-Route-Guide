@@ -93,7 +93,7 @@ async function readJson(request) {
 function validExpedition(value) {
   return value === null || (
     value && value.schema === 1 && Array.isArray(value.players) &&
-    value.players.length >= 2 && value.players.length <= 6 &&
+    value.players.length >= 1 && value.players.length <= 6 &&
     value.completed && typeof value.completed === "object"
   );
 }
@@ -194,7 +194,7 @@ async function main() {
     }
     if (url.pathname === "/api/expedition" && request.method === "PUT") {
       if (request.headers["x-control-token"] !== controlToken) {
-        sendJson(response, 403, { error: "Follower access is read-only" });
+        sendJson(response, 403, { error: "Only the controller can change expedition settings" });
         return;
       }
       try {
@@ -204,6 +204,34 @@ async function main() {
         revision += 1;
         await saveState();
         sendJson(response, 200, { enabled: true, revision });
+      } catch (error) {
+        sendJson(response, 400, { error: error instanceof Error ? error.message : "Invalid request" });
+      }
+      return;
+    }
+    if (url.pathname === "/api/player-progress" && request.method === "PATCH") {
+      try {
+        if (!expedition) throw new Error("The host has not started a run");
+        const body = await readJson(request);
+        const playerId = String(body.playerId || "");
+        const player = expedition.players.find((candidate) => candidate.id === playerId);
+        if (!player) throw new Error("Unknown player");
+        const key = String(body.key || "");
+        if (!key || key.length > 300) throw new Error("Invalid progress key");
+        if (body.kind === "completed") {
+          const ownedKey = key.endsWith(`:${playerId}`) || key.includes(playerId);
+          if (!ownedKey) throw new Error("Players can only update their own checklist");
+          expedition.completed[key] = Boolean(body.value);
+        } else if (body.kind === "runes") {
+          if (!key.endsWith(`:${playerId}`)) throw new Error("Players can only update their own rune balance");
+          expedition.checkpointRunes ||= {};
+          expedition.checkpointRunes[key] = Math.max(0, Math.floor(Number(body.value) || 0));
+        } else {
+          throw new Error("Unknown progress update");
+        }
+        revision += 1;
+        await saveState();
+        sendJson(response, 200, { enabled: true, revision, expedition });
       } catch (error) {
         sendJson(response, 400, { error: error instanceof Error ? error.message : "Invalid request" });
       }

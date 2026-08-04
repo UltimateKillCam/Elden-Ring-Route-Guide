@@ -1,6 +1,71 @@
-import type { Build } from "./data";
+import type { Build, PhaseKey, StageLoadout } from "./data";
+
+const sourcedStage = (level: string, weapon: string, offhand: string, skill: string, talismans: string[], armour: string, spells: string[], flask: string, stats: string): Omit<StageLoadout, "talismanSlots"> => ({ level, weapon, offhand, skill, talismans, armour, spells, flask, stats });
 
 export const additionalSourcedBuilds: Build[] = [
+  {
+    id: "mobalytics-bloodhounds-fang",
+    name: "Bloodhound’s Fang Finesse",
+    stats: "STR / DEX / FAI",
+    role: "Melee",
+    playstyle: "A whole-run curved-greatsword build: use the Samurai’s Uchigatana only until Darriwil, then keep Bloodhound’s Fang instead of collecting replacement weapons. Bloodhound’s Finesse supplies damage, distance and a safe follow-up; Bloodflame Blade is added in Liurnia.",
+    complexity: "Published guide",
+    phases: { early: "Uchigatana → Bloodhound’s Fang", mid: "Bloodhound’s Fang + Bloodflame Blade", late: "Bloodhound’s Fang + Finesse", dlc: "Bloodhound’s Fang + Finesse" },
+    tags: ["bloodhound fang", "curved greatsword", "bleed", "skill", "whole game"], startingClass: "Samurai", mechanic: "Skill damage", collection: "Other guides", availableFrom: "early",
+    publishedStages: {
+      early: sourcedStage("RL 25", "Bloodhound’s Fang", "Finger Seal after reaching 15 FAI", "Bloodhound’s Finesse", ["Green Turtle Talisman", "Radagon’s Soreseal"], "Land of Reeds Set; replace pieces only as needed to remain at medium load", ["Golden Vow (Ash of War before 25 FAI)"], "Opaline Bubbletear + any available stamina tear", "VIG 20, MND 11, END 13, STR 18, DEX 17; two-hand if using Radagon’s Soreseal as a temporary requirement bridge"),
+      mid: sourcedStage("RL 50", "Bloodhound’s Fang", "Finger Seal", "Bloodhound’s Finesse", ["Green Turtle Talisman", "Radagon’s Soreseal", "Ritual Sword Talisman"], "Knight Set or another medium-load mix reaching 51 poise", ["Bloodflame Blade", "Flame, Grant Me Strength"], "Opaline Bubbletear + Greenburst Crystal Tear only after its Caelid Avatar is appropriate", "VIG 30, MND 11, END 13, STR 18, DEX 25, FAI 15"),
+      late: sourcedStage("RL 100–150", "Bloodhound’s Fang", "Frenzied Flame Seal only if Hyetta’s quest was selected; otherwise Finger Seal", "Bloodhound’s Finesse", ["Shard of Alexander", "Ritual Sword Talisman", "Ritual Shield Talisman", "Green Turtle Talisman"], "Skeletal Mask; Blaidd’s Armour and Gauntlets; Night’s Cavalry Greaves (29.2 weight in the source)", ["Bloodflame Blade", "Flame, Grant Me Strength"], "Opaline Bubbletear + Greenburst Crystal Tear", "At RL100: VIG 40, END 20, STR 18, DEX 58, FAI 15. At RL150: VIG 50, END 25, STR 31, DEX 80"),
+      dlc: sourcedStage("RL 150+", "Bloodhound’s Fang", "Frenzied Flame Seal or Finger Seal", "Bloodhound’s Finesse", ["Shard of Alexander", "Ritual Sword Talisman", "Ritual Shield Talisman", "Green Turtle Talisman"], "Skeletal Mask; Blaidd’s Armour and Gauntlets; Night’s Cavalry Greaves", ["Bloodflame Blade", "Flame, Grant Me Strength"], "Opaline Bubbletear + Greenburst Crystal Tear", "Keep the RL150 core: VIG 50, END 25, STR 31, DEX 80, FAI 15; add VIG/END for DLC comfort"),
+    },
+    source: { label: "Mobalytics: Bloodhound’s Fang Build Guide", url: "https://mobalytics.gg/blog/elden-ring/bloodhounds-fang-build/" },
+  },
+  {
+    id: "mobalytics-blasphemous-blade",
+    name: "Blasphemous Blade Pilgrim",
+    stats: "STR / FAI",
+    role: "Melee",
+    playstyle: "The guide’s Lordsworn’s Greatsword remains equipped from Gatefront until Rykard is defeated. It then changes once—into Blasphemous Blade—so no throwaway midgame weapon is inserted immediately before the remembrance weapon.",
+    complexity: "Published guide", phases: { early: "Lordsworn’s Greatsword", mid: "Lordsworn’s Greatsword", late: "Blasphemous Blade", dlc: "Blasphemous Blade" },
+    tags: ["blasphemous blade", "greatsword", "faith", "fire", "healing"], startingClass: "Confessor", mechanic: "Skill damage", collection: "Other guides", availableFrom: "late", quest: "Defeat Rykard through the Volcano Manor dungeon after the route reaches Mt. Gelmir",
+    publishedStages: {
+      early: sourcedStage("RL 25", "Lordsworn’s Greatsword", "Finger Seal", "Square Off or Sacred Blade", ["Two Fingers Heirloom"], "Confessor Set; stay at medium load", ["Urgent Heal"], "Any defensive tears already collected", "VIG 20, END 11, STR 14, DEX 14, FAI 14"),
+      mid: sourcedStage("RL 50", "Lordsworn’s Greatsword", "Finger Seal", "Sacred Blade", ["Two Fingers Heirloom", "Starscourge Heirloom"], "Banished Knight pieces that keep medium load", ["Flame, Grant Me Strength"], "Any defensive tears already collected", "VIG 29, END 11, STR 22, DEX 15, FAI 21"),
+      late: sourcedStage("RL 100–150", "Blasphemous Blade", "Finger Seal", "Taker’s Flames", ["Shard of Alexander", "Fire Scorpion Charm", "Erdtree’s Favor", "Dragoncrest Greatshield Talisman"], "Ruler’s Mask with Banished Knight or Crucible Axe pieces at medium load; Haligtree pieces only after reaching Haligtree", ["Flame, Grant Me Strength"], "Flame-Shrouding Cracked Tear + a defensive tear", "RL100: VIG 40, END 30, STR 30, DEX 15, FAI 33. RL150: VIG 40, END 30, STR 50, DEX 15, FAI 60"),
+      dlc: sourcedStage("RL 150+", "Blasphemous Blade", "Finger Seal", "Taker’s Flames", ["Shard of Alexander", "Fire Scorpion Charm", "Erdtree’s Favor +2", "Dragoncrest Greatshield Talisman"], "Haligtree Knight Helm with medium-load armour, or the completed Crucible Axe Set", ["Flame, Grant Me Strength"], "Flame-Shrouding Cracked Tear + Opaline Hardtear", "Keep the guide’s RL150 core; add VIG/MND before further damage stats"),
+    },
+    source: { label: "Mobalytics: Blasphemous Blade Guide (level 1 to end game)", url: "https://mobalytics.gg/blog/elden-ring/blasphemous-blade-build-guide/" },
+  },
+  {
+    id: "mobalytics-moonveil",
+    name: "Moonveil Stancebreaker",
+    stats: "DEX / INT",
+    role: "Spellblade",
+    playstyle: "Start with the Samurai’s Uchigatana, defeat the Gael Tunnel Magma Wyrm when the Caelid route reaches it, then keep Moonveil for the rest of the run. Transient Moonlight is used close enough for blade and projectile to combine their stance damage.",
+    complexity: "Published guide", phases: { early: "Uchigatana → Moonveil", mid: "Moonveil + Cold Uchigatana", late: "Moonveil + Carian Glintstone Staff", dlc: "Moonveil + Carian Glintstone Staff" },
+    tags: ["moonveil", "katana", "intelligence", "stance", "sorcery"], startingClass: "Samurai", mechanic: "Stance damage", collection: "Other guides", availableFrom: "mid",
+    publishedStages: {
+      early: sourcedStage("RL 25 until Gael Tunnel", "Uchigatana", "Meteorite Staff when available", "Unsheathe", ["Green Turtle Talisman"], "Land of Reeds Set; medium load", ["Glintstone Pebble"], "Intelligence-knot Crystal Tear + a defensive tear", "VIG 14, STR 12, DEX 15, INT 23; do not claim Moonveil until the planned Gael Tunnel fight"),
+      mid: sourcedStage("RL 50", "Moonveil", "Cold Uchigatana + Glintblade Phalanx or Carian Glintstone Staff", "Transient Moonlight", ["Carian Filigreed Crest", "Assassin’s Cerulean Dagger", "Green Turtle Talisman"], "Land of Reeds or Knight mix at medium load", ["Carian Slicer", "Glintstone Pebble"], "Magic-Shrouding Cracked Tear + Intelligence-knot Crystal Tear", "VIG 30, MND 15, END 15, STR 12, DEX 18, INT 23"),
+      late: sourcedStage("RL 100–150", "Moonveil", "Carian Glintstone Staff; Cold Uchigatana is optional", "Transient Moonlight", ["Shard of Alexander", "Magic Scorpion Charm", "Ritual Sword Talisman", "Dragoncrest Greatshield Talisman"], "Spellblade or Preceptor pieces at medium load", ["Carian Slicer", "Terra Magica"], "Magic-Shrouding Cracked Tear + Cerulean Hidden Tear", "RL100: VIG 40, MND 20, END 20, DEX 20, INT 51. RL150: VIG 50, MND 20, END 20, DEX 50, INT 60"),
+      dlc: sourcedStage("RL 150+", "Moonveil", "Carian Glintstone Staff", "Transient Moonlight", ["Shard of Alexander", "Magic Scorpion Charm", "Ritual Sword Talisman", "Dragoncrest Greatshield Talisman"], "Preceptor or Spellblade mix at medium load", ["Carian Slicer", "Terra Magica"], "Magic-Shrouding Cracked Tear + Cerulean Hidden Tear", "Keep INT 60 and DEX 50; add VIG/END before pushing damage"),
+    },
+    source: { label: "Mobalytics: Moonveil Build Guide", url: "https://mobalytics.gg/blog/elden-ring/moonveil-build-guide/" },
+  },
+  {
+    id: "mobalytics-carian-spellblade",
+    name: "Carian Sword Spellblade",
+    stats: "STR / INT",
+    role: "Spellblade",
+    playstyle: "Carian Slicer supplies the early melee plan, then the freely obtainable Carian Knight’s Sword becomes the permanent weapon. The build alternates sword sorceries with Carian Grandeur and never requires a shield.",
+    complexity: "Published guide", phases: { early: "Astrologer’s Staff + Carian Slicer", mid: "Carian Knight’s Sword + Carian Glintstone Staff", late: "Carian Knight’s Sword + Carian Glintstone Staff", dlc: "Carian Knight’s Sword + Carian Glintstone Staff" },
+    tags: ["carian", "spellblade", "intelligence", "sorcery", "no shield"], startingClass: "Astrologer", mechanic: "Spell damage", collection: "Other guides", availableFrom: "early",
+    publishedStages: {
+      early: sourcedStage("RL 25", "Astrologer’s Staff", "No shield", "Carian Slicer", ["Cerulean Amber Medallion"], "Astrologer Set at medium load", ["Carian Slicer", "Glintstone Pebble"], "Intelligence-knot Crystal Tear + a defensive tear", "MND 17, END 14, INT 28; the source intentionally delays Vigor here"),
+      ...Object.fromEntries((["mid", "late", "dlc"] as PhaseKey[]).map((phase) => [phase, sourcedStage(phase === "mid" ? "RL 50" : phase === "late" ? "RL 100–150" : "RL 150+", "Carian Knight’s Sword", "Carian Glintstone Staff", "Carian Grandeur", ["Cerulean Amber Medallion", "Graven-Mass Talisman", "Shard of Alexander", "Stargazer Heirloom"], "Mage armour pieces at medium load: Queen of the Full Moon, Battlemage or Preceptor pieces only after their normal quest gates", ["Carian Slicer", "Carian Piercer", "Glintblade Phalanx"], "Magic-Shrouding Cracked Tear + Intelligence-knot Crystal Tear", "Guide breakpoints: RL50 VIG 20, STR 18, INT 32; RL100 VIG 31, MND 22, INT 60; RL150 VIG 40, MND 30, END 30, STR 21, INT 80")])) as Record<"mid" | "late" | "dlc", Omit<StageLoadout, "talismanSlots">>,
+    },
+    source: { label: "Mobalytics: Spellblade Build Guide", url: "https://mobalytics.gg/blog/elden-ring/spellblade-build-guide/" },
+  },
   {
     id: "game8-wing-stance-milady",
     name: "Wing Stance Milady",

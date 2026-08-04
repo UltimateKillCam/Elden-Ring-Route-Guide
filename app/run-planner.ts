@@ -155,6 +155,22 @@ export type OptionalRuneBoss = {
   directions: string;
 };
 
+const OPTIONAL_BOSS_LEVEL_BASE: Readonly<Record<string, number>> = {
+  "first-steps": 15,
+  weeping: 25,
+  stormveil: 30,
+  "liurnia-south": 40,
+  academy: 50,
+  caria: 55,
+  caelid: 60,
+  altus: 70,
+};
+
+/** Suggested minimum level for the optional fight, before co-op assistance. */
+export function recommendedOptionalBossLevel(boss: OptionalRuneBoss): number {
+  return (OPTIONAL_BOSS_LEVEL_BASE[boss.chapterId] ?? 80) + (boss.difficulty - 1) * 5;
+}
+
 /**
  * Optional, progression-safe rune bosses. Rewards are NG host rewards. The
  * list deliberately favours short caves, catacombs and readable field fights;

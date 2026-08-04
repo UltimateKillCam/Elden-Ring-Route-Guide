@@ -40,6 +40,7 @@ test("ships the curated, complete wiki and sourced build catalogues with the ful
   assert.equal((wikiBuilds.match(/^\s*"id": "fextra-/gm) ?? []).length, 160);
   assert.equal((wikiBuilds.match(/^\s*"collection": "Fextralife"/gm) ?? []).length, 160);
   assert.equal((sourcedBuilds.match(/^\s*id: "game8-/gm) ?? []).length, 1);
+  assert.equal((sourcedBuilds.match(/^\s*id: "mobalytics-/gm) ?? []).length, 4);
   assert.equal((memeBuilds.match(/^\s*id: "meme-/gm) ?? []).length, 6);
   assert.match(data, /wikiBuilds.*additionalSourcedBuilds.*sourcedMemeBuilds/);
   assert.ok((data.match(/remembrance:\s*true/g) ?? []).length >= 22);
@@ -93,6 +94,10 @@ test("ships the curated, complete wiki and sourced build catalogues with the ful
   assert.match(sourcedBuilds, /Wing Stance Milady/);
   assert.match(sourcedBuilds, /Finger Seal for buffs only; no shield/);
   assert.doesNotMatch(sourcedBuilds, /Guard counters/);
+  assert.match(data, /build\("quality-knight"[\s\S]*?\["Longsword", "Claymore", "Quality Great .*?", "Milady \+ Wing Stance"\]/);
+  assert.match(data, /build\("colossal-hammer"[\s\S]*?\["Large Club", "Great Club", "Giant-Crusher", "Anvil Hammer"\]/);
+  assert.match(sourcedBuilds, /Lordsworn’s Greatsword remains equipped from Gatefront until Rykard/);
+  assert.match(sourcedBuilds, /Bloodhound’s Fang Finesse/);
 });
 
 test("uses plain product copy and the revised social card", async () => {
@@ -121,7 +126,9 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /Compare every sourced build before the run controller assigns them/);
   assert.match(page, /Strength.*Dexterity.*Intelligence.*Faith.*Arcane.*Ranged/);
   assert.doesNotMatch(page, /Party role|All roles/);
-  assert.match(server, /Follower access is read-only/);
+  assert.match(server, /Only the controller can change expedition settings/);
+  assert.match(server, /\/api\/player-progress/);
+  assert.match(server, /Players can only update their own checklist/);
   assert.match(server, /Build catalogue/);
   assert.match(server, /\?catalog=1/);
   assert.match(server, /x-control-token/);
@@ -156,6 +163,13 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /weapon-upgrade ceilings are lowered together/);
   assert.match(page, /Rune top-up:/);
   assert.match(page, /only recommends a fully funded level/);
+  assert.match(page, /Rune checkpoint/);
+  assert.match(page, /Replace with/);
+  assert.match(page, /Skip this boss/);
+  assert.match(page, /SAVE_LIBRARY_KEY/);
+  assert.match(page, /Duplicate current/);
+  assert.match(page, /Which character are you playing/);
+  assert.match(page, /Solo playthrough/);
   assert.doesNotMatch(page, /The model is short|stay at RL.*next mandatory boss payout/);
   assert.match(progression, /const EXACT_GATES/);
   assert.match(progression, /const REGION_GATES/);

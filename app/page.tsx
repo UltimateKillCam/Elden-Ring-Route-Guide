@@ -8,12 +8,14 @@ import { splitArmourSpecification } from "./equipment-data";
 import {
   CHAPTER_ECONOMY,
   CHAPTER_ECONOMY_BY_ID,
+  OPTIONAL_RUNE_BOSSES,
   expectedPerPlayerBossPot,
   maxEquipLoad,
   maxWeightForTier,
   planBuildStatTarget,
   planWeaponUpgrade,
   radagonSoresealBridgeAdvice,
+  recommendedOptionalBossLevel,
   runesBetweenLevels,
   selectOptionalRuneBosses,
   type AttributeBlock,
@@ -23,12 +25,13 @@ import {
 } from "./run-planner";
 import { findWeaponUpgradeRecord, weaponUpgradePath } from "./weapon-upgrades";
 
-type Mode = "standard" | "seamless";
+type Mode = "solo" | "standard" | "seamless";
 type View = "route" | "codex" | "party";
 type LanMode = "none" | "controller" | "follower";
 type Player = { id: string; name: string; buildId: string; color: string };
 type Expedition = {
   schema: 1;
+  saveId?: string;
   name: string;
   mode: Mode;
   players: Player[];
@@ -37,7 +40,10 @@ type Expedition = {
   createdAt: string;
   lossRate?: number;
   levelOffset?: number;
+  checkpointRunes?: Record<string, number>;
+  runeBossSelections?: Record<string, string[]>;
 };
+type SaveLibrary = { activeId: string | null; saves: Record<string, Expedition> };
 type Task = {
   id: string;
   label: string;
@@ -50,10 +56,14 @@ type Task = {
   slot?: string;
   afterObjective?: string;
   optional?: boolean;
+  runeBossId?: string;
 };
 
 const PLAYER_COLORS = ["#d8ad62", "#7db6a8", "#b987aa", "#7698c8", "#c5775e", "#a7a36c"];
 const STORAGE_KEY = "tarnished-together-expedition-v1";
+const SAVE_LIBRARY_KEY = "tarnished-together-save-library-v2";
+
+const newSaveId = () => `run-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 const makePlayers = (count: number): Player[] =>
   Array.from({ length: count }, (_, index) => ({
@@ -509,8 +519,9 @@ function statChangeText(previous: AttributeBlock, current: AttributeBlock) {
 
 function expectedRunesBeforeBoss(chapterIndex: number, expedition: Expedition) {
   const lossRate = Math.min(.3, Math.max(.1, (expedition.lossRate ?? 20) / 100));
+  const economyMode = expedition.mode === "solo" ? "seamless" : expedition.mode;
   return CHAPTER_ECONOMY.slice(0, chapterIndex + 1).reduce((total, economy, index) => {
-    const boss = index < chapterIndex ? expectedPerPlayerBossPot(economy.bossRunes, expedition.players.length, expedition.mode) : 0;
+    const boss = index < chapterIndex ? expectedPerPlayerBossPot(economy.bossRunes, expedition.players.length, economyMode) : 0;
     total.low += Math.floor(economy.fieldRunesLow * (1 - lossRate)) + boss;
     total.high += Math.floor(economy.fieldRunesHigh * (1 - lossRate)) + boss;
     return total;
@@ -566,6 +577,7 @@ function runeSupportPlan(expedition: Expedition): Record<string, RuneSupportChap
   const result: Record<string, RuneSupportChapter> = {};
   let cumulativeBossRunes = 0;
   const levelOffset = expedition.levelOffset ?? 0;
+  const economyMode = expedition.mode === "solo" ? "seamless" : expedition.mode;
   const previousLevels: Record<string, number> = {};
   const previousUpgrades: Record<string, number> = {};
 
@@ -590,7 +602,16 @@ function runeSupportPlan(expedition: Expedition): Record<string, RuneSupportChap
       maximumShortfall = Math.max(maximumShortfall, required - expected.low - cumulativeBossRunes);
     }
 
-    const recovery = selectOptionalRuneBosses(maximumShortfall, chapter.id, expedition.players.length, expedition.mode);
+    const manualSelection = expedition.runeBossSelections?.[chapter.id];
+    const recovery = manualSelection
+      ? {
+          bosses: manualSelection.map((id) => OPTIONAL_RUNE_BOSSES.find((boss) => boss.id === id && boss.chapterId === chapter.id)).filter((boss): boss is OptionalRuneBoss => Boolean(boss)),
+          perPlayerRunes: manualSelection.reduce((total, id) => {
+            const boss = OPTIONAL_RUNE_BOSSES.find((candidate) => candidate.id === id && candidate.chapterId === chapter.id);
+            return total + (boss ? expectedPerPlayerBossPot(boss.runes, expedition.players.length, economyMode) : 0);
+          }, 0),
+        }
+      : selectOptionalRuneBosses(maximumShortfall, chapter.id, expedition.players.length, economyMode);
     cumulativeBossRunes += recovery.perPlayerRunes;
     const levels: Record<string, number> = {};
     const upgrades: Record<string, number> = {};
@@ -644,11 +665,12 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition): T
   const result: Task[] = (chapterSupport?.bosses ?? []).map((boss) => ({
     id: `${chapter.id}-rune-boss-${boss.id}`,
     label: `Rune top-up: ${boss.name}`,
-    detail: `${boss.location}. ${boss.directions} Listed solo reward: ${formatRunes(boss.runes)} runes. ${expedition.mode === "standard" ? `Complete it in each player's world; the planner budgets 75% for that player's hosted clear plus 25% for up to two clears as a summoned cooperator.` : "Complete it once in the shared Seamless world."} This fight was added because the conservative rune budget needs it before the next funded level recommendation.`,
+    detail: `${boss.location}. ${boss.directions} Listed solo reward: ${formatRunes(boss.runes)} runes. ${expedition.mode === "standard" ? `Complete it in each player's world; the planner budgets 75% for that player's hosted clear plus 25% for up to two clears as a summoned cooperator.` : expedition.mode === "solo" ? "Defeat it once in this world." : "Complete it once in the shared Seamless world."} This fight was added because the conservative rune budget needs it before the next funded level recommendation.`,
     kind: "boss" as const,
     perPlayer: expedition.mode === "standard",
-    scope: expedition.mode === "standard" ? "Each player's world" : "Shared session",
+    scope: expedition.mode === "standard" ? "Each player's world" : expedition.mode === "solo" ? "Solo" : "Shared session",
     optional: false,
+    runeBossId: boss.id,
   }));
 
   for (const player of expedition.players) {
@@ -668,8 +690,8 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition): T
     const previousPlan = previousEconomy
       ? planBuildStatTarget(planningBuild, previousTargetLevel, weaponRequirements(previousLoadout.weapon))
       : { ...currentPlan, targetRuneLevel: currentPlan.origin.level, attributes: currentPlan.origin.attributes };
-    const levelRunes = runesBetweenLevels(previousTargetLevel, economy.targetRuneLevel);
-    const cumulativeLevelRunes = runesBetweenLevels(currentPlan.origin.level, economy.targetRuneLevel);
+    const levelRunes = runesBetweenLevels(previousTargetLevel, fundedTargetLevel);
+    const cumulativeLevelRunes = runesBetweenLevels(currentPlan.origin.level, fundedTargetLevel);
     const pathResult = weaponUpgradePath(currentLoadout.weapon);
     const upgradePath: UpgradePath | undefined = pathResult === "none" ? undefined : pathResult;
     const currentUpgrade = chapterSupport?.upgrades[player.id] ?? (upgradePath === "somber" ? targets.somberUpgrade : targets.standardUpgrade);
@@ -772,7 +794,7 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
         : guide,
       kind: isBoss ? "boss" : isQuest ? "quest" : "objective",
       perPlayer,
-      scope: perPlayer ? "Each player" : expedition.mode === "seamless" ? "Shared session" : "Party",
+      scope: perPlayer ? "Each player" : expedition.mode === "seamless" ? "Shared session" : expedition.mode === "solo" ? "Solo" : "Party",
       item: essentialItem?.name,
     });
   });
@@ -881,7 +903,7 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition): Task[] {
       detail: `This is ${chapter.remembrance ? "a Remembrance encounter" : "a major encounter"}. Enter around ${chapter.level} with weapons no higher than ${chapter.upgrade}.`,
       kind: "boss",
       perPlayer: expedition.mode === "standard",
-      scope: expedition.mode === "standard" ? "Repeat in each world" : "Shared boss reward",
+      scope: expedition.mode === "standard" ? "Repeat in each world" : expedition.mode === "solo" ? "Solo boss reward" : "Shared boss reward",
     });
   }
   return tasks;
@@ -944,7 +966,7 @@ function FullBuildDetails({ build, onClose, assignLabel, onAssign }: { build: Bu
             );
           })}
         </div>
-        <p className="loadout-note">{build.publishedLoadout ? "The build's published stage is reproduced from its linked source. Earlier gaps use the closest matching Fextralife stage and show that source on the stage; once the build's own weapon is available it is carried forward." : "Talismans are listed in slot order. Swap the defensive slot for the boss-specific elemental drake talisman when needed."}</p>
+        <p className="loadout-note">{build.publishedStages ? "Every stage is taken from the linked progression guide. A named weapon remains in use until the guide’s actual replacement is obtainable." : build.publishedLoadout ? "The build's published stage is reproduced from its linked source. Earlier gaps use the closest matching Fextralife stage and show that source on the stage; once the build's own weapon is available it is carried forward." : "Talismans are listed in slot order. Swap the defensive slot for the boss-specific elemental drake talisman when needed."}</p>
         {onAssign && <button type="button" className="assign-build-button" onClick={onAssign}>{assignLabel || "Choose this build"}</button>}
       </section>
     </div>
@@ -1000,8 +1022,8 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
         <div className="settings-title"><span>1</span><div><h1>Set up the party</h1><p>Choose the multiplayer rules and name each player.</p></div></div>
         <div className="settings-grid">
           <label><span>Run name</span><input value={name} onChange={(event) => setName(event.target.value)} /></label>
-          <div><span className="settings-label">Mode</span><div className="plain-segmented"><button type="button" className={mode === "standard" ? "active" : ""} onClick={() => setMode("standard")}>Standard co-op</button><button type="button" className={mode === "seamless" ? "active" : ""} onClick={() => setMode("seamless")}>Seamless Co-op</button></div></div>
-          <div><span className="settings-label">Players</span><div className="plain-segmented count-buttons">{[2, 3, 4, 5, 6].map((size) => <button type="button" className={count === size ? "active" : ""} key={size} onClick={() => changeCount(size)}>{size}</button>)}</div></div>
+          <div><span className="settings-label">Mode</span><div className="plain-segmented"><button type="button" className={mode === "solo" ? "active" : ""} onClick={() => { setMode("solo"); changeCount(1); }}>Solo</button><button type="button" className={mode === "standard" ? "active" : ""} onClick={() => { setMode("standard"); if (count < 2) changeCount(2); }}>Standard co-op</button><button type="button" className={mode === "seamless" ? "active" : ""} onClick={() => { setMode("seamless"); if (count < 2) changeCount(2); }}>Seamless Co-op</button></div></div>
+          <div><span className="settings-label">Players</span><div className="plain-segmented count-buttons">{[1, 2, 3, 4, 5, 6].map((size) => <button type="button" className={count === size ? "active" : ""} disabled={mode === "solo" && size !== 1} key={size} onClick={() => { changeCount(size); if (size === 1) setMode("solo"); else if (mode === "solo") setMode("standard"); }}>{size}</button>)}</div></div>
           <label><span>Rune loss allowance</span><select value={lossRate} onChange={(event) => setLossRate(Number(event.target.value))}><option value={10}>10% · confident</option><option value={20}>20% · normal</option><option value={30}>30% · cautious</option></select><small className="setting-help">The level plan subtracts this share of field runes for deaths, missed enemies and consumables kept in inventory.</small></label>
           <label><span>Level pace</span><select value={levelOffset} onChange={(event) => setLevelOffset(Number(event.target.value))}><option value={0}>Match guide levels</option><option value={5}>5 levels below guide</option><option value={10}>10 levels below guide</option><option value={15}>15 levels below guide</option><option value={20}>20 levels below guide</option></select><small className="setting-help">Rune-level recommendations and weapon-upgrade ceilings are lowered together. The planner still funds every recommendation.</small></label>
         </div>
@@ -1031,7 +1053,7 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
         </div>
       </section>
 
-      <div className="setup-actions"><div><strong>{players.length} players ready</strong><span>{mode === "standard" ? "Standard co-op; world steps will be repeated per player." : "Seamless Co-op; host and individual pickups are tracked separately."} Rune plans keep a {lossRate}% loss allowance and run {levelOffset ? `${levelOffset} levels below guide pace` : "at guide pace"}.</span></div><button type="button" onClick={() => onCreate({ schema: 1, name: name.trim() || "Untitled expedition", mode, players, hostId: players[0].id, completed: {}, createdAt: new Date().toISOString(), lossRate, levelOffset })}>Create route</button></div>
+      <div className="setup-actions"><div><strong>{players.length} {players.length === 1 ? "player" : "players"} ready</strong><span>{mode === "solo" ? "Solo route with no co-op rune reduction." : mode === "standard" ? "Standard co-op; world steps will be repeated per player." : "Seamless Co-op; host and individual pickups are tracked separately."} Rune plans keep a {lossRate}% loss allowance and run {levelOffset ? `${levelOffset} levels below guide pace` : "at guide pace"}.</span></div><button type="button" onClick={() => onCreate({ schema: 1, saveId: newSaveId(), name: name.trim() || "Untitled expedition", mode, players, hostId: players[0].id, completed: {}, createdAt: new Date().toISOString(), lossRate, levelOffset, checkpointRunes: {}, runeBossSelections: {} })}>Create route</button></div>
       <footer className="setup-footer">Unofficial fan project. Full spoilers. Data baseline: regulation 1.16.1.</footer>
       {detail && <FullBuildDetails build={detail} onClose={() => setDetail(null)} assignLabel={`Assign to ${players[activePlayer].name}`} onAssign={() => chooseBuild(detail)} />}
     </main>
@@ -1127,24 +1149,125 @@ function MapPanel({ chapter, expedition, onSelect }: { chapter: Chapter; expedit
   );
 }
 
-function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly = false }: { expedition: Expedition; setExpedition: React.Dispatch<React.SetStateAction<Expedition | null>>; activeId: string; setActiveId: (id: string) => void; readOnly?: boolean }) {
+function BossMapThumbnail({ boss }: { boss: OptionalRuneBoss }) {
+  const marker = findMapItem(boss.name, "surface") || findMapRoutePoint(`${boss.name} ${boss.location}`, "surface") || findMapRoutePoint(boss.location, "surface");
+  const layer = marker?.layer || "surface";
+  const level = MAP_TILE_LEVELS[layer];
+  const count = 2 ** level;
+  const tileX = marker ? Math.max(0, Math.min(count - 1, Math.floor(marker.x / 100 * count))) : 0;
+  const tileY = marker ? Math.max(0, Math.min(count - 1, Math.floor(marker.y / 100 * count))) : 0;
+  const imageUrl = `${MAP_TILE_ROOTS[layer]}/${level}/${tileX}/${tileY}.jpg`;
+  return <div className="rune-boss-picture" style={{ backgroundImage: `url(${imageUrl})` }}><span>{marker ? boss.location : boss.name}</span></div>;
+}
+
+function RuneCheckpointPanel({
+  chapter,
+  expedition,
+  setExpedition,
+  viewerPlayerId,
+  onViewerUpdate,
+}: {
+  chapter: Chapter;
+  expedition: Expedition;
+  setExpedition: React.Dispatch<React.SetStateAction<Expedition | null>>;
+  viewerPlayerId?: string;
+  onViewerUpdate?: (kind: "completed" | "runes", key: string, value: boolean | number) => void;
+}) {
+  const economy = CHAPTER_ECONOMY_BY_ID[chapter.id];
+  if (!economy) return null;
+  const chapterIndex = chapters.indexOf(chapter);
+  const support = runeSupportPlan(expedition);
+  const currentSupport = support[chapter.id];
+  const previousSupport = chapterIndex > 0 ? support[chapters[chapterIndex - 1].id] : undefined;
+  const selectedBosses = currentSupport?.bosses ?? [];
+  const alternatives = OPTIONAL_RUNE_BOSSES.filter((boss) => boss.chapterId === chapter.id);
+
+  const setRunes = (playerId: string, value: number) => {
+    const key = `${chapter.id}:${playerId}`;
+    if (viewerPlayerId) {
+      if (viewerPlayerId !== playerId) return;
+      setExpedition((current) => current ? { ...current, checkpointRunes: { ...(current.checkpointRunes || {}), [key]: value } } : current);
+      onViewerUpdate?.("runes", key, value);
+      return;
+    }
+    setExpedition((current) => current ? { ...current, checkpointRunes: { ...(current.checkpointRunes || {}), [key]: value } } : current);
+  };
+
+  const setBosses = (ids: string[]) => setExpedition((current) => current ? {
+    ...current,
+    runeBossSelections: { ...(current.runeBossSelections || {}), [chapter.id]: ids },
+  } : current);
+  const replaceBoss = (index: number, id: string) => {
+    const ids = selectedBosses.map((boss) => boss.id);
+    ids[index] = id;
+    setBosses(Array.from(new Set(ids)));
+  };
+  const resetBosses = () => setExpedition((current) => {
+    if (!current) return current;
+    const selections = { ...(current.runeBossSelections || {}) };
+    delete selections[chapter.id];
+    return { ...current, runeBossSelections: selections };
+  });
+
+  return <section className="rune-checkpoint">
+    <header><div><p className="eyebrow">Rune checkpoint</p><h3>Enter what each player is holding</h3><p>Enter the rune counter before spending at this chapter. The result includes the level cost, the maximum stone purchase for the planned weapon ceiling and the protected merchant reserve. Boss targets follow the published location tiers, with a small increase for the harder fights. <a href="https://eldenring.wiki.gg/wiki/Recommended_Level_by_Location" target="_blank" rel="noreferrer">Level basis ↗</a></p></div>{!viewerPlayerId && expedition.runeBossSelections?.[chapter.id] && <button type="button" onClick={resetBosses}>Restore recommended bosses</button>}</header>
+    <div className="rune-balance-grid">
+      {expedition.players.map((player) => {
+        const build = builds.find((candidate) => candidate.id === player.buildId)!;
+        const loadout = stageLoadout(build, phaseForChapter(chapter));
+        const pathResult = weaponUpgradePath(loadout.weapon);
+        const path: UpgradePath | undefined = pathResult === "none" ? undefined : pathResult;
+        const level = currentSupport?.levels[player.id] ?? guideTargets(economy, expedition.levelOffset ?? 0).runeLevel;
+        const previousLevel = previousSupport?.levels[player.id] ?? planBuildStatTarget(build, level).origin.level;
+        const upgrade = currentSupport?.upgrades[player.id] ?? 0;
+        const previousUpgrade = previousSupport?.upgrades[player.id] ?? 0;
+        const levelCost = runesBetweenLevels(Math.min(previousLevel, level), level);
+        const materialCost = path ? planWeaponUpgrade(path, Math.min(previousUpgrade, upgrade), upgrade).materialPurchaseRunes : 0;
+        const required = levelCost + materialCost + economy.purchaseReserve;
+        const key = `${chapter.id}:${player.id}`;
+        const held = expedition.checkpointRunes?.[key];
+        const withBosses = (held ?? 0) + (currentSupport?.chapterBossRunes ?? 0);
+        const gap = Math.max(0, required - withBosses);
+        const editable = !viewerPlayerId || viewerPlayerId === player.id;
+        return <article key={player.id} style={{ "--player": player.color } as React.CSSProperties}>
+          <div><strong>{player.name}</strong><span>RL{previousLevel} → RL{level}</span></div>
+          <label>Runes held<input type="number" min="0" step="100" disabled={!editable} value={held ?? ""} placeholder="Enter current runes" onChange={(event) => setRunes(player.id, Math.max(0, Number(event.target.value) || 0))} /></label>
+          <dl><div><dt>Levels</dt><dd>{formatRunes(levelCost)}</dd></div><div><dt>Stone ceiling</dt><dd>{formatRunes(materialCost)}</dd></div><div><dt>Reserve</dt><dd>{formatRunes(economy.purchaseReserve)}</dd></div><div><dt>Boss top-up</dt><dd>+{formatRunes(currentSupport?.chapterBossRunes ?? 0)}</dd></div></dl>
+          {held === undefined ? <p className="rune-status waiting">Enter the current counter for an exact check.</p> : gap > 0 ? <p className="rune-status short">Need {formatRunes(gap)} more. Choose a higher-value replacement below, or skip optional fights and accept the planner’s lower funded target.</p> : <p className="rune-status ready">Funded with {formatRunes(withBosses - required)} left after the reserve.</p>}
+        </article>;
+      })}
+    </div>
+    {selectedBosses.length > 0 && <div className="rune-boss-manager"><div className="objectives-heading"><div><p className="eyebrow">Optional rune fights</p><h3>Recommended top-up bosses</h3></div><span>{selectedBosses.length} selected</span></div><div className="rune-boss-grid">{selectedBosses.map((boss, index) => <article key={`${boss.id}-${index}`}><BossMapThumbnail boss={boss} /><div className="rune-boss-copy"><strong>{boss.name}</strong><span>{boss.location}</span><dl><div><dt>Recommended</dt><dd>RL {recommendedOptionalBossLevel(boss)}+</dd></div><div><dt>Solo reward</dt><dd>{formatRunes(boss.runes)}</dd></div></dl>{!viewerPlayerId && <div className="rune-boss-actions"><label>Replace with<select value={boss.id} onChange={(event) => replaceBoss(index, event.target.value)}>{alternatives.filter((candidate) => candidate.id === boss.id || !selectedBosses.some((selected) => selected.id === candidate.id)).map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name} · RL {recommendedOptionalBossLevel(candidate)} · {formatRunes(candidate.runes)}</option>)}</select></label><button type="button" onClick={() => setBosses(selectedBosses.filter((_, bossIndex) => bossIndex !== index).map((candidate) => candidate.id))}>Skip this boss</button></div>}</div></article>)}</div></div>}
+    {!selectedBosses.length && alternatives.length > 0 && !viewerPlayerId && <div className="empty-rune-bosses"><p>No optional rune boss is selected. The planner has lowered the funded level to match that choice.</p><button type="button" onClick={resetBosses}>Use recommended bosses</button></div>}
+  </section>;
+}
+
+function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly = false, viewerPlayerId, onViewerUpdate }: { expedition: Expedition; setExpedition: React.Dispatch<React.SetStateAction<Expedition | null>>; activeId: string; setActiveId: (id: string) => void; readOnly?: boolean; viewerPlayerId?: string; onViewerUpdate?: (kind: "completed" | "runes", key: string, value: boolean | number) => void }) {
   const chapter = chapters.find((candidate) => candidate.id === activeId) || chapters[0];
   const tasks = tasksForChapter(chapter, expedition);
   const completedTasks = tasks.filter((task) => taskDone(task, expedition)).length;
   const chapterIndex = chapters.indexOf(chapter);
   const nextStep = nextIncompleteTask(expedition);
 
-  useEffect(() => {
-    if (readOnly && nextStep && activeId !== nextStep.chapter.id) setActiveId(nextStep.chapter.id);
-  }, [activeId, nextStep, readOnly, setActiveId]);
-
   const toggle = (key: string) => {
-    if (readOnly) return;
+    if (readOnly) {
+      if (!viewerPlayerId || (!key.endsWith(`:${viewerPlayerId}`) && !key.includes(viewerPlayerId))) return;
+      const value = !expedition.completed[key];
+      setExpedition((current) => current ? { ...current, completed: { ...current.completed, [key]: value } } : current);
+      onViewerUpdate?.("completed", key, value);
+      return;
+    }
     setExpedition((current) => current ? { ...current, completed: { ...current.completed, [key]: !current.completed[key] } } : current);
   };
 
   const completeAndContinue = () => {
-    if (!nextStep || readOnly) return;
+    if (!nextStep) return;
+    if (readOnly) {
+      if (!viewerPlayerId) return;
+      const key = nextStep.task.perPlayer ? `${nextStep.task.id}:${viewerPlayerId}` : nextStep.task.playerId === viewerPlayerId ? nextStep.task.id : "";
+      if (key) toggle(key);
+      return;
+    }
     const completed = { ...expedition.completed };
     taskKeys(nextStep.task, expedition).forEach((key) => { completed[key] = true; });
     const updated = { ...expedition, completed };
@@ -1217,9 +1340,9 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly 
             </div>
             <div className="next-step-actions">
               {activeId !== nextStep.chapter.id && <button type="button" onClick={() => setActiveId(nextStep.chapter.id)}>Show area</button>}
-              {!readOnly && <button type="button" className="primary" onClick={completeAndContinue}>Complete and continue</button>}
+              {(!readOnly || (viewerPlayerId && (nextStep.task.perPlayer || nextStep.task.playerId === viewerPlayerId))) && <button type="button" className="primary" onClick={completeAndContinue}>{readOnly ? "Mark my step complete" : "Complete and continue"}</button>}
               {!readOnly && nextStep.task.optional && <button type="button" onClick={skipAndContinue}>Skip this item</button>}
-              {readOnly && <span>Updates from the host</span>}
+              {readOnly && <span>{viewerPlayerId ? `Following as ${expedition.players.find((player) => player.id === viewerPlayerId)?.name}` : "Updates from the host"}</span>}
             </div>
           </section>
         ) : <section className="next-step-panel route-finished"><div><p>Route complete</p><h3>All objectives have been checked off.</h3></div></section>}
@@ -1234,6 +1357,8 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly 
         {chapter.quest && <div className="quest-callout"><strong>Quest safety</strong><span>{chapter.quest}. Some rewards are mutually exclusive; follow the named choice needed by the selected build. In standard co-op, the alternate reward can be taken in another player&apos;s world.</span></div>}
 
         <MapPanel chapter={chapter} expedition={expedition} onSelect={setActiveId} />
+
+        <RuneCheckpointPanel chapter={chapter} expedition={expedition} setExpedition={setExpedition} viewerPlayerId={viewerPlayerId} onViewerUpdate={onViewerUpdate} />
 
         <div className="objectives-heading"><div><p className="eyebrow">Ordered stops</p><h3>Do these before moving on</h3></div><span>{Math.round((completedTasks / Math.max(tasks.length, 1)) * 100)}% complete</span></div>
         <div className="task-list">
@@ -1254,13 +1379,13 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly 
                     <div className="player-checks">
                       {expedition.players.map((player) => {
                         const key = `${task.id}:${player.id}`;
-                        return <button type="button" disabled={readOnly} key={key} className={expedition.completed[key] ? "checked" : ""} onClick={() => toggle(key)} style={{ "--player": player.color } as React.CSSProperties}><i>{expedition.completed[key] ? "✓" : ""}</i>{player.name}</button>;
+                        return <button type="button" disabled={readOnly && viewerPlayerId !== player.id} key={key} className={expedition.completed[key] ? "checked" : ""} onClick={() => toggle(key)} style={{ "--player": player.color } as React.CSSProperties}><i>{expedition.completed[key] ? "✓" : ""}</i>{player.name}</button>;
                       })}
                     </div>
-                  ) : !readOnly ? (
+                  ) : (!readOnly || task.playerId === viewerPlayerId) ? (
                     <div className="task-actions">
                       {!skipped && <button type="button" className="complete-button" onClick={() => toggle(task.id)}><i>{done ? "✓" : ""}</i>{done ? "Completed" : "Mark complete"}</button>}
-                      {task.optional && <button type="button" className="complete-button skip-button" onClick={() => toggleSkipped(task)}><i>{skipped ? "↶" : "—"}</i>{skipped ? "Restore item" : "Skip item"}</button>}
+                      {task.optional && !readOnly && <button type="button" className="complete-button skip-button" onClick={() => toggleSkipped(task)}><i>{skipped ? "↶" : "—"}</i>{skipped ? "Restore item" : "Skip item"}</button>}
                     </div>
                   ) : null}
                 </div>
@@ -1281,7 +1406,7 @@ function RouteView({ expedition, setExpedition, activeId, setActiveId, readOnly 
           const phase = chapter.act === "Shadow of the Erdtree" ? "dlc" : chapterIndex < 3 ? "early" : chapterIndex < 9 ? "mid" : "late";
           return <div className="company-member" key={player.id} style={{ "--player": player.color } as React.CSSProperties}><span>{player.name.slice(0, 1).toUpperCase()}</span><div><strong>{player.name}</strong><small>{selected.name}</small><p>{selected.phases[phase]}</p></div></div>;
         })}
-        <div className="mode-note"><strong>{expedition.mode === "standard" ? "Standard co-op rules" : "Seamless rules"}</strong><p>{expedition.mode === "standard" ? "World-state steps are tracked for every player. Rotate hosts and tick each copy." : "The route follows host progression. Individual pickups remain assigned separately."}</p></div>
+        <div className="mode-note"><strong>{expedition.mode === "solo" ? "Solo route" : expedition.mode === "standard" ? "Standard co-op rules" : "Seamless rules"}</strong><p>{expedition.mode === "solo" ? "Boss rewards use the full solo payout and every pickup belongs to this character." : expedition.mode === "standard" ? "World-state steps are tracked for every player. Rotate hosts and tick each copy." : "The route follows host progression. Individual pickups remain assigned separately."}</p></div>
       </aside>
     </div>
   );
@@ -1336,20 +1461,23 @@ function ReadOnlyBuildCatalogue({ lanAvailable }: { lanAvailable: boolean }) {
   );
 }
 
-function PartyView({ expedition, setExpedition, onExport, onImport, onReset }: { expedition: Expedition; setExpedition: React.Dispatch<React.SetStateAction<Expedition | null>>; onExport: () => void; onImport: (event: React.ChangeEvent<HTMLInputElement>) => void; onReset: () => void }) {
+function PartyView({ expedition, setExpedition, saveLibrary, activeSaveId, onSelectSave, onNewSave, onDuplicateSave, onDeleteSave, onExport, onImport }: { expedition: Expedition; setExpedition: React.Dispatch<React.SetStateAction<Expedition | null>>; saveLibrary: SaveLibrary; activeSaveId: string | null; onSelectSave: (id: string) => void; onNewSave: () => void; onDuplicateSave: () => void; onDeleteSave: () => void; onExport: () => void; onImport: (event: React.ChangeEvent<HTMLInputElement>) => void }) {
   const totalKeys = chapters.flatMap((chapter) => tasksForChapter(chapter, expedition)).flatMap((task) => taskKeys(task, expedition));
   const completed = totalKeys.filter((key) => expedition.completed[key]).length;
   const updatePlayer = (id: string, patch: Partial<Player>) => setExpedition((current) => current ? { ...current, players: current.players.map((player) => player.id === id ? { ...player, ...patch } : player) } : current);
-  return <section className="party-page"><div className="page-heading"><div><p className="eyebrow">Expedition management</p><h2>{expedition.name}</h2><p>{expedition.mode === "standard" ? "Standard co-op across independent worlds" : "Seamless Co-op with host-led progression"}</p></div><div className="progress-medallion"><strong>{Math.round((completed / Math.max(totalKeys.length, 1)) * 100)}%</strong><span>route complete</span></div></div>
+  return <section className="party-page"><div className="page-heading"><div><p className="eyebrow">Run settings</p><h2>{expedition.name}</h2><p>{expedition.mode === "solo" ? "Solo playthrough" : expedition.mode === "standard" ? "Standard co-op across independent worlds" : "Seamless Co-op with host-led progression"}</p></div><div className="progress-medallion"><strong>{Math.round((completed / Math.max(totalKeys.length, 1)) * 100)}%</strong><span>route complete</span></div></div>
     <div className="party-cards">{expedition.players.map((player, index) => { const selected = builds.find((candidate) => candidate.id === player.buildId)!; const classification = buildClassification(selected); return <article key={player.id} style={{ "--player": player.color } as React.CSSProperties}><div className="portrait">{player.name.slice(0, 1).toUpperCase()}</div><div className="party-card-head"><input value={player.name} onChange={(event) => updatePlayer(player.id, { name: event.target.value })} /><span>Player {index + 1}</span></div><select value={player.buildId} onChange={(event) => updatePlayer(player.id, { buildId: event.target.value })}>{builds.map((candidate) => <option value={candidate.id} key={candidate.id}>{candidate.name}</option>)}</select><p>{selected.playstyle}</p><div className="party-stats"><span><small>Attributes</small>{classification.attributes}</span><span><small>Range</small>{classification.range}</span></div><label className="host-radio"><input type="radio" name="host" checked={expedition.hostId === player.id} onChange={() => setExpedition((current) => current ? { ...current, hostId: player.id } : current)} /> {expedition.hostId === player.id ? "Current host" : "Make host"}</label></article>; })}</div>
     <div className="save-panel"><div><p className="eyebrow">Rune plan</p><h3>Level and loss allowances</h3><p>Expected field income is reduced before levels are assigned. If the conservative balance cannot pay for the selected pace, the route inserts easier optional bosses and only recommends a fully funded level. Golden Rune items remain emergency reserves.</p></div><div className="loss-setting"><label>Allow for <select value={expedition.lossRate ?? 20} onChange={(event) => setExpedition((current) => current ? { ...current, lossRate: Number(event.target.value) } : current)}><option value={10}>10% lost</option><option value={20}>20% lost</option><option value={30}>30% lost</option></select></label><label>Run <select value={expedition.levelOffset ?? 0} onChange={(event) => setExpedition((current) => current ? { ...current, levelOffset: Number(event.target.value), completed: {} } : current)}><option value={0}>at guide level</option><option value={5}>5 levels below</option><option value={10}>10 levels below</option><option value={15}>15 levels below</option><option value={20}>20 levels below</option></select></label></div></div>
-    <div className="save-panel"><div><p className="eyebrow">Carry the route</p><h3>Save and share</h3><p>Progress is saved automatically. Export an expedition file for backup or to move the route to another computer.</p></div><div className="save-actions"><button type="button" className="primary" onClick={onExport}>Export expedition</button><label>Import file<input type="file" accept="application/json" onChange={onImport} /></label><button type="button" className="danger" onClick={onReset}>Start over</button></div></div>
+    <div className="save-panel save-library-panel"><div><p className="eyebrow">Saved runs</p><h3>Switch without moving files</h3><p>Every run is stored in this browser. Export is still available for backups and moving a run to another device.</p><div className="save-library-list">{Object.values(saveLibrary.saves).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map((save) => <button type="button" className={save.saveId === activeSaveId ? "active" : ""} key={save.saveId} onClick={() => onSelectSave(save.saveId!)}><strong>{save.name}</strong><span>{save.players.length === 1 ? "Solo" : `${save.players.length} players`} · {new Date(save.createdAt).toLocaleDateString()}</span></button>)}</div></div><div className="save-actions"><button type="button" className="primary" onClick={onNewSave}>New run</button><button type="button" onClick={onDuplicateSave}>Duplicate current</button><button type="button" onClick={onExport}>Export current</button><label>Import file<input type="file" accept="application/json" onChange={onImport} /></label><button type="button" className="danger" onClick={onDeleteSave}>Delete current</button></div></div>
     <div className="source-panel"><p className="eyebrow">Reference shelf</p><h3>Sources and version</h3><p>Content baseline: App/Regulation 1.16.1, checked 1 August 2026. External references open in a new tab.</p><div>{sources.map(([label, url]) => <a key={url} href={url} target="_blank" rel="noreferrer">{label}<span>↗</span></a>)}</div></div>
   </section>;
 }
 
 export default function Home() {
   const [expedition, setExpedition] = useState<Expedition | null>(null);
+  const [saveLibrary, setSaveLibrary] = useState<SaveLibrary>({ activeId: null, saves: {} });
+  const [activeSaveId, setActiveSaveId] = useState<string | null>(null);
+  const [viewerPlayerId, setViewerPlayerId] = useState("");
   const [hydrated, setHydrated] = useState(false);
   const [lanMode, setLanMode] = useState<LanMode | null>(null);
   const [catalogueOnly, setCatalogueOnly] = useState(false);
@@ -1367,10 +1495,26 @@ export default function Home() {
       const requestedCatalogue = params.get("catalog") === "1";
       if (!cancelled) setCatalogueOnly(requestedCatalogue);
       let localExpedition: Expedition | null = null;
+      let localLibrary: SaveLibrary = { activeId: null, saves: {} };
       try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) localExpedition = JSON.parse(saved);
-      } catch { localStorage.removeItem(STORAGE_KEY); }
+        const libraryText = localStorage.getItem(SAVE_LIBRARY_KEY);
+        if (libraryText) {
+          const parsed = JSON.parse(libraryText) as SaveLibrary;
+          if (parsed && typeof parsed.saves === "object") localLibrary = parsed;
+        }
+        const legacyText = localStorage.getItem(STORAGE_KEY);
+        if (!Object.keys(localLibrary.saves).length && legacyText) {
+          const legacy = JSON.parse(legacyText) as Expedition;
+          const id = legacy.saveId || newSaveId();
+          legacy.saveId = id;
+          localLibrary = { activeId: id, saves: { [id]: legacy } };
+        }
+        localExpedition = localLibrary.activeId ? localLibrary.saves[localLibrary.activeId] || null : null;
+        if (localExpedition && !localExpedition.saveId) {
+          const id = newSaveId(); localExpedition = { ...localExpedition, saveId: id }; localLibrary = { activeId: id, saves: { ...localLibrary.saves, [id]: localExpedition } };
+        }
+      } catch { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(SAVE_LIBRARY_KEY); }
+      if (!cancelled) { setSaveLibrary(localLibrary); setActiveSaveId(localLibrary.activeId); }
 
       try {
         const response = await fetch("/api/expedition", { cache: "no-store" });
@@ -1380,11 +1524,15 @@ export default function Home() {
           if (remote.enabled === true) {
             const token = params.get("control") || "";
             const mode: LanMode = token ? "controller" : "follower";
+            const requestedViewer = params.get("follow") || localStorage.getItem("tarnished-together-viewer-player") || "";
             controlToken.current = token;
             lanRevision.current = Number(remote.revision || 0);
             if (!cancelled) {
               setLanMode(mode);
-              setExpedition(remote.expedition || (mode === "controller" ? localExpedition : null));
+              const rawChoice = remote.expedition || (mode === "controller" ? localExpedition : null);
+              const chosen = rawChoice && !rawChoice.saveId ? { ...rawChoice, saveId: newSaveId() } : rawChoice;
+              setExpedition(chosen);
+              if (mode === "follower" && chosen?.players.some((player: Player) => player.id === requestedViewer)) setViewerPlayerId(requestedViewer);
               setHydrated(true);
             }
             return;
@@ -1406,8 +1554,11 @@ export default function Home() {
     if (!hydrated || lanMode === null || lanMode === "follower") return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      if (expedition) localStorage.setItem(STORAGE_KEY, JSON.stringify(expedition));
-      else localStorage.removeItem(STORAGE_KEY);
+      if (expedition?.saveId) {
+        setSaveLibrary((current) => ({ activeId: expedition.saveId!, saves: { ...current.saves, [expedition.saveId!]: expedition } }));
+        setActiveSaveId(expedition.saveId);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(expedition));
+      }
       if (lanMode === "controller") {
         void fetch("/api/expedition", {
           method: "PUT",
@@ -1418,6 +1569,11 @@ export default function Home() {
     }, 180);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
   }, [expedition, hydrated, lanMode]);
+
+  useEffect(() => {
+    if (!hydrated || lanMode === "follower") return;
+    localStorage.setItem(SAVE_LIBRARY_KEY, JSON.stringify(saveLibrary));
+  }, [saveLibrary, hydrated, lanMode]);
 
   useEffect(() => {
     if (!hydrated || lanMode !== "follower") return;
@@ -1445,6 +1601,24 @@ export default function Home() {
   }, [expedition]);
 
   const notify = (message: string) => { setToast(message); window.setTimeout(() => setToast(""), 2600); };
+  const openSave = (id: string) => {
+    const selected = saveLibrary.saves[id];
+    if (!selected) return;
+    setActiveSaveId(id); setSaveLibrary((current) => ({ ...current, activeId: id })); setExpedition(selected); setView("route"); setActiveId(chapters[0].id);
+  };
+  const newRun = () => { setExpedition(null); setActiveSaveId(null); setSaveLibrary((current) => ({ ...current, activeId: null })); setView("route"); setActiveId(chapters[0].id); };
+  const duplicateRun = () => {
+    if (!expedition) return;
+    const saveId = newSaveId();
+    const copy: Expedition = { ...expedition, saveId, name: `${expedition.name} copy`, completed: { ...expedition.completed }, checkpointRunes: { ...expedition.checkpointRunes }, runeBossSelections: { ...expedition.runeBossSelections }, createdAt: new Date().toISOString() };
+    setSaveLibrary((current) => ({ activeId: saveId, saves: { ...current.saves, [saveId]: copy } })); setActiveSaveId(saveId); setExpedition(copy); notify("Run duplicated");
+  };
+  const deleteRun = () => {
+    if (!activeSaveId || !window.confirm(`Delete “${expedition?.name || "this run"}” from this browser?`)) return;
+    const remaining = { ...saveLibrary.saves }; delete remaining[activeSaveId];
+    const nextId = Object.keys(remaining)[0] || null;
+    setSaveLibrary({ activeId: nextId, saves: remaining }); setActiveSaveId(nextId); setExpedition(nextId ? remaining[nextId] : null); setView("route"); setActiveId(chapters[0].id);
+  };
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -1452,8 +1626,9 @@ export default function Home() {
     reader.onload = () => {
       try {
         const parsed = JSON.parse(String(reader.result));
-        if (parsed.schema !== 1 || !Array.isArray(parsed.players) || parsed.players.length < 2 || parsed.players.length > 6) throw new Error();
-        setExpedition(parsed); setView("route"); notify("Expedition imported");
+        if (parsed.schema !== 1 || !Array.isArray(parsed.players) || parsed.players.length < 1 || parsed.players.length > 6) throw new Error();
+        parsed.saveId = newSaveId();
+        setExpedition(parsed); setActiveSaveId(parsed.saveId); setSaveLibrary((current) => ({ activeId: parsed.saveId, saves: { ...current.saves, [parsed.saveId]: parsed } })); setView("route"); notify("Run imported as a new save");
       } catch { notify("That expedition file is not valid"); }
     };
     reader.readAsText(file);
@@ -1465,7 +1640,14 @@ export default function Home() {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a"); anchor.href = url; anchor.download = `${expedition.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "expedition"}.json`; anchor.click(); URL.revokeObjectURL(url); notify("Expedition exported");
   };
-  const handleReset = () => { if (window.confirm("Start a new expedition? The current local progress will be removed unless you export it first.")) { setExpedition(null); setView("route"); setActiveId(chapters[0].id); } };
+  const viewerUpdate = (kind: "completed" | "runes", key: string, value: boolean | number) => {
+    if (!viewerPlayerId) return;
+    void fetch("/api/player-progress", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ playerId: viewerPlayerId, kind, key, value }) }).then(async (response) => {
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Update failed");
+      lanRevision.current = Number(body.revision || lanRevision.current); setExpedition(body.expedition);
+    }).catch((error) => notify(error instanceof Error ? error.message : "Could not save progress"));
+  };
 
   if (!hydrated) return <main className="loading-screen"><span>✦</span><p>Reading the guidance of grace…</p></main>;
   if (catalogueOnly) return <ReadOnlyBuildCatalogue lanAvailable={lanMode !== "none"} />;
@@ -1473,17 +1655,18 @@ export default function Home() {
   if (!expedition) return <Setup onCreate={(created) => { setExpedition(created); notify("Route created"); }} imported={handleImport} />;
 
   const readOnly = lanMode === "follower";
+  if (readOnly && !expedition.players.some((player) => player.id === viewerPlayerId)) return <main className="viewer-chooser"><div><p className="eyebrow">Join this run</p><h1>Which character are you playing?</h1><p>This only gives you control of that character’s item checklist and rune entries. You can still browse every chapter and step.</p>{expedition.players.map((player) => <button type="button" key={player.id} onClick={() => { setViewerPlayerId(player.id); localStorage.setItem("tarnished-together-viewer-player", player.id); const url = new URL(window.location.href); url.searchParams.set("follow", player.id); window.history.replaceState({}, "", url); }}>{player.name}<span>{builds.find((build) => build.id === player.buildId)?.name}</span></button>)}</div></main>;
 
   return (
     <main className={`app-shell ${readOnly ? "follower-mode" : ""}`}>
       <header className="topbar">
         <button type="button" className="brand" onClick={() => { setView("route"); setActiveId(chapters[0].id); }}><span>✦</span><strong>Tarnished <em>Together</em></strong></button>
         <nav aria-label="Primary"><button type="button" className={view === "route" ? "active" : ""} onClick={() => setView("route")}>Route</button>{readOnly && <button type="button" onClick={() => { window.location.href = "/?catalog=1"; }}>Build catalogue</button>}{!readOnly && <><button type="button" className={view === "codex" ? "active" : ""} onClick={() => setView("codex")}>Build codex</button><button type="button" className={view === "party" ? "active" : ""} onClick={() => setView("party")}>Company</button></>}</nav>
-        <div className="top-progress"><span><i style={{ width: `${progress}%` }} /></span><strong>{progress}%</strong>{readOnly ? <b className="lan-badge">Following</b> : <button type="button" onClick={handleExport} aria-label="Export expedition">⇩</button>}</div>
+        <div className="top-progress"><span><i style={{ width: `${progress}%` }} /></span><strong>{progress}%</strong>{readOnly ? <b className="lan-badge">{expedition.players.find((player) => player.id === viewerPlayerId)?.name}</b> : <select className="save-switcher" aria-label="Current saved run" value={activeSaveId || expedition.saveId || ""} onChange={(event) => openSave(event.target.value)}>{Object.values(saveLibrary.saves).map((save) => <option value={save.saveId} key={save.saveId}>{save.name}</option>)}</select>}</div>
       </header>
-      {(view === "route" || readOnly) && <RouteView expedition={expedition} setExpedition={setExpedition} activeId={activeId} setActiveId={setActiveId} readOnly={readOnly} />}
+      {(view === "route" || readOnly) && <RouteView expedition={expedition} setExpedition={setExpedition} activeId={activeId} setActiveId={setActiveId} readOnly={readOnly} viewerPlayerId={viewerPlayerId} onViewerUpdate={viewerUpdate} />}
       {!readOnly && view === "codex" && <CodexView expedition={expedition} />}
-      {!readOnly && view === "party" && <PartyView expedition={expedition} setExpedition={setExpedition} onExport={handleExport} onImport={handleImport} onReset={handleReset} />}
+      {!readOnly && view === "party" && <PartyView expedition={expedition} setExpedition={setExpedition} saveLibrary={saveLibrary} activeSaveId={activeSaveId} onSelectSave={openSave} onNewSave={newRun} onDuplicateSave={duplicateRun} onDeleteSave={deleteRun} onExport={handleExport} onImport={handleImport} />}
       {toast && <div className="toast" role="status">{toast}</div>}
     </main>
   );

@@ -1,6 +1,6 @@
 # Tarnished Together
 
-A responsive Elden Ring route planner for 2–6 players. It supports standard co-op and the PC Seamless Co-op mod.
+A responsive Elden Ring route planner for solo runs and 2–6 player groups. It supports solo play, standard co-op and the PC Seamless Co-op mod.
 
 The app includes:
 
@@ -9,12 +9,12 @@ The app includes:
 - every Remembrance boss, plus Bayle;
 - player-specific gear and world-progress tracking;
 - level, weapon-upgrade and Scadutree Blessing targets;
-- local autosave and JSON export/import.
-- a controller/follower LAN mode with live read-only progress for other devices.
+- multiple local autosave slots plus JSON export/import.
+- a controller/follower LAN mode where each follower can browse the full route, update their own item checks and rune counters, and receive live host progress.
 
 ## Run for your local co-op group
 
-Double-click `Start-LAN.cmd`. The launcher builds the current guide, opens the controller on this PC, and prints two read-only links for each home-network address: a complete build catalogue for choosing before the run and the live route follower. Other players do not need a ChatGPT account and cannot assign builds or change route progress.
+Double-click `Start-LAN.cmd`. The launcher builds the current guide, opens the controller on this PC, and prints a complete build-catalogue link and a live route link for each home-network address. Other players do not need a ChatGPT account. Each follower chooses their character, can browse every chapter and can update only that character’s pickups and rune counters; the controller retains shared boss, quest, build and route control.
 
 Use the links under **Home network links**. Addresses under **Other network adapters** are normally VPN or virtual-machine adapters and should not be sent to another computer on your Wi-Fi.
 

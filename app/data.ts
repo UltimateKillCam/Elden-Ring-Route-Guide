@@ -22,6 +22,7 @@ export type Build = {
   collection: "Curated" | "Fextralife" | "Other guides" | "Meme / cosplay";
   availableFrom?: PhaseKey;
   publishedLoadout?: Omit<StageLoadout, "talismanSlots">;
+  publishedStages?: Partial<Record<PhaseKey, Omit<StageLoadout, "talismanSlots">>>;
   phaseBridges?: Partial<Record<PhaseKey, string>>;
   guideCategories?: string[];
   source: BuildSource;
@@ -268,10 +269,13 @@ function closestPublishedStage(build: Build, phase: PhaseKey) {
 }
 
 export function stageLoadout(build: Build, phase: PhaseKey): StageLoadout {
+  const exactStage = build.publishedStages?.[phase];
+  if (exactStage) return { ...exactStage, talismanSlots: `${exactStage.talismans.length} listed by source` };
   if (build.publishedLoadout) {
     const available = build.availableFrom || "early";
     if (PHASES.indexOf(phase) < PHASES.indexOf(available)) {
-      const borrowed = closestPublishedStage(build, phase);
+      const immediatelyBeforeMainWeapon = PHASES.indexOf(phase) === PHASES.indexOf(available) - 1 && PHASES.indexOf(phase) > 0 && !build.phaseBridges?.[phase];
+      const borrowed = closestPublishedStage(build, immediatelyBeforeMainWeapon ? PHASES[PHASES.indexOf(phase) - 1] : phase);
       if (borrowed?.publishedLoadout) {
         const resolution = weaponResolutions[borrowed.id];
         return {
