@@ -167,6 +167,7 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /Winning is not required/);
   assert.match(mapItems, /cleanImportedDescription/);
   assert.match(page, /Meet Nepheli before Godrick.*Secluded Cell/s);
+  assert.match(page, /"Meet Patches at Scenic Isle": "Patches \(First Liurnia Location\)"/);
   const { findMapItem } = await import("../app/map-items.ts");
   assert.doesNotMatch(findMapItem("Nepheli Loux")?.description ?? "", /�/);
   assert.match(page, /Golden Seed - 2x Capital Outskirts West/);

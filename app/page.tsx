@@ -533,6 +533,7 @@ const ESSENTIAL_MAP_QUERIES: Record<string, string> = {
   "Resolve the Leda and Ansbach Storehouse signs for the party's required reward": "Storehouse, First Floor",
   "Meet Rogier in the chapel and inspect the corpse below Stormveil": "Sorcerer Rogier (First Location)",
   "Meet Nepheli before Godrick": "Nepheli Loux",
+  "Meet Patches at Scenic Isle": "Patches (First Liurnia Location)",
   "Collect the second Academy Glintstone Key": "Academy Glintstone Key (B)",
   "Exhaust Rogier before joining Ranni": "Sorcerer Rogier (First Location)",
   "Move Sellen's primal glintstone and resolve the Sellen or Jerren summon signs": "Witch-Hunter Jerren (Third Location)",
