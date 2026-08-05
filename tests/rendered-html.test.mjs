@@ -182,6 +182,11 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /checkpointLevels/);
   assert.match(page, /checkpointStats/);
   assert.match(page, /checkpointWeaponLevels/);
+  assert.match(page, /carriedCheckpointNumber/);
+  assert.match(page, /carriedCheckpointStats/);
+  assert.match(page, /carriedWeaponCheckpoint/);
+  assert.match(page, /only change values that have increased/);
+  assert.match(page, /held runes again because that balance does not carry forward/);
   assert.match(page, /statScheduleText/);
   assert.match(page, /Apply them exactly as follows/);
   assert.match(page, /Chapter target/);
@@ -197,6 +202,10 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /previousUpgradePath === upgradePath/);
   assert.match(page, /Replace with/);
   assert.match(page, /Skip this boss/);
+  assert.match(page, /const optional = \/\^\(\?:Optional\|Optionally\|If the optional\)/);
+  assert.match(page, /Optional rune bosses have been removed because this character is already above the chapter target/);
+  assert.match(page, /everyRecordedPlayerIsOverTarget/);
+  assert.match(page, /No levels recommended; RL/);
   assert.match(page, /SAVE_LIBRARY_KEY/);
   assert.match(page, /Duplicate current/);
   assert.match(page, /Which character are you playing/);

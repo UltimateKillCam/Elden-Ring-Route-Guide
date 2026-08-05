@@ -9,8 +9,31 @@ async function loadCatalogue() {
   const server = await createServer({ configFile: false, server: { middlewareMode: true }, appType: "custom" });
   const data = await server.ssrLoadModule("/app/data.ts");
   const weapons = await server.ssrLoadModule("/app/weapon-upgrades.ts");
-  return { ...data, ...weapons, close: () => server.close() };
+  const questRoute = await server.ssrLoadModule("/app/quest-route.ts");
+  return { ...data, ...weapons, ...questRoute, close: () => server.close() };
 }
+
+test("quest route keeps every Kenneth state change and merges the Soreseal advisory", async () => {
+  const catalogue = await loadCatalogue();
+  try {
+    const firstSteps = catalogue.chapters.find((chapter) => chapter.id === "first-steps");
+    const labels = firstSteps.essentials;
+    const kenneth = [
+      "Meet Kenneth Haight above the Mistwood road",
+      "Clear Fort Haight and collect Bloody Slash",
+      "Return to Kenneth for the Erdsteel Dagger",
+      "Rest at Fort Haight West, then pledge service to Kenneth",
+      "Revisit Kenneth on Fort Haight's battlements",
+    ];
+    assert.deepEqual(labels.filter((label) => /Kenneth|Fort Haight and collect Bloody Slash/.test(label)), kenneth);
+    assert.ok(kenneth.every((label) => catalogue.QUEST_STEP_GUIDES[label]?.length > 80));
+    assert.ok(Object.keys(catalogue.QUEST_STEP_GUIDES).length >= 180, "quest audit lost detailed route instructions");
+    assert.doesNotMatch(labels.join("\n"), /^WARNING/m);
+    assert.equal(labels.filter((label) => /Radagon's Soreseal/.test(label)).length, 1);
+  } finally {
+    await catalogue.close();
+  }
+});
 
 const statCodes = (build) => DAMAGE_STATS.filter((stat) => build.stats.toUpperCase().includes(stat));
 

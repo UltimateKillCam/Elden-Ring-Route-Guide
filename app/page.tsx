@@ -24,6 +24,7 @@ import {
   type UpgradePath,
 } from "./run-planner";
 import { findWeaponUpgradeRecord, weaponUpgradePath } from "./weapon-upgrades";
+import { QUEST_STEP_GUIDES } from "./quest-route";
 
 type Mode = "solo" | "standard" | "seamless";
 type View = "route" | "selected" | "codex" | "party";
@@ -97,6 +98,20 @@ const FEXTRA_CATEGORY_FILTERS = ["All Fextralife groups", ...Array.from(new Set(
 const MECHANIC_FILTERS = ["All focuses", ...Array.from(new Set(builds.map((candidate) => candidate.mechanic))).sort()];
 const SORT_OPTIONS = ["Catalogue order", "Collection", "Attribute", "Combat focus", "Starting class", "Name"];
 const PHASE_ORDER: PhaseKey[] = ["early", "mid", "late", "dlc"];
+
+function carriedCheckpointNumber(record: Record<string, number> | undefined, chapterIndex: number, playerId: string) {
+  for (let index = chapterIndex; index >= 0; index -= 1) {
+    const value = record?.[`${chapters[index].id}:${playerId}`];
+    if (value !== undefined) return value;
+  }
+  return undefined;
+}
+
+function carriedCheckpointStats(record: Record<string, Partial<AttributeBlock>> | undefined, chapterIndex: number, playerId: string) {
+  const stats: Partial<AttributeBlock> = {};
+  for (let index = 0; index <= chapterIndex; index += 1) Object.assign(stats, record?.[`${chapters[index].id}:${playerId}`] || {});
+  return stats;
+}
 
 function buildClassification(build: Build) {
   const stats = build.stats.toUpperCase();
@@ -455,6 +470,8 @@ const ESSENTIAL_GUIDES: Record<string, string> = {
   "Do not touch the sealing tree until every follower check is complete": "Stop after Romina. Before interacting with the sealing tree, finish Moore, Thiollier, Hornsent, Ansbach, Freyja, Leda, Dane, Igon, Ymir and Jolan, collect their available rewards and confirm Ansbach and Thiollier are eligible for Enir-Ilim. Burning the tree is the DLC's final shared quest cutoff.",
 };
 
+Object.assign(ESSENTIAL_GUIDES, QUEST_STEP_GUIDES);
+
 const ESSENTIAL_MAP_QUERIES: Record<string, string> = {
   "Axe of Godrick": "Godrick the Grafted",
   "Grafted Dragon": "Godrick the Grafted",
@@ -489,6 +506,11 @@ const ESSENTIAL_MAP_QUERIES: Record<string, string> = {
   "Accept Melina's accord and receive Torrent": "Gatefront Ruins",
   "Enter Margit's arena once to trigger the Roundtable Hold invitation": "Margit, the Fell Omen",
   "Accept Melina's invitation and meet Smithing Master Hewg": "Margit, the Fell Omen",
+  "Meet Kenneth Haight above the Mistwood road": "Kenneth Haight (First Location)",
+  "Clear Fort Haight and collect Bloody Slash": "Fort Haight",
+  "Return to Kenneth for the Erdsteel Dagger": "Kenneth Haight (First Location)",
+  "Rest at Fort Haight West, then pledge service to Kenneth": "Kenneth Haight (First Location)",
+  "Revisit Kenneth on Fort Haight's battlements": "Kenneth Haight (Second Location)",
   "Speak to Ensha at Roundtable Hold before taking a secret medallion": "Haligtree Secret Medallion (Right)",
   "Return to Blaidd in Siofra and exhaust his dialogue": "Blaidd (Ranni's Quest - First Location)",
   "Speak to Jerren in Redmane Plaza to begin the festival": "Redmane Castle Plaza",
@@ -616,8 +638,9 @@ const FLASK_UPGRADE_STOPS: Record<string, string[]> = {
 
 function objectiveMapQuery(label: string) {
   if (ESSENTIAL_MAP_QUERIES[label]) return ESSENTIAL_MAP_QUERIES[label];
-  const withoutAction = label.replace(/^Defeat\s+/i, "").replace(/^Speak (?:to|with)\s+/i, "").trim();
-  return withoutAction.split(":")[0].split(",")[0].trim();
+  const withoutAction = label.replace(/^(?:Optional:\s*)?(?:Defeat|Meet|Speak (?:to|with)|Return to|Revisit|Collect|Give|Find|Use|Finish|Confirm|Exhaust|Choose)\s+/i, "").trim();
+  const shortLabel = withoutAction.split(":")[0].split(",")[0].trim();
+  return QUEST_STEP_GUIDES[label] ? `${shortLabel}. ${QUEST_STEP_GUIDES[label]}` : shortLabel;
 }
 
 function essentialGuide(chapter: Chapter, label: string, index: number) {
@@ -640,6 +663,15 @@ function phaseForChapter(chapter: Chapter): PhaseKey {
   const late = chapters.findIndex((candidate) => candidate.id === PHASE_START.late);
   const mid = chapters.findIndex((candidate) => candidate.id === PHASE_START.mid);
   return index >= dlc ? "dlc" : index >= late ? "late" : index >= mid ? "mid" : "early";
+}
+
+function carriedWeaponCheckpoint(expedition: Expedition, chapterIndex: number, playerId: string, build: Build, activeWeapon: string) {
+  for (let index = chapterIndex; index >= 0; index -= 1) {
+    if (stageLoadout(build, phaseForChapter(chapters[index])).weapon !== activeWeapon) break;
+    const value = expedition.checkpointWeaponLevels?.[`${chapters[index].id}:${playerId}`];
+    if (value !== undefined) return value;
+  }
+  return undefined;
 }
 
 function weaponRequirements(value: string): Partial<AttributeBlock> {
@@ -760,6 +792,9 @@ function runeSupportPlan(expedition: Expedition): Record<string, RuneSupportChap
     const targets = guideTargets(economy, levelOffset);
     const expected = expectedRunesBeforeBoss(chapterIndex, expedition);
     let maximumShortfall = 0;
+    const playersWithRecordedLevels = expedition.players.filter((player) => carriedCheckpointNumber(expedition.checkpointLevels, chapterIndex, player.id) !== undefined);
+    const everyRecordedPlayerIsOverTarget = playersWithRecordedLevels.length === expedition.players.length
+      && playersWithRecordedLevels.every((player) => (carriedCheckpointNumber(expedition.checkpointLevels, chapterIndex, player.id) ?? 0) >= targets.runeLevel);
 
     for (const player of expedition.players) {
       const selected = builds.find((candidate) => candidate.id === player.buildId)!;
@@ -769,13 +804,22 @@ function runeSupportPlan(expedition: Expedition): Record<string, RuneSupportChap
       const pathResult = weaponUpgradePath(loadout.weapon);
       const path: UpgradePath | undefined = pathResult === "none" ? undefined : pathResult;
       const desiredUpgrade = path === "somber" ? targets.somberUpgrade : targets.standardUpgrade;
-      const materials = path ? planWeaponUpgrade(path, 0, desiredUpgrade).materialPurchaseRunes : 0;
-      const required = runesBetweenLevels(plan.origin.level, targets.runeLevel) + materials + economy.purchaseReserve;
-      maximumShortfall = Math.max(maximumShortfall, required - expected.low - cumulativeBossRunes);
+      const checkpointKey = `${chapter.id}:${player.id}`;
+      const enteredLevel = carriedCheckpointNumber(expedition.checkpointLevels, chapterIndex, player.id);
+      const enteredWeaponLevel = carriedWeaponCheckpoint(expedition, chapterIndex, player.id, selected, loadout.weapon) ?? 0;
+      const enteredRunes = expedition.checkpointRunes?.[checkpointKey];
+      const playerOverTarget = enteredLevel !== undefined && enteredLevel >= targets.runeLevel;
+      const levelRunes = playerOverTarget ? 0 : runesBetweenLevels(enteredLevel ?? plan.origin.level, targets.runeLevel);
+      const materials = path ? planWeaponUpgrade(path, Math.min(enteredWeaponLevel, desiredUpgrade), desiredUpgrade).materialPurchaseRunes : 0;
+      const required = levelRunes + materials + economy.purchaseReserve;
+      const available = enteredRunes ?? (expected.low + cumulativeBossRunes);
+      if (!playerOverTarget) maximumShortfall = Math.max(maximumShortfall, required - available);
     }
 
     const manualSelection = expedition.runeBossSelections?.[chapter.id];
-    const recovery = manualSelection
+    const recovery = everyRecordedPlayerIsOverTarget
+      ? { bosses: [], perPlayerRunes: 0 }
+      : manualSelection
       ? {
           bosses: manualSelection.map((id) => OPTIONAL_RUNE_BOSSES.find((boss) => boss.id === id && boss.chapterId === chapter.id)).filter((boss): boss is OptionalRuneBoss => Boolean(boss)),
           perPlayerRunes: manualSelection.reduce((total, id) => {
@@ -859,9 +903,9 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition, su
       ? (support[chapters[chapterIndex - 1]?.id]?.levels[player.id] ?? guideTargets(previousEconomy, levelOffset).runeLevel)
       : currentPlan.origin.level;
     const previousLoadout = stageLoadout(selected, previousPhase);
-    const enteredLevel = expedition.checkpointLevels?.[`${chapter.id}:${player.id}`];
+    const enteredLevel = carriedCheckpointNumber(expedition.checkpointLevels, chapterIndex, player.id);
     const levelingFrom = Math.min(fundedTargetLevel, Math.max(currentPlan.origin.level, enteredLevel ?? previousTargetLevel));
-    const enteredStats = completeCheckpointStats(expedition.checkpointStats?.[`${chapter.id}:${player.id}`]);
+    const enteredStats = completeCheckpointStats(carriedCheckpointStats(expedition.checkpointStats, chapterIndex, player.id));
     const previousPlan = enteredLevel !== undefined
       ? planBuildStatTarget(planningBuild, levelingFrom, weaponRequirements(currentLoadout.weapon))
       : previousEconomy
@@ -877,7 +921,7 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition, su
     const plannedPreviousUpgrade = previousEconomy && previousUpgradePath === upgradePath
       ? (support[chapters[chapterIndex - 1]?.id]?.upgrades[player.id] ?? 0)
       : 0;
-    const enteredWeaponLevel = expedition.checkpointWeaponLevels?.[`${chapter.id}:${player.id}`];
+    const enteredWeaponLevel = carriedWeaponCheckpoint(expedition, chapterIndex, player.id, selected, currentLoadout.weapon);
     const previousUpgrade = enteredWeaponLevel === undefined
       ? plannedPreviousUpgrade
       : Math.min(currentUpgrade, enteredWeaponLevel);
@@ -965,6 +1009,7 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition, support?: Rec
   chapter.essentials.forEach((label, index) => {
     const isBoss = label.startsWith("Defeat");
     const isQuest = /speak|meet|quest|dialogue|decision|finish|resolve|ranni|fia|millicent|leda|ansbach|thiollier|moore|igon|varre/i.test(label);
+    const optional = /^(?:Optional|Optionally|If the optional)/i.test(label);
     const individualPickup = /Sacred Tear|Golden Seed|collect|pickup|medallion|key/i.test(label);
     const perPlayer = expedition.mode === "standard" || individualPickup;
     const essentialItem = findMapItem(label, mapLayerForObjective(chapter, label));
@@ -976,6 +1021,7 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition, support?: Rec
         ? `${guide} Target ${chapter.level} and ${chapter.upgrade}; stop upgrading once the party reaches the listed cap.`
         : guide,
       kind: isBoss ? "boss" : isQuest ? "quest" : "objective",
+      optional,
       perPlayer,
       scope: perPlayer ? "Each player" : expedition.mode === "seamless" ? "Shared session" : expedition.mode === "solo" ? "Solo" : "Party",
       item: essentialItem?.name,
@@ -1335,6 +1381,11 @@ function RuneCheckpointPanel({
   const previousSupport = chapterIndex > 0 ? support[chapters[chapterIndex - 1].id] : undefined;
   const selectedBosses = currentSupport?.bosses ?? [];
   const alternatives = OPTIONAL_RUNE_BOSSES.filter((boss) => boss.chapterId === chapter.id);
+  const routeTargetLevel = guideTargets(economy, expedition.levelOffset ?? 0).runeLevel;
+  const everyPlayerIsOverTarget = expedition.players.every((player) => {
+    const recordedLevel = carriedCheckpointNumber(expedition.checkpointLevels, chapterIndex, player.id);
+    return recordedLevel !== undefined && recordedLevel >= routeTargetLevel;
+  });
 
   const setRunes = (playerId: string, value: number) => {
     const key = `${chapter.id}:${playerId}`;
@@ -1400,7 +1451,7 @@ function RuneCheckpointPanel({
   });
 
   return <section className="rune-checkpoint">
-    <header><div><p className="eyebrow">Start-of-chapter checkpoint</p><h3>Fill this in before spending anything</h3><p><strong>Complete this once when you arrive in the chapter, before levelling or reinforcing a weapon.</strong> Enter each player&apos;s current Status-screen values and the runes presently held. These are the starting values used by the chapter&apos;s level, weapon and optional-boss recommendations; do not wait until the end of the chapter. <a href="https://eldenring.wiki.gg/wiki/Recommended_Level_by_Location" target="_blank" rel="noreferrer">Level basis ↗</a></p></div>{!viewerPlayerId && expedition.runeBossSelections?.[chapter.id] && <button type="button" onClick={resetBosses}>Restore recommended bosses</button>}</header>
+    <header><div><p className="eyebrow">Start-of-chapter checkpoint</p><h3>Fill this in before spending anything</h3><p><strong>Complete this once when you arrive in the chapter, before levelling or reinforcing a weapon.</strong> Rune level, attributes and the same active weapon&apos;s reinforcement level carry forward from the latest earlier checkpoint, so only change values that have increased. Enter held runes again because that balance does not carry forward. These values drive the chapter&apos;s level, weapon and optional-boss recommendations; do not wait until the end of the chapter. <a href="https://eldenring.wiki.gg/wiki/Recommended_Level_by_Location" target="_blank" rel="noreferrer">Level basis ↗</a></p></div>{!viewerPlayerId && !everyPlayerIsOverTarget && expedition.runeBossSelections?.[chapter.id] && <button type="button" onClick={resetBosses}>Restore recommended bosses</button>}</header>
     <div className="rune-balance-grid">
       {expedition.players.map((player) => {
         const build = builds.find((candidate) => candidate.id === player.buildId)!;
@@ -1415,19 +1466,20 @@ function RuneCheckpointPanel({
         const previousPathResult = previousLoadout ? weaponUpgradePath(previousLoadout.weapon) : "none";
         const previousPath: UpgradePath | undefined = previousPathResult === "none" ? undefined : previousPathResult;
         const previousUpgrade = previousPath === path ? (previousSupport?.upgrades[player.id] ?? 0) : 0;
-        const levelCost = runesBetweenLevels(Math.min(previousLevel, level), level);
         const key = `${chapter.id}:${player.id}`;
         const held = expedition.checkpointRunes?.[key];
-        const currentLevel = expedition.checkpointLevels?.[key];
-        const savedStats = expedition.checkpointStats?.[key] || {};
-        const savedWeaponLevel = expedition.checkpointWeaponLevels?.[key];
+        const currentLevel = carriedCheckpointNumber(expedition.checkpointLevels, chapterIndex, player.id);
+        const savedStats = carriedCheckpointStats(expedition.checkpointStats, chapterIndex, player.id);
+        const savedWeaponLevel = carriedWeaponCheckpoint(expedition, chapterIndex, player.id, build, loadout.weapon);
         const maximumWeaponLevel = path === "somber" ? 10 : 25;
         const enteredWeaponLevel = path && savedWeaponLevel !== undefined ? Math.min(maximumWeaponLevel, savedWeaponLevel) : undefined;
         const upgradeFrom = enteredWeaponLevel ?? previousUpgrade;
         const materialCost = path ? planWeaponUpgrade(path, Math.min(upgradeFrom, upgrade), upgrade).materialPurchaseRunes : 0;
-        const required = levelCost + materialCost + economy.purchaseReserve;
         const actualStats = completeCheckpointStats(savedStats);
         const levelingFrom = Math.min(level, Math.max(planBuildStatTarget(build, level).origin.level, currentLevel ?? previousLevel));
+        const playerIsOverTarget = currentLevel !== undefined && currentLevel >= level;
+        const levelCost = playerIsOverTarget ? 0 : runesBetweenLevels(levelingFrom, level);
+        const required = playerIsOverTarget ? 0 : levelCost + materialCost + economy.purchaseReserve;
         const exactLevelPlan = planBuildStatTarget(build, level, weaponRequirements(loadout.weapon));
         const exactStartPlan = planBuildStatTarget(build, levelingFrom, weaponRequirements(loadout.weapon));
         const recommendedNow = planBuildStatTarget(build, currentLevel ?? previousLevel, weaponRequirements(loadout.weapon));
@@ -1442,7 +1494,7 @@ function RuneCheckpointPanel({
         const enteredPointTotal = actualStats ? (Object.keys(STAT_LABELS) as StatKey[]).reduce((sum, stat) => sum + actualStats[stat] - recommendedNow.origin.attributes[stat], 0) : undefined;
         const expectedPointTotal = currentLevel !== undefined ? currentLevel - recommendedNow.origin.level : undefined;
         const withBosses = (held ?? 0) + (currentSupport?.chapterBossRunes ?? 0);
-        const gap = Math.max(0, required - withBosses);
+        const gap = playerIsOverTarget ? 0 : Math.max(0, required - withBosses);
         const editable = !viewerPlayerId || viewerPlayerId === player.id;
         return <article key={player.id} style={{ "--player": player.color } as React.CSSProperties}>
           <div><strong>{player.name}</strong><span>RL{previousLevel} → RL{level}</span></div>
@@ -1450,15 +1502,17 @@ function RuneCheckpointPanel({
           <div className="checkpoint-stats"><div className="stat-grid-heading"><span>Stat</span><span>Current</span><span>At this RL</span><span>Chapter target</span></div>{(Object.keys(STAT_LABELS) as StatKey[]).map((stat) => { const actual = savedStats[stat]; const now = recommendedNow.attributes[stat]; const target = exactLevelPlan.attributes[stat]; return <label key={stat}><span>{STAT_LABELS[stat]}</span><input aria-label={`${player.name} ${STAT_LABELS[stat]}`} type="number" min="1" max="99" disabled={!editable} value={actual ?? ""} placeholder={String(now)} onChange={(event) => setStat(player.id, stat, Number(event.target.value))} /><b className={actual === undefined ? "" : actual < now ? "behind" : actual > now ? "ahead" : "matched"}>{now}</b><b>{target}</b></label>; })}</div>
           {path && <div className="weapon-checkpoint"><div><span>Active weapon</span><strong>{loadout.weapon}</strong><small>{path === "somber" ? "Somber" : "Regular"} reinforcement</small></div><label>Current +<input aria-label={`${player.name} current weapon level`} type="number" min="0" max={maximumWeaponLevel} disabled={!editable} value={enteredWeaponLevel ?? ""} placeholder={String(recommendedWeaponNow)} onChange={(event) => setWeaponLevel(player.id, Number(event.target.value), maximumWeaponLevel)} /></label><div><span>At this RL</span><b className={enteredWeaponLevel === undefined ? "" : enteredWeaponLevel < recommendedWeaponNow ? "behind" : enteredWeaponLevel > recommendedWeaponNow ? "ahead" : "matched"}>+{recommendedWeaponNow}</b></div><div><span>Chapter target</span><b>+{upgrade}</b></div></div>}
           {currentLevel === undefined ? <p className="stat-check waiting">Enter the current RL and all eight stats from the Status screen.</p> : !actualStats ? <p className="stat-check waiting">Enter all eight current stats to base the level plan on the real character.</p> : enteredPointTotal !== expectedPointTotal ? <p className="stat-check warning">The entered stats account for {enteredPointTotal} allocated levels, but RL{currentLevel} should account for {expectedPointTotal}. Recheck the character Status screen.</p> : <p className="stat-check ready">Current stats match the number of levels available at RL{currentLevel}.</p>}
-          <p className="level-instruction">{currentLevel !== undefined && currentLevel >= level ? `No levels needed; RL${currentLevel} already meets the RL${level} target.` : `Next: buy ${Math.max(0, level - levelingFrom)} levels to reach RL${level}. ${exactChanges}.`}</p>
+          <p className="level-instruction">{playerIsOverTarget ? `No levels recommended; RL${currentLevel} already exceeds the RL${level} route target. Keep held runes for later chapters, merchants and upgrades.` : `Next: buy ${Math.max(0, level - levelingFrom)} levels to reach RL${level}. ${exactChanges}.`}</p>
           {path && <p className="weapon-instruction">{upgradeFrom >= upgrade ? `${loadout.weapon} is already at or above this chapter's +${upgrade} ceiling. Do not reinforce it further yet.` : `Reinforce ${loadout.weapon} from +${upgradeFrom} to +${upgrade}. The stone budget below now starts from the entered +${upgradeFrom} level.`}</p>}
           <dl><div><dt>Levels</dt><dd>{formatRunes(levelCost)}</dd></div><div><dt>Stone ceiling</dt><dd>{formatRunes(materialCost)}</dd></div><div><dt>Reserve</dt><dd>{formatRunes(economy.purchaseReserve)}</dd></div><div><dt>Boss top-up</dt><dd>+{formatRunes(currentSupport?.chapterBossRunes ?? 0)}</dd></div></dl>
-          {held === undefined ? <p className="rune-status waiting">Enter the current counter for an exact check.</p> : gap > 0 ? <p className="rune-status short">Need {formatRunes(gap)} more. Choose a higher-value replacement below, or skip optional fights and accept the planner’s lower funded target.</p> : <p className="rune-status ready">Funded with {formatRunes(withBosses - required)} left after the reserve.</p>}
+          {playerIsOverTarget ? <p className="rune-status ready">No rune top-up is needed. Optional rune bosses have been removed because this character is already above the chapter target.</p> : held === undefined ? <p className="rune-status waiting">Enter the current counter for an exact check.</p> : gap > 0 ? <p className="rune-status short">Need {formatRunes(gap)} more. Choose a higher-value replacement below, or skip optional fights and accept the planner’s lower funded target.</p> : <p className="rune-status ready">Funded with {formatRunes(withBosses - required)} left after the reserve.</p>}
         </article>;
       })}
     </div>
     {selectedBosses.length > 0 && <div className="rune-boss-manager"><div className="objectives-heading"><div><p className="eyebrow">Optional rune fights</p><h3>Recommended top-up bosses</h3></div><span>{selectedBosses.length} selected</span></div><div className="rune-boss-grid">{selectedBosses.map((boss, index) => <article key={`${boss.id}-${index}`}><BossMapThumbnail boss={boss} /><div className="rune-boss-copy"><strong>{boss.name}</strong><span>{boss.location}</span><dl><div><dt>Recommended</dt><dd>RL {recommendedOptionalBossLevel(boss)}+</dd></div><div><dt>Solo reward</dt><dd>{formatRunes(boss.runes)}</dd></div></dl>{!viewerPlayerId && <div className="rune-boss-actions"><label>Replace with<select value={boss.id} onChange={(event) => replaceBoss(index, event.target.value)}>{alternatives.filter((candidate) => candidate.id === boss.id || !selectedBosses.some((selected) => selected.id === candidate.id)).map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name} · RL {recommendedOptionalBossLevel(candidate)} · {formatRunes(candidate.runes)}</option>)}</select></label><button type="button" onClick={() => setBosses(selectedBosses.filter((_, bossIndex) => bossIndex !== index).map((candidate) => candidate.id))}>Skip this boss</button></div>}</div></article>)}</div></div>}
-    {!selectedBosses.length && alternatives.length > 0 && !viewerPlayerId && <div className="empty-rune-bosses"><p>No optional rune boss is selected. The planner has lowered the funded level to match that choice.</p><button type="button" onClick={resetBosses}>Use recommended bosses</button></div>}
+    {!selectedBosses.length && alternatives.length > 0 && !viewerPlayerId && (everyPlayerIsOverTarget
+      ? <div className="empty-rune-bosses"><p>Optional rune bosses are disabled because every recorded player already meets or exceeds this chapter's level target.</p></div>
+      : <div className="empty-rune-bosses"><p>No optional rune boss is selected. The planner has lowered the funded level to match that choice.</p><button type="button" onClick={resetBosses}>Use recommended bosses</button></div>)}
   </section>;
 }
 

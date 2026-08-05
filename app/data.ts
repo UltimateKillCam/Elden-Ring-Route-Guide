@@ -3,6 +3,7 @@ import { sourcedMemeBuilds } from "./meme-builds";
 import { additionalSourcedBuilds } from "./sourced-builds";
 import { weaponResolutions } from "./weapon-resolutions";
 import { findWeaponUpgradeRecord } from "./weapon-upgrades";
+import { applyQuestRoutePatches } from "./quest-route";
 
 export type PhaseKey = "early" | "mid" | "late" | "dlc";
 
@@ -741,7 +742,7 @@ const sourcedMapCoordinates: Record<string, { x: number; y: number }> = {
   enir: { x: 38.065, y: 53.993 },
 };
 
-export const chapters: Chapter[] = chapterData.map((chapter) => ({ ...chapter, ...sourcedMapCoordinates[chapter.id] }));
+export const chapters: Chapter[] = chapterData.map((chapter) => applyQuestRoutePatches({ ...chapter, ...sourcedMapCoordinates[chapter.id] }));
 
 export const itemGuides: Record<string, string> = {
   "Golden Seed (Ordina Liturgical Town)": "From the Ordina, Liturgical Town grace, ride west-northwest beyond the buildings, then turn north toward the riverbank. The seed is beneath the small illusory tree on the rocks above the river.",
