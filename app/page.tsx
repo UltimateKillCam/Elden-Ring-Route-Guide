@@ -62,6 +62,7 @@ type Task = {
   afterObjective?: string;
   optional?: boolean;
   runeBossId?: string;
+  mapQuery?: string;
 };
 
 const PLAYER_COLORS = ["#d8ad62", "#7db6a8", "#b987aa", "#7698c8", "#c5775e", "#a7a36c"];
@@ -896,6 +897,7 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition, su
     scope: expedition.mode === "standard" ? "Each player's world" : expedition.mode === "solo" ? "Solo" : "Shared session",
     optional: false,
     runeBossId: boss.id,
+    mapQuery: boss.mapQuery || `${boss.name} ${boss.location}`,
   }));
 
   for (const player of expedition.players) {
@@ -1295,7 +1297,7 @@ function MapPanel({ chapter, expedition, chapterTasks, tasksByChapter, onSelect 
   const currentTask = chapterTasks.find((task) => !taskDone(task, expedition));
   const objectiveLayer = currentTask ? mapLayerForObjective(chapter, currentTask.label) : chapterMapLayer;
   const mappedItem = currentTask?.item ? findMapItem(currentTask.item, objectiveLayer) : undefined;
-  const mappedObjective = !mappedItem && currentTask ? findMapRoutePoint(objectiveMapQuery(currentTask.label), objectiveLayer) : undefined;
+  const mappedObjective = !mappedItem && currentTask ? findMapRoutePoint(currentTask.mapQuery || objectiveMapQuery(currentTask.label), objectiveLayer) : undefined;
   const mappedPoint = mappedItem || mappedObjective || findMapRoutePoint(chapter.grace, objectiveLayer);
   const mapLayer = mappedPoint?.layer || objectiveLayer;
   const mapChapters = chapters.filter((candidate) => mapLayerForChapter(candidate) === mapLayer);

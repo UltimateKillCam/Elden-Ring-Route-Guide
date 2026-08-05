@@ -10,7 +10,9 @@ async function loadCatalogue() {
   const data = await server.ssrLoadModule("/app/data.ts");
   const weapons = await server.ssrLoadModule("/app/weapon-upgrades.ts");
   const questRoute = await server.ssrLoadModule("/app/quest-route.ts");
-  return { ...data, ...weapons, ...questRoute, close: () => server.close() };
+  const mapItems = await server.ssrLoadModule("/app/map-items.ts");
+  const planner = await server.ssrLoadModule("/app/run-planner.ts");
+  return { ...data, ...weapons, ...questRoute, ...mapItems, ...planner, close: () => server.close() };
 }
 
 test("quest route keeps every Kenneth state change and merges the Soreseal advisory", async () => {
@@ -88,6 +90,27 @@ test("curated paths avoid respec pivots and severe off-path weapon requirements"
     const colossal = catalogue.builds.find((build) => build.id === "colossal-hammer");
     assert.deepEqual(PHASES.map((phase) => quality.phases[phase]), ["Longsword", "Claymore", "Quality Great Épée", "Milady + Wing Stance"]);
     assert.deepEqual(PHASES.map((phase) => colossal.phases[phase]), ["Large Club", "Great Club", "Giant-Crusher", "Anvil Hammer"]);
+  } finally {
+    await catalogue.close();
+  }
+});
+
+test("every optional rune boss resolves to its own encounter marker", async () => {
+  const catalogue = await loadCatalogue();
+  try {
+    for (const boss of catalogue.OPTIONAL_RUNE_BOSSES) {
+      const query = boss.mapQuery || `${boss.name} ${boss.location}`;
+      const marker = catalogue.findMapRoutePoint(query, "surface");
+      assert.ok(marker, `${boss.name} has no map marker`);
+    }
+    const markerFor = (id) => {
+      const boss = catalogue.OPTIONAL_RUNE_BOSSES.find((candidate) => candidate.id === id);
+      return catalogue.findMapRoutePoint(boss.mapQuery || `${boss.name} ${boss.location}`, "surface")?.name;
+    };
+    assert.equal(markerFor("hugues"), "Battlemage Hugues");
+    assert.equal(markerFor("avatar-liurnia"), "Minor Erdtree (Liurnia Southwest)");
+    assert.equal(markerFor("putrid-avatar-caelid"), "Erdtree Avatar (Caelid)");
+    assert.equal(markerFor("troll-old-altus"), "Old Altus Tunnel");
   } finally {
     await catalogue.close();
   }

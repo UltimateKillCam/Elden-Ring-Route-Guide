@@ -206,6 +206,8 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /The stone budget below now starts from the entered/);
   assert.match(page, /safeDesiredUpgrade/);
   assert.match(page, /const routeModel = useMemo/);
+  assert.match(page, /currentTask\.mapQuery \|\| objectiveMapQuery\(currentTask\.label\)/);
+  assert.match(page, /mapQuery: boss\.mapQuery \|\| `\$\{boss\.name\} \$\{boss\.location\}`/);
   assert.match(page, /tasksByChapter/);
   assert.match(styles, /content-visibility: auto/);
   assert.match(page, /previousUpgradePaths\[player\.id\] === path/);
