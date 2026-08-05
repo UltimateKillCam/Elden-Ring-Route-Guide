@@ -128,6 +128,13 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /Strength.*Dexterity.*Intelligence.*Faith.*Arcane.*Ranged/);
   assert.doesNotMatch(page, /Party role|All roles/);
   assert.match(server, /Only the controller can change expedition settings/);
+  assert.match(server, /text\/event-stream/);
+  assert.match(server, /broadcastExpedition/);
+  assert.match(server, /mutationSource = "player"/);
+  assert.match(page, /new EventSource\("\/api\/expedition\/events"\)/);
+  assert.match(page, /window\.addEventListener\("focus", refreshNow\)/);
+  assert.match(page, /activeChapterId/);
+  assert.match(page, /selectRouteChapter/);
   assert.match(server, /\/api\/player-progress/);
   assert.match(server, /Players can only update their own checklist/);
   assert.match(server, /Players can only update their own level/);

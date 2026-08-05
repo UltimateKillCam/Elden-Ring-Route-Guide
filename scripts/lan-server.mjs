@@ -26,7 +26,9 @@ const assetTypes = {
 
 let expedition = null;
 let revision = 0;
+let mutationSource = "loaded";
 let appProcess;
+const expeditionStreams = new Set();
 
 async function loadState() {
   try {
@@ -79,6 +81,24 @@ function sendJson(response, status, body) {
     "cache-control": "no-store",
   });
   response.end(text);
+}
+
+function expeditionSnapshot() {
+  return { enabled: true, revision, source: mutationSource, expedition };
+}
+
+function writeExpeditionEvent(response) {
+  response.write(`data: ${JSON.stringify(expeditionSnapshot())}\n\n`);
+}
+
+function broadcastExpedition() {
+  for (const response of expeditionStreams) {
+    try {
+      writeExpeditionEvent(response);
+    } catch {
+      expeditionStreams.delete(response);
+    }
+  }
 }
 
 async function readJson(request) {
@@ -189,7 +209,24 @@ async function main() {
       return;
     }
     if (url.pathname === "/api/expedition" && request.method === "GET") {
-      sendJson(response, 200, { enabled: true, revision, expedition });
+      sendJson(response, 200, expeditionSnapshot());
+      return;
+    }
+    if (url.pathname === "/api/expedition/events" && request.method === "GET") {
+      response.writeHead(200, {
+        "content-type": "text/event-stream; charset=utf-8",
+        "cache-control": "no-store, no-transform",
+        "connection": "keep-alive",
+        "x-accel-buffering": "no",
+      });
+      response.flushHeaders?.();
+      expeditionStreams.add(response);
+      writeExpeditionEvent(response);
+      const heartbeat = setInterval(() => response.write(": keep-alive\n\n"), 15_000);
+      request.once("close", () => {
+        clearInterval(heartbeat);
+        expeditionStreams.delete(response);
+      });
       return;
     }
     if (url.pathname === "/api/expedition" && request.method === "PUT") {
@@ -202,7 +239,9 @@ async function main() {
         if (!validExpedition(body.expedition)) throw new Error("Invalid expedition");
         expedition = body.expedition;
         revision += 1;
+        mutationSource = "controller";
         await saveState();
+        broadcastExpedition();
         sendJson(response, 200, { enabled: true, revision });
       } catch (error) {
         sendJson(response, 400, { error: error instanceof Error ? error.message : "Invalid request" });
@@ -253,7 +292,9 @@ async function main() {
           throw new Error("Unknown progress update");
         }
         revision += 1;
+        mutationSource = "player";
         await saveState();
+        broadcastExpedition();
         sendJson(response, 200, { enabled: true, revision, expedition });
       } catch (error) {
         sendJson(response, 400, { error: error instanceof Error ? error.message : "Invalid request" });
@@ -293,6 +334,8 @@ async function main() {
   if (process.env.ELDEN_RING_NO_BROWSER !== "1") await openController(controllerUrl);
 
   const stop = () => {
+    for (const response of expeditionStreams) response.end();
+    expeditionStreams.clear();
     server.close();
     if (appProcess && !appProcess.killed) appProcess.kill();
     process.exit(0);

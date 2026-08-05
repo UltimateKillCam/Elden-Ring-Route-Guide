@@ -33,6 +33,7 @@ type Player = { id: string; name: string; buildId: string; color: string };
 type Expedition = {
   schema: 1;
   saveId?: string;
+  activeChapterId?: string;
   name: string;
   mode: Mode;
   players: Player[];
@@ -1252,7 +1253,7 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
         </div>
       </section>
 
-      <div className="setup-actions"><div><strong>{players.length} {players.length === 1 ? "player" : "players"} ready</strong><span>{mode === "solo" ? "Solo route with no co-op rune reduction." : mode === "standard" ? "Standard co-op; world steps will be repeated per player." : "Seamless Co-op; host and individual pickups are tracked separately."} Rune plans keep a {lossRate}% loss allowance and run {levelOffset ? `${levelOffset} levels below guide pace` : "at guide pace"}.</span></div><button type="button" onClick={() => onCreate({ schema: 1, saveId: newSaveId(), name: name.trim() || "Untitled expedition", mode, players, hostId: players[0].id, completed: {}, createdAt: new Date().toISOString(), lossRate, levelOffset, checkpointRunes: {}, checkpointLevels: {}, checkpointStats: {}, checkpointWeaponLevels: {}, runeBossSelections: {} })}>Create route</button></div>
+      <div className="setup-actions"><div><strong>{players.length} {players.length === 1 ? "player" : "players"} ready</strong><span>{mode === "solo" ? "Solo route with no co-op rune reduction." : mode === "standard" ? "Standard co-op; world steps will be repeated per player." : "Seamless Co-op; host and individual pickups are tracked separately."} Rune plans keep a {lossRate}% loss allowance and run {levelOffset ? `${levelOffset} levels below guide pace` : "at guide pace"}.</span></div><button type="button" onClick={() => onCreate({ schema: 1, saveId: newSaveId(), activeChapterId: chapters[0].id, name: name.trim() || "Untitled expedition", mode, players, hostId: players[0].id, completed: {}, createdAt: new Date().toISOString(), lossRate, levelOffset, checkpointRunes: {}, checkpointLevels: {}, checkpointStats: {}, checkpointWeaponLevels: {}, runeBossSelections: {} })}>Create route</button></div>
       <footer className="setup-footer">Unofficial fan project. Full spoilers. Data baseline: regulation 1.16.1.</footer>
       {detail && <FullBuildDetails build={detail} onClose={() => setDetail(null)} assignLabel={`Assign to ${players[activePlayer].name}`} onAssign={() => chooseBuild(detail)} />}
     </main>
@@ -1780,6 +1781,7 @@ function Home() {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const controlToken = useRef("");
   const lanRevision = useRef(-1);
+  const lastSharedChapterId = useRef("");
 
   useEffect(() => {
     let cancelled = false;
@@ -1869,22 +1871,52 @@ function Home() {
   }, [saveLibrary, hydrated, lanMode]);
 
   useEffect(() => {
-    if (!hydrated || lanMode !== "follower") return;
+    if (!hydrated || lanMode === "none" || lanMode === null) return;
     let active = true;
+    let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+    const applyRemote = (remote: { revision?: number; source?: string; expedition?: Expedition | null }) => {
+      const nextRevision = Number(remote.revision || 0);
+      if (!active || nextRevision === lanRevision.current) return;
+      if (lanMode === "controller" && remote.source !== "player") {
+        lanRevision.current = Math.max(lanRevision.current, nextRevision);
+        return;
+      }
+      lanRevision.current = nextRevision;
+      setExpedition(remote.expedition || null);
+    };
     const poll = async () => {
       try {
-        const response = await fetch("/api/expedition", { cache: "no-store" });
-        if (!response.ok) return;
-        const remote = await response.json();
-        const revision = Number(remote.revision || 0);
-        if (active && revision !== lanRevision.current) {
-          lanRevision.current = revision;
-          setExpedition(remote.expedition || null);
-        }
-      } catch { /* The next poll will retry. */ }
+        const response = await fetch(`/api/expedition?revision=${lanRevision.current}&time=${Date.now()}`, { cache: "no-store" });
+        if (response.ok) applyRemote(await response.json());
+      } catch { /* The event stream reconnects and the next fallback poll retries. */ }
     };
-    const interval = window.setInterval(() => { void poll(); }, 1200);
-    return () => { active = false; window.clearInterval(interval); };
+    const scheduleFallback = () => {
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+      fallbackTimer = setTimeout(async () => {
+        await poll();
+        if (active) scheduleFallback();
+      }, document.visibilityState === "visible" ? 3000 : 8000);
+    };
+    const stream = new EventSource("/api/expedition/events");
+    stream.onmessage = (event) => {
+      try { applyRemote(JSON.parse(event.data)); } catch { /* Ignore a malformed event and retain polling. */ }
+    };
+    stream.onerror = () => { void poll(); };
+    const refreshNow = () => { void poll(); };
+    const refreshVisible = () => { if (document.visibilityState === "visible") void poll(); };
+    window.addEventListener("focus", refreshNow);
+    window.addEventListener("online", refreshNow);
+    document.addEventListener("visibilitychange", refreshVisible);
+    void poll();
+    scheduleFallback();
+    return () => {
+      active = false;
+      stream.close();
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+      window.removeEventListener("focus", refreshNow);
+      window.removeEventListener("online", refreshNow);
+      document.removeEventListener("visibilitychange", refreshVisible);
+    };
   }, [hydrated, lanMode]);
 
   const routeModel = useMemo(() => {
@@ -1896,6 +1928,28 @@ function Home() {
     return { runeSupport, tasksByChapter, progress };
   }, [expedition]);
   const progress = routeModel.progress;
+
+  useEffect(() => {
+    if (!hydrated || !expedition || lanMode !== "follower") return;
+    const sharedChapterId = expedition.activeChapterId;
+    if (!sharedChapterId || !chapters.some((chapter) => chapter.id === sharedChapterId) || lastSharedChapterId.current === sharedChapterId) return;
+    lastSharedChapterId.current = sharedChapterId;
+    setActiveId(sharedChapterId);
+    setView("route");
+  }, [expedition?.activeChapterId, hydrated, lanMode]);
+
+  useEffect(() => {
+    if (!hydrated || !expedition || lanMode === "follower" || expedition.activeChapterId) return;
+    setExpedition((current) => current ? { ...current, activeChapterId: activeId } : current);
+  }, [activeId, expedition, hydrated, lanMode]);
+
+  const selectRouteChapter = (id: string) => {
+    if (!chapters.some((chapter) => chapter.id === id)) return;
+    setActiveId(id);
+    if (lanMode !== "follower") {
+      setExpedition((current) => current && current.activeChapterId !== id ? { ...current, activeChapterId: id } : current);
+    }
+  };
 
   const notify = (message: string) => { setToast(message); window.setTimeout(() => setToast(""), 2600); };
   const openSave = (id: string) => {
@@ -1957,11 +2011,11 @@ function Home() {
   return (
     <main className={`app-shell ${readOnly ? "follower-mode" : ""}`}>
       <header className="topbar">
-        <button type="button" className="brand" onClick={() => { setView("route"); setActiveId(chapters[0].id); }}><span>✦</span><strong>Tarnished <em>Together</em></strong></button>
+        <button type="button" className="brand" onClick={() => { setView("route"); selectRouteChapter(chapters[0].id); }}><span>✦</span><strong>Tarnished <em>Together</em></strong></button>
         <nav aria-label="Primary"><button type="button" className={view === "route" ? "active" : ""} onClick={() => setView("route")}>Route</button><button type="button" className={view === "selected" ? "active" : ""} onClick={() => setView("selected")}>Selected builds</button>{readOnly && <button type="button" onClick={() => { window.location.href = "/?catalog=1"; }}>Build catalogue</button>}{!readOnly && <><button type="button" className={view === "codex" ? "active" : ""} onClick={() => setView("codex")}>Build codex</button><button type="button" className={view === "party" ? "active" : ""} onClick={() => setView("party")}>Company</button></>}</nav>
         <div className="top-progress"><span><i style={{ width: `${progress}%` }} /></span><strong>{progress}%</strong>{readOnly ? <b className="lan-badge">{expedition.players.find((player) => player.id === viewerPlayerId)?.name}</b> : <select className="save-switcher" aria-label="Current saved run" value={activeSaveId || expedition.saveId || ""} onChange={(event) => openSave(event.target.value)}>{Object.values(saveLibrary.saves).map((save) => <option value={save.saveId} key={save.saveId}>{save.name}</option>)}</select>}</div>
       </header>
-      {view === "route" && <RouteView expedition={expedition} setExpedition={setExpedition} tasksByChapter={routeModel.tasksByChapter} runeSupport={routeModel.runeSupport} activeId={activeId} setActiveId={setActiveId} readOnly={readOnly} viewerPlayerId={viewerPlayerId} onViewerUpdate={viewerUpdate} />}
+      {view === "route" && <RouteView expedition={expedition} setExpedition={setExpedition} tasksByChapter={routeModel.tasksByChapter} runeSupport={routeModel.runeSupport} activeId={activeId} setActiveId={selectRouteChapter} readOnly={readOnly} viewerPlayerId={viewerPlayerId} onViewerUpdate={viewerUpdate} />}
       {view === "selected" && <SelectedBuildsView expedition={expedition} viewerPlayerId={readOnly ? viewerPlayerId : undefined} />}
       {!readOnly && view === "codex" && <CodexView expedition={expedition} />}
       {!readOnly && view === "party" && <PartyView expedition={expedition} setExpedition={setExpedition} saveLibrary={saveLibrary} activeSaveId={activeSaveId} onSelectSave={openSave} onNewSave={newRun} onDuplicateSave={duplicateRun} onDeleteSave={deleteRun} onExport={handleExport} onImport={handleImport} />}
