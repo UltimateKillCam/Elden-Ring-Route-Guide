@@ -168,6 +168,8 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(mapItems, /cleanImportedDescription/);
   assert.match(page, /Meet Nepheli before Godrick.*Secluded Cell/s);
   assert.match(page, /"Meet Patches at Scenic Isle": "Patches \(First Liurnia Location\)"/);
+  assert.match(page, /"Spare Patches and reopen his Murkwater Cave shop": "first-steps-quest-patches-murkwater-cave"/);
+  assert.match(page, /"Spare Patches and reopen his Murkwater Cave shop": "Patches \(Bossfight\)"/);
   const { findMapItem } = await import("../app/map-items.ts");
   assert.doesNotMatch(findMapItem("Nepheli Loux")?.description ?? "", /�/);
   assert.match(page, /Golden Seed - 2x Capital Outskirts West/);

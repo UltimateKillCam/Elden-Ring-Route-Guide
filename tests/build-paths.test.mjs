@@ -30,6 +30,11 @@ test("quest route keeps every Kenneth state change and merges the Soreseal advis
     assert.ok(Object.keys(catalogue.QUEST_STEP_GUIDES).length >= 180, "quest audit lost detailed route instructions");
     assert.doesNotMatch(labels.join("\n"), /^WARNING/m);
     assert.equal(labels.filter((label) => /Radagon's Soreseal/.test(label)).length, 1);
+    const patchesLabel = "Spare Patches and reopen his Murkwater Cave shop";
+    const scenicLabel = "Meet Patches at Scenic Isle";
+    assert.ok(labels.includes(patchesLabel), "Patches' Murkwater Cave encounter is missing from Limgrave");
+    assert.ok(catalogue.chapters.find((chapter) => chapter.id === "liurnia-south").essentials.includes(scenicLabel), "Patches' Scenic Isle encounter is missing from Liurnia");
+    assert.match(catalogue.QUEST_STEP_GUIDES[patchesLabel], /half health.*Stop attacking.*reload the cave/is);
   } finally {
     await catalogue.close();
   }

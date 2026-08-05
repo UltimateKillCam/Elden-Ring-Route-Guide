@@ -533,6 +533,7 @@ const ESSENTIAL_MAP_QUERIES: Record<string, string> = {
   "Resolve the Leda and Ansbach Storehouse signs for the party's required reward": "Storehouse, First Floor",
   "Meet Rogier in the chapel and inspect the corpse below Stormveil": "Sorcerer Rogier (First Location)",
   "Meet Nepheli before Godrick": "Nepheli Loux",
+  "Spare Patches and reopen his Murkwater Cave shop": "Patches (Bossfight)",
   "Meet Patches at Scenic Isle": "Patches (First Liurnia Location)",
   "Collect the second Academy Glintstone Key": "Academy Glintstone Key (B)",
   "Exhaust Rogier before joining Ranni": "Sorcerer Rogier (First Location)",
@@ -636,6 +637,12 @@ const FLASK_UPGRADE_STOPS: Record<string, string[]> = {
   mountaintops: ["Golden Seed - Forbidden Lands", "Golden Seed - Flame Peak", "Golden Seed - Mountaintops of the Giants East", "Sacred Tear (Church of Ripose)", "Sacred Tear (First Church of Marika)"],
   haligtree: ["Golden Seed (Consecrated Snowfield)", "Golden Seed (Ordina Liturgical Town)", "Golden Seed - Elphael, Brace of the Haligtree"],
   mohgwyn: ["Golden Seed - Mohgwyn Palace"],
+};
+
+// Expanded quest cards need permanent IDs. An old position-based completion must not
+// silently complete a newly inserted step in an existing run.
+const STABLE_ESSENTIAL_TASK_IDS: Record<string, string> = {
+  "Spare Patches and reopen his Murkwater Cave shop": "first-steps-quest-patches-murkwater-cave",
 };
 
 function objectiveMapQuery(label: string) {
@@ -1017,7 +1024,7 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition, support?: Rec
     const essentialItem = findMapItem(label, mapLayerForObjective(chapter, label));
     const guide = essentialGuide(chapter, label, index);
     tasks.push({
-      id: `${chapter.id}-essential-${index}`,
+      id: STABLE_ESSENTIAL_TASK_IDS[label] || `${chapter.id}-essential-${index}`,
       label,
       detail: isBoss
         ? `${guide} Target ${chapter.level} and ${chapter.upgrade}; stop upgrading once the party reaches the listed cap.`
