@@ -160,7 +160,7 @@ const QUEST_ROUTE_PATCHES: Record<string, QuestRoutePatch[]> = {
     {
       before: "Collect Amber Starlight north-east of Altus Highway Junction",
       steps: [
-        step("Meet Yura at the Second Church and defeat Eleonora", "From Altus Highway Junction, reach the Second Church of Marika, speak to the dying Yura and take Nagakiba, then defeat Eleonora's invasion. Keep the Purifying Crystal Tear for Mohg and exhaust the invasion reward screen before leaving."),
+        step("Meet Yura at the Second Church and defeat Eleonora", "Prerequisite check: you must already have met Yura beneath the ruin north-east of Seaside Ruins, defeated Bloody Finger Nerijus in the Murkwater stream, exhausted Yura beneath the overpass afterward, used Yura's red summon sign beyond Main Academy Gate, and spoken to him on the bridge after defeating the Ravenmount Assassin. If any earlier card remains unfinished, return to it before continuing. Then travel from Altus Highway Junction to the Second Church of Marika, speak to the dying Yura, take Nagakiba and defeat Eleonora's invasion. Keep the Purifying Crystal Tear for Mohg."),
       ],
     },
   ],

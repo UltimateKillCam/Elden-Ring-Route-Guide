@@ -42,6 +42,26 @@ test("quest route keeps every Kenneth state change and merges the Soreseal advis
   }
 });
 
+test("Yura's route preserves every encounter before Eleonora", async () => {
+  const catalogue = await loadCatalogue();
+  try {
+    const expected = [
+      ["first-steps", "Meet Yura beneath the ruin north-east of Seaside Ruins"],
+      ["first-steps", "Defeat Bloody Finger Nerijus with Yura at Murkwater"],
+      ["academy", "Use Yura's red summon sign on the Main Academy Gate bridge"],
+      ["academy", "Speak to Yura after the Ravenmount Assassin"],
+      ["altus", "Meet Yura at the Second Church and defeat Eleonora"],
+    ];
+    for (const [chapterId, label] of expected) {
+      assert.ok(catalogue.chapters.find((chapter) => chapter.id === chapterId)?.essentials.includes(label), `${label} is missing from ${chapterId}`);
+      assert.ok(catalogue.QUEST_STEP_GUIDES[label]?.length > 100, `${label} lacks a complete guide`);
+    }
+    assert.match(catalogue.QUEST_STEP_GUIDES[expected.at(-1)[1]], /Prerequisite check:.*Seaside Ruins.*Nerijus.*red summon sign.*Ravenmount Assassin/is);
+  } finally {
+    await catalogue.close();
+  }
+});
+
 const statCodes = (build) => DAMAGE_STATS.filter((stat) => build.stats.toUpperCase().includes(stat));
 
 test("every generated progression bridge is source-backed, timely and stat-compatible", async () => {

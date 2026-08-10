@@ -170,6 +170,11 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /"Meet Patches at Scenic Isle": "Patches \(First Liurnia Location\)"/);
   assert.match(page, /"Spare Patches and reopen his Murkwater Cave shop": "first-steps-quest-patches-murkwater-cave"/);
   assert.match(page, /"Spare Patches and reopen his Murkwater Cave shop": "Patches \(Bossfight\)"/);
+  assert.match(page, /"Meet Yura beneath the ruin north-east of Seaside Ruins": "first-steps-quest-yura-seaside-ruins"/);
+  assert.match(page, /"Defeat Bloody Finger Nerijus with Yura at Murkwater": "first-steps-quest-yura-nerijus"/);
+  assert.match(page, /"Use Yura's red summon sign on the Main Academy Gate bridge": "academy-quest-yura-red-sign"/);
+  assert.match(page, /"Speak to Yura after the Ravenmount Assassin": "academy-quest-yura-after-ravenmount"/);
+  assert.match(page, /"Meet Yura at the Second Church and defeat Eleonora": "altus-quest-yura-eleonora"/);
   const { findMapItem } = await import("../app/map-items.ts");
   assert.doesNotMatch(findMapItem("Nepheli Loux")?.description ?? "", /�/);
   assert.match(page, /Golden Seed - 2x Capital Outskirts West/);

@@ -534,6 +534,11 @@ const ESSENTIAL_MAP_QUERIES: Record<string, string> = {
   "Resolve the Leda and Ansbach Storehouse signs for the party's required reward": "Storehouse, First Floor",
   "Meet Rogier in the chapel and inspect the corpse below Stormveil": "Sorcerer Rogier (First Location)",
   "Meet Nepheli before Godrick": "Nepheli Loux",
+  "Meet Yura beneath the ruin north-east of Seaside Ruins": "Bloody Finger Hunter Yura (First Location)",
+  "Defeat Bloody Finger Nerijus with Yura at Murkwater": "Bloody Finger Hunter Yura (Second Location)",
+  "Use Yura's red summon sign on the Main Academy Gate bridge": "Bloody Finger Hunter Yura (Third Location)",
+  "Speak to Yura after the Ravenmount Assassin": "Bloody Finger Hunter Yura (Third Location)",
+  "Meet Yura at the Second Church and defeat Eleonora": "Bloody Finger Hunter Yura (Fourth Location)",
   "Spare Patches and reopen his Murkwater Cave shop": "Patches (Bossfight)",
   "Meet Patches at Scenic Isle": "Patches (First Liurnia Location)",
   "Collect the second Academy Glintstone Key": "Academy Glintstone Key (B)",
@@ -643,7 +648,12 @@ const FLASK_UPGRADE_STOPS: Record<string, string[]> = {
 // Expanded quest cards need permanent IDs. An old position-based completion must not
 // silently complete a newly inserted step in an existing run.
 const STABLE_ESSENTIAL_TASK_IDS: Record<string, string> = {
+  "Meet Yura beneath the ruin north-east of Seaside Ruins": "first-steps-quest-yura-seaside-ruins",
+  "Defeat Bloody Finger Nerijus with Yura at Murkwater": "first-steps-quest-yura-nerijus",
   "Spare Patches and reopen his Murkwater Cave shop": "first-steps-quest-patches-murkwater-cave",
+  "Use Yura's red summon sign on the Main Academy Gate bridge": "academy-quest-yura-red-sign",
+  "Speak to Yura after the Ravenmount Assassin": "academy-quest-yura-after-ravenmount",
+  "Meet Yura at the Second Church and defeat Eleonora": "altus-quest-yura-eleonora",
 };
 
 function objectiveMapQuery(label: string) {
