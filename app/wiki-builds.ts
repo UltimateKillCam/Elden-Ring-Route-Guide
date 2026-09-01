@@ -8,7 +8,7 @@ export const wikiBuilds: Build[] = [
     "name": "All-Knowing Sage",
     "stats": "INT / FAI / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 172 setup using Staff of the Great Beyond, and Sword of Night and Flame with Night-and-Flame Stance.",
+    "playstyle": "The Staff of the Great Beyond, while not offering the highest sorcery scaling, provides decent performance at 50 Intelligence and 50 Faith, achieving 315 sorcery scaling. This flexibility allows players to cast a variety of spells without swapping gear. This build also leverages the Sword of Night and Flame, which scales well with Intelligence and Faith, and provides versatile combat options with its powerful magic and fire-based weapon skills. The spell selection for this build is diverse, catering to different elemental damage types. For Holy damage, \"Multilayered Ring of Light\" and \"Elden Stars\" are effective, with the former being particularly versatile and the latter useful for initiating boss fights. Lightning spells include \"Knight's Lightning Spear\" and \"Ancient Dragons' Lightning Strike,\" both of which deliver high damage and stance-breaking potential.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 172",
@@ -72,7 +72,7 @@ export const wikiBuilds: Build[] = [
     "name": "Archer",
     "stats": "DEX / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published beginner setup using Shortbow and Longbow with Ash of War: Barrage & Ash of War: Mighty Shot.",
+    "playstyle": "No melee whatsoever. You'll use your Long Bow and Mighty Shot to pick off enemies at range before they close to melee range. Once close you'll use your Shortbow to evade and fire and use Barrage. Learn when to use Barrage during Boss fights, and learn how much spacing you need to get it off without taking damage.",
     "complexity": "Published guide",
     "phases": {
       "early": "Shortbow and Longbow",
@@ -114,7 +114,7 @@ export const wikiBuilds: Build[] = [
     "name": "Barbarian",
     "stats": "STR / DEX / VIG / END",
     "role": "Published build",
-    "playstyle": "Published beginner setup using Zweihander with Ash of War: War Cry.",
+    "playstyle": "A Strength-based Build that uses Colossus Weapons to devastating effect, by using buffed Charge Attacks. You'll begin fights with War Cry, then hit R2 to Charge Attack and follow up with R1 until you're out of Stamina. This should stagger or kill most enemies allowing a Critical Strike if they are still alive. The way this Build works is that you'll use the Ash of War: War Cry to buff your damage, and to turn your Charge R2 attacks into actual \"Charging\" attacks, as in charging forward.",
     "complexity": "Published guide",
     "phases": {
       "early": "Zweihander",
@@ -156,7 +156,7 @@ export const wikiBuilds: Build[] = [
     "name": "Battlemage",
     "stats": "STR / INT / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 100 setup using Carian Glintstone Staff with Contagious Fury.",
+    "playstyle": "A melee mage Build that uses Sorceries as their only means of damage while wielding a Shield in their off-hand to protect themselves and buff their damage. Carian Greatsword is there for AoE when needed, and Loretta's Greatbow is there for long range damage as necessary. The way this Build works is that you use the Jellyfish Shield in your left hand and the Carian Glintstone Staff in your right, and use Carian Slicer as your melee attack. It's cheaper than Glintstone Pebble, allowing you to use it nearly twice as much, helping to preserve FP.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 100",
@@ -204,7 +204,7 @@ export const wikiBuilds: Build[] = [
     "name": "Berserker",
     "stats": "STR / DEX / VIG / END",
     "role": "Published build",
-    "playstyle": "Published beginner setup using Claymore and Lordsworn's Greatsword with Ash of War: Quickstep.",
+    "playstyle": "A Strength-based Bulid that focuses on deal high damage per swing and via Jump Attacks. You can use Quickstep to dodge attacks and position yourself behind or on the side of enemies easily for follow up attacks as well after landing a Jump Attack. Jumping with L1 is absolutely devastating and one shots most enemies, and staggers those it doesn't allowing you to roll away or Quickstep away easily. Heavy Armor and high Endurance allows you good Physical protection while allowing you to still med roll, which is a must.",
     "complexity": "Published guide",
     "phases": {
       "early": "Claymore and Lordsworn's Greatsword",
@@ -246,7 +246,7 @@ export const wikiBuilds: Build[] = [
     "name": "Black Arrow",
     "stats": "STR / DEX / FAI / VIG",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Black Bow & any Seal that weighs nothing with Barrage.",
+    "playstyle": "A Bow Build that focuses on the use of the Black Bow to take down enemies and bosses at range. Blue Dancer Charm gives you a decent amount of damage with this build as long as you can keep your equip load low. The way this Build works is that you'll buff with Golden Vow and use Barrage against hard to kill enemies, otherwise you'll jump shoot and land shoot enemies or roll shoot them with your Bow, since Black Bow operates like a Shortbow, allowing you to do this. Flame, Grant Me Strength is useful when you need even more damage.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -297,7 +297,7 @@ export const wikiBuilds: Build[] = [
     "name": "Black Blade",
     "stats": "STR / FAI / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Maliketh's Black Blade & Clawmark Seal with Destined Death.",
+    "playstyle": "The Black Blade Build uses the Black Blade Incantation to open difficult fights, placing a -10% Max Health debuff on the enemy or Boss for a short time from range. This HP does not come back once this buff expires, so it's only necessary to use this once per fight, but you can use it again if you need a ranged option. Ideally you want to use Destined Death from Maliketh's Black Blade immediately after this because Destined Death also applies a stacking -10% Max Health debuff. Use Golden Vow to boost your damage and defenses, and Blessing of the Erdtree to keep your HP topped off.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -349,7 +349,7 @@ export const wikiBuilds: Build[] = [
     "name": "Black Flame Spellblade",
     "stats": "DEX / FAI / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 100 setup using Cross-Naginata, Flamberge, Scythe, Grave Scythe, Nagakiba with Repeating Thrust, Spinning Slash, Sword Dance or Double Slash.",
+    "playstyle": "You'll use your Ash of War, whichever one you chose to help set Hemorrhage or Black Flame, depending on what you're facing. Black Flame Blade is more useful when enemies cannot Bleed, when cooperating, or when you cannot hit an enemy often enough to set Hemorrhage because they are so aggressive. You'll use Black Flame when you need range, and Scouring Black Flame when you need AoE. The way this Build works is that you'll choose one of the weapons listed above because they come with Bleed on them natively, they call be buffed with Bloodflame Blade, and they can use the Ashes of War listed above. You'll buff with Bloodflame Blade and Golden Vow as you make your way through Dungeons to increase your damage and Bleeding, and also your protection.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 100",
@@ -397,7 +397,7 @@ export const wikiBuilds: Build[] = [
     "name": "Black Guard",
     "stats": "DEX / ARC / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 150+ setup using Clinging Bone; Marais Executioner's Sword with Lifesteal Fist, Eochaid's Dancing Blade.",
+    "playstyle": "The Back Guard build highlights the Clinging Bone weapon, it has physical and magic damage and is equipped with a unique skill, Lifesteal Fist. The skill shows that it grabs onto a \"humanoid\" type of enemy, it goes through enemies that are even blocking, damaging, and heals about 30% of your max health. The skill predominantly does insane magic damage making it possible to pair with other items such as the Magic Scorpion Charm to further boost its damage. What's also great about this is the flexibility of how you can approach combat, such as using block-counters, dual-wield, you can steal health from your enemies, and you can even swap between the alternate weapons that come with this such as Marais Executioner's Sword or Regalia of Eochaid.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150+",
@@ -449,7 +449,7 @@ export const wikiBuilds: Build[] = [
     "name": "Black Hammer",
     "stats": "STR / FAI / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 165 setup using Black Steel Greathammer with Sacred Blade.",
+    "playstyle": "A build that utilizes the DLC exclusive Black Steel Greathammer that deals heavy holy damage. The Holy-Shrouding Cracked Tear is recommended to further boost holy damage, while the Stonebarb Cracked Tear is used to enhance stance-breaking potential, making it easier to land critical hits on bosses. For Great Runes, Radahn's Great Rune is favored for its boost to health, FP, and stamina, though Godrick's Great Rune is also a viable option for players who choose to use Sacred Order, as it enhances multiple stats. The Black Hammer build in Elden Ring's Shadow of the Erdtree DLC revolves around the Black Steel Greathammer, a unique weapon that deals both physical and holy damage. This weapon stands out due to its innate scaling with Strength, Dexterity, and Faith, and its ability to be infused with Ashes of War or weapon buffs, making it highly versatile.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 165",
@@ -498,7 +498,7 @@ export const wikiBuilds: Build[] = [
     "name": "Black Knife Assassin",
     "stats": "DEX / FAI / VIG",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Erdsteel Dagger x2, Black Knife & any Sacred Seal with Blade of Death, Bloodhound's Step & Parry.",
+    "playstyle": "A Dexterity/Faith Build that uses dual Daggers to rapidly strike enemies and Bosses for high damage the further into combo chains you go. The way this Build works is that you'll buff with Golden Vow and then you'll use your L1 combos to stun lock most enemies, building up your Attack Power because of Millicent's Prosthesis and Winged Sword Insignia. You can use Bloodhound's Step to dodge easily, or you can use Quickstep if you find it difficult to use Bloodhound's Step. You can use Blessing of the Erdtree and Flame, Grant Me Strength to buff healing and damage for Boss fights.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -550,7 +550,7 @@ export const wikiBuilds: Build[] = [
     "name": "Blackflame Apostle",
     "stats": "DEX / FAI / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 50 setup using Any Weapon that has Bleed on it by default such as the Uchigatana, Nightrider Flail with Bloody Slash or Unsheathe work well, but you can use any you like.",
+    "playstyle": "A Faith-Dex Build that focuses on the use of Black Flame to boost damage and give multiple options to every scenario. Black Flame Blade has a very short cast time but very short duration. It does extra damage, and it's damage over time is based on the Max HP of the enemy, so it's more effective against high HP targets like Bosses and tough enemies, and is fantastic in Co Op where Bosses and enemies have even more HP. The way this Build works is that you'll carry your Seal in your left hand and weapon in your right, buffing it with either Black Flame Blade or Bloodflame Blade depending on the circumstance.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 50",
@@ -597,7 +597,7 @@ export const wikiBuilds: Build[] = [
     "name": "Blackflame Bushido",
     "stats": "DEX / FAI / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Cross-Naginata with Phantom Slash, Sword Dance or Double Slash.",
+    "playstyle": "A Dexterity/Faith Build that uses the Cross-Naginata to set Hemorrhage and Black Flame on enemies in melee range. Black Flame Blade is used on more difficult enemies, and since you have high Faith the damage it adds to your attacks is substantial, and this is in addition to the Black Flame damage over time it places on the enemy. Black Flame is great for range when you need it, and Scouring Black Flame is a good AoE that can hit multiple enemies and is good at mid range when enemies are aggressive, and Black Flame might miss. The way this Build works is that you'll buff with Golden Vow and you'll use Bloodflame Blade to help set Hemorrhage on most regular enemies, as it adds to the native bleeding of the Cross-Naginata or Nagakiba. You'll then use Phantom Slash if you're using Cross-Naginata or Sword Dance or Double Slash if you're using Nagakiba.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -653,7 +653,7 @@ export const wikiBuilds: Build[] = [
     "name": "Blasphemous Beastmaster",
     "stats": "STR / FAI / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 100 setup using Blasphemous Blade, Cinquedea, Clawmark Seal with Taker's Flames.",
+    "playstyle": "A Strength/Faith hybrid build that uses Bestial Incantations and the Blasphemous Blade to destroy enemies at range or in melee combat. The way this Build works is that you'll focus on using Stone of Gurranq to range down enemies when you can, using the Blasphemous Blade as back up for instances where it is just easier to melee enemies or use Taker's Flames. You'll buff with Golden Vow constantly to maintain this buff whenever you are in combat, using Flame, Grant Me Strength for tougher enemies and boss fights. Beast Claw is used for AoE if you need any, and Bestial Sling can be used to take down big targets from close range if you need it.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 100",
@@ -707,7 +707,7 @@ export const wikiBuilds: Build[] = [
     "name": "Blasphemous Herald",
     "stats": "STR / FAI / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Blasphemous Blade, Gargoyle's Blackblade, Gargoyle's Greatsword & Clawmark Seal with Taker's Flame, Corpse Wax Cutter, Flaming Strike & Sacred Order.",
+    "playstyle": "A melee build that uses Jump Attacks and the Blasphemous Blade to demolish enemies point blank and at range. You'll swap to Gargoyle's Blackblade when Fire Damage is resisted to give you Holy Damage, and you'll change the Affinity on the Gargoyle's Greatsword to Sacred with the Sacred Order Ash of War. The way this Build works is that you'll buff with Golden Vow as you'll use Jump Attacks to destroy enemies with Blasphemous Blade in the right hand and Gargoyle's Greatsword in the left. You'll swap the damage type of the Gargoyle's Greatsword to Flame Art with Flaming Strike, when using Blasphemous Blade.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -762,7 +762,7 @@ export const wikiBuilds: Build[] = [
     "name": "Blazing Blackblade",
     "stats": "FAI / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 150+ setup using Hookclaws with Flaming Strike.",
+    "playstyle": "The Blazing Blackblade build highlights the Hookclaws weapon, it is a good weapon out of all of the claws because you can acquire this weapon easily when you explore Stormveil Castle and it has great length or reach compared to other claws which can be quite an issue when facing enemies or bosses that have unusual design and movement. The Hookclaws in this build come with the Ash of War: Flaming Strike skill and are infused with Flame art. Upgrading the weapon to the Flame art infusion helps in achieving the minimum requirements of the weapon of 8 STR and 14 DEX, allowing the build to focus on upgrading the primary stat of this build, Faith, making it possible to equip any incantation you want to use, or in this case, specifically the spells Golden Vow and Flame, Grant Me Strength that contributes to increasing the damage of the weapon.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150+",
@@ -813,7 +813,7 @@ export const wikiBuilds: Build[] = [
     "name": "Blazing Bushido",
     "stats": "STR / DEX / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 100 setup using Nagakiba, Greatbow, Finger Seal with Unsheathe & Rain of Arrows.",
+    "playstyle": "A Samurai Build that uses the Nagakiba and a Greatbow to take on enemies at range or in close combat. Bloodflame Blade applies 40% of your Incantation Scaling to your Weapon as Fire Damage for 60 seconds, and also makes Bleed Build Up last a second or so after you stop swinging, allowing you to set Bleeding more easily on enemies, as their Bleed Bar doesn't deplete as quickly. It has a faster cast time, and you can pull it off in combat with some practice if you need to reapply it. The Greatbow has D/D Scaling with these so it makes sense to pump both for max damage with the Nagakiba and Greatbow. Additionally, keeping the Nagakiba only Physical Damage, will allow you to buff it with Bloodflame Blade. You'll use Flame, Grant Me Strength to buff your Physical and Fire Damage by 20%, which applies to your Bow attacks as well as your Bloodflame Blade, which is excellent.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 100",
@@ -864,7 +864,7 @@ export const wikiBuilds: Build[] = [
     "name": "Blazing Executioner",
     "stats": "STR / VIG / END",
     "role": "Published build",
-    "playstyle": "Published all levels setup using Crescent Moon Axe with Flaming Strike.",
+    "playstyle": "A Strength Build that focuses on the use of the Crescent Moon Axe and the Flaming Strike Ash of War. Flaming Strike is exceptional in this build because it will increase your already high damage, but will deal Fire Damage and allow for a follow up attack that deals decent damage. Don't forget that you can just use Flaming Strike without the follow up for easy to kill enemies to save on FP. The way this Build works is that you'll use Flaming Strike to buff your Fire Crescent Moon Axe and than use the R2 and Charged R2 attacks to sweep multiple enemies, and Jump Attacks to take on single enemies.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from All Levels",
@@ -911,7 +911,7 @@ export const wikiBuilds: Build[] = [
     "name": "Blood Dancer",
     "stats": "DEX / ARC / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 100 setup using Eleonora's Poleblade & Dragon Communion Seal with Bloodblade Dance.",
+    "playstyle": "An Bleed Build focused on Arcane and the use of Eleonora's Poleblade to deal incredible damage very quickly and set the Hemorrhage status effect. You can use Dragonice to wipe out packs of enemies or to set Frostbite on Bosses, though you'll want to lead with Rotten Breath first if they can be effected by Scarlet Rot. Lightning Spear can be used to pick off lone enemies at range, or to range down a single target, and Dragonclaw is used situationally when you need burst Physical Damage. The way this Build works is that you'll buff with Flame, Grant Me Strength for tough fights to boost both your Physical and Fire Damage, and Eleonora's Poleblade does both. Most of the time you'll be leading with Bloodblade Dance to stagger enemies and to Hemorrhage them as quickly as you can.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 100",
@@ -959,7 +959,7 @@ export const wikiBuilds: Build[] = [
     "name": "Blood Dragon",
     "stats": "DEX / FAI / ARC / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 50 setup using Dual Scimitars with Bloody Slash.",
+    "playstyle": "The way this Build works is that you will Duplicate the Ashes of War: Bloody Slash to put it on both your Scimitars (or other curved swords), and select the Bleed Affinity so that they both apply Bleed build up when they hit an enemy. This will also allow them to scale with Arcane, which both increases their outright damage, and also increases the amount of Bleed build up they apply when hitting an enemy, making enemies Hemorrhage more quickly, ripping off huge chunks of HP. You can use Bloody Slash against more difficult enemies and Bosses, and its damage increases with weapon upgrades and Arcane, so the more you increase Arcane the more damage this Skill will do. Dragonclaw is your Spell for tough enemies that turtle behind Shields, making it hard for you to get to them with your Swords.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 50",
@@ -1004,7 +1004,7 @@ export const wikiBuilds: Build[] = [
     "name": "Blood Lancer",
     "stats": "STR / ARC / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 160+ setup using Sword Lance with Blood Tax.",
+    "playstyle": "A build that uses the Sword Lance to perform devastating heavy damage towards enemies. This weapon is technically a heavy thrusting sword, with R1 attacks similar to other heavy thrusting swords but R2 attacks that mimic the Lance weapon. Its running R2 attack is particularly notable, allowing multiple hits on enemies, closing the distance, and helping to duck under attacks, making it a versatile weapon for building up bleed and boosting attack power. Blood Tax enables rapid hits, building up attack power with talismans like Rotten Winged Sword Insignia and Thorny Cracked Tear.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 160+",
@@ -1051,7 +1051,7 @@ export const wikiBuilds: Build[] = [
     "name": "Bloodblade",
     "stats": "DEX / ARC / VIG / END",
     "role": "Published build",
-    "playstyle": "Published beginner setup using Scimitar x2 with Ash of War: Bloody Slash x2.",
+    "playstyle": "A Bleed-focused Build that uses the Bleed Status Effect to continuously rip off huge chunks of enemy health via dual blades. The way this Build works is that you slot the Ash of War: Bloody Slash on to both Scimitars so that when you strike with both weapons via L1 you build up Bleed faster. Focus on using running and jumping L1 attacks as these do 4 hits very quickly, as opposed to just L1 by itself which does 2 or rolling L1 which does 3. Play aggressively, but make sure not to get yourself killed going for the Bleed proc.",
     "complexity": "Published guide",
     "phases": {
       "early": "Scimitar x2",
@@ -1093,7 +1093,7 @@ export const wikiBuilds: Build[] = [
     "name": "Bloodhound",
     "stats": "STR / DEX / VIG",
     "role": "Published build",
-    "playstyle": "Published all levels setup using Bloodhound's Fang with Bloodhound's Finesse.",
+    "playstyle": "A Dexterity Build that focuses on the use of the Bloodhound's Fang and its weapon skill Bloodhound's Finesse. The way this Build works is that you'll use Bloodhound's Fang from almost the beginning the game, essentially after you defeat Bloodhound Knight Darriwil, which should be first thing. You should two-hand it and lean into its weapon skill: Bloodhound's Finesse as much as possible. Try not to focus on the Bleed Build Up of this weapon, since enemies will usually die before it triggers 9 out of 10 times, but you might be well off to use Blood Grease during Boss fights or other Greases to further boost your damage, so make sure to do this!",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from All Levels",
@@ -1140,7 +1140,7 @@ export const wikiBuilds: Build[] = [
     "name": "Bloody Ballerina",
     "stats": "ARC / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Bloody Helice with Dynast's Finesse.",
+    "playstyle": "An Arcane Build that focuses on the use of the Bloody Helice weapon and its weapon skill: Dynast's Finesse The way this Build works is that you'll be using Dynast's Finesse during your tough enemy and Boss fights, while using R1 and R2 attacks on trash enemies to conserve FP. The follow up attack of Dynast's Finesse will get you back into melee range, and does significant Stance Damage, allowing you to stagger enemies quite easily. Further attacks usually trigger Hemorrhage, which will proc your Attack Power buffs from Lord of Blood's Exultation and White Mask, allowing you to pump out even more damage as the fight goes on.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -1187,7 +1187,7 @@ export const wikiBuilds: Build[] = [
     "name": "Bloody Beastclaw",
     "stats": "ARC / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 150+ setup using Beast Claw with Savage Claws.",
+    "playstyle": "The build highlights the Beast Claw weapon you can acquire from a hostile NPC, just southeast of the first Site of Grace in Gravesite Plain. Several things are worth noting: First, the weapon allows the wielder to perform rapid and consecutive attacks, making some enemies flinch and preventing them from making a move. Second, this weapon naturally builds up bleed on hit, eventually triggering Hemorrhage. The ash of war or skill that this weapon uses is Savage Claws.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150+",
@@ -1235,7 +1235,7 @@ export const wikiBuilds: Build[] = [
     "name": "Bloody Bowman",
     "stats": "STR / DEX / VIG",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Black Bow with Barrage.",
+    "playstyle": "A Dexterity/Strength Build that uses the Black Bow to unleash a Barrage of Blood and Poison Arrows at enemies. The way this Build works is that you'll use the Black Bow to range down enemies. Based on what enemies you are facing, you'll use regular Arrows for trash enemies, or enemies that you won't get much out of triggering Hemorrhage or Poison on because they'll be dead too quickly. Archery Skill using a bow held horizontally.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -1283,7 +1283,7 @@ export const wikiBuilds: Build[] = [
     "name": "Blue Baller",
     "stats": "STR / INT / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 150+ setup using Iron Ball; Academy Glintstone Staff with Endure.",
+    "playstyle": "The Blue Baller guild highlights the Iron Ball fists weapon that is equipped with incredible damage, it can be acquired early in the game, and it has a unique boxing-like nature and significant stance damage from their charged heavy attacks which you can often stance break tough enemies with just two charged heavy attacks. Pairing this weapon with the Stonebarb Cracked Tear further increases your stance damage, allowing the player to stance-break bosses with two charged heavy attacks, which in the opinion, is something that is incredibly fast. And obviously, once they are down, you can follow up with a critical attack or punish the target with consecutive hits. In addition to the Iron Ball weapon, this build is also equipped with the Academy Glintstone Staff to buff the Heavy Iron Balls with magic.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150+",
@@ -1335,7 +1335,7 @@ export const wikiBuilds: Build[] = [
     "name": "Carian Cavalier",
     "stats": "STR / DEX / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Loretta's War Sickle & any Staff with Loretta's Slash.",
+    "playstyle": "Casting Freezing Mist on a Boss first will debuff them and increase the damage you do to them before beginning your assault. Cast this an then try to keep them in the mist until Frostbite triggers and then go to town. Loretta's Slash is very situational, and this build is not setup to optimize its damage. The way this Build works is that you'll use the very fast attacks of Loretta's War Sickle to melt enemies in one or two attacks, and Bosses in less than a minute.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -1385,7 +1385,7 @@ export const wikiBuilds: Build[] = [
     "name": "Carian Cleaver",
     "stats": "STR / INT / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 150+ setup using Iron Cleaver, Carian Regal Scepter with Royal Knight's Resolve.",
+    "playstyle": "The Carian Cleaver build highlights high damage of spellcasting and melee attacks. If you're looking for that balance between casting spells and being effective in melee combat, then this build is for you. For this build to work you'll need to acquire the Iron Cleaver for melee combat and set it to magic infusion to acquire that high damage value, the reason why it uses this weapon apart from its high damage value is its R2 attack which allows the character to charge and lunge forward to close the gap when attacking an enemy. For shields, this build uses the Jellyfish Shield.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150+",
@@ -1434,7 +1434,7 @@ export const wikiBuilds: Build[] = [
     "name": "Carian Knight",
     "stats": "INT / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 154 setup using Carian Sorcery Sword with Impaling Thrust, Carian Retaliation.",
+    "playstyle": "The build focuses on stance breaking to take advantage of the weapon's high critical rating. Spells are chosen not for their damage but for their stance damage. This approach allows the Carian Sorcery Sword to be used effectively in both melee and casting roles, with spells functioning similarly to Ashes of War. Previously, this weapon was not very viable due to its intelligence scaling, which is still significantly worse compared to the Carian Regal Scepter.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 154",
@@ -1487,7 +1487,7 @@ export const wikiBuilds: Build[] = [
     "name": "Carian Shield Knight",
     "stats": "STR / INT / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 163 setup using Not specified by source with Cragblade.",
+    "playstyle": "A build that utilizes the Carian Thrusting Shield as your main weapon, allowing you to block and attack at the same time. The Carian Shield Knight build in Elden Ring focuses on using the Carian Thrusting Shield, which was introduced in the Shadow of the Erdtree update. This build is centered around the shield's ability to perform thrusting attacks while simultaneously blocking, making it incredibly effective for dealing counter damage and breaking enemy stances. The Carian Thrusting Shield is one of two new thrusting shields and requires minimal investment in Strength, Dexterity, and Intelligence, making it accessible to a wide range of builds.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 163",
@@ -1535,7 +1535,7 @@ export const wikiBuilds: Build[] = [
     "name": "Carian Sovereignty",
     "stats": "STR / INT / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 172 setup using Claymore with Carian Sovereignty.",
+    "playstyle": "A build for those who enjoy using the spells while still using a melee weapon. This Sovereign Spellblade build emphasizes the destructive power of the Carian Sovereignty skill, making it a good choice for players seeking high damage output. The Ash of War itself, highlights its ability to charge up a magic sword that delivers a long-range slash, followed by a horizontal AOE attack. For the weapon, this build uses the Claymore, a greatsword that provides the highest hyper armor, essential for avoiding interruptions during the skill's charge-up.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 172",
@@ -1586,7 +1586,7 @@ export const wikiBuilds: Build[] = [
     "name": "Carian Spellknight",
     "stats": "INT / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Longsword & Carian Regal Scepter with Carian Grandeur.",
+    "playstyle": "Rykard's Rancor gives you a high damage Fire Spell you can use when enemies are highly magic resistant. Greatblade Phalanx is used to help stagger an enemy when connecting with Carian Grandeur close to the time it lands. You can use Terra Magica to buff your Magic Damage before a tough fight if you have time, making you even more deadly. The way this Build works is that you'll use your Shield to Block Counter regular enemies around the landscape.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -1641,7 +1641,7 @@ export const wikiBuilds: Build[] = [
     "name": "Carian Twinblade",
     "stats": "STR / DEX / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 150+ setup using Rellana's Twinblade, Golden Order Seal with Moon-and-Fire Stance.",
+    "playstyle": "The weapon can be obtained by progressing the game and beating Rellana Twin Moon Knight in Castle Ensis. Rellana's Twinblade is a paired weapon that deals physical, magic, and fire damage — with STR, DEX, INT, and FAI scaling. The weapon comes with a unique skill, Moon-and-Fire Stance, where the character enters a stance to imbue its weapon with magic or fire. And with the requirements of this weapon, you'll most likely find yourself spreading out points to STR, DEX, INT, and FAI.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150+",
@@ -1693,7 +1693,7 @@ export const wikiBuilds: Build[] = [
     "name": "Champion",
     "stats": "STR / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 50 setup using Lordsworn's Greatsword & Claymore with Golden Vow & Determination.",
+    "playstyle": "A dual-wielding Build that focuses on the use of Greatsword and Heavy Armor to tank hits while dealing devastating damage via Jump Attacks. Golden Vow lasts 45 seconds when used on an Ash of War, and increases your Attack Rating by about 10%, while also improving your Resistance by 5%. Determination is used in combat to boost the damage of both weapons, but the catch is that you need to connect with them at the same instant or you only get the increased damage on the first hit. The way this build works is that you'll try to get Jump Attacks with your two Greatswords, which are boosted by the Claw Talisman.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 50",
@@ -1735,7 +1735,7 @@ export const wikiBuilds: Build[] = [
     "name": "Cold-Blooded Raptor",
     "stats": "STR / INT / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 100 setup using Bloodhound Claws, Sacrificial Axe & Academy Glintstone Staff with Royal Knight's Resolve & Golden Vow.",
+    "playstyle": "A Strength/Intelligence Build that uses Claws to deal damage rapidly, and to also set the Hemorrhage and Frostbite status effects. You'll build up Hemorrhage and Frostbite on anything that doesn't die in a few hits, ripping off huge chunks of HP rapidly, making your damage output very high. The way this Build works is that you'll two hand your Claws, which brings out a second one and buff with Royal Knight's Resolve to boost the damage with both Claws. This is possible because they are only considered one Weapon, and buffs both Claws. You'll then Jump Attack enemies or bosses for increased damage, finishing them off with R1 attacks if they survive.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 100",
@@ -1789,7 +1789,7 @@ export const wikiBuilds: Build[] = [
     "name": "Coldstorm Cleric",
     "stats": "STR / FAI / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published all game setup using Chainlink Flail with Stormcaller.",
+    "playstyle": "This build is also paired with the Fire's Deadly Sin Incantation, to continuously retrigger the Frostbite Status Effect since it is a continuous source of fire damage it can reliably reset the Frostbite status effect on enemies for build that inflicts frostbite rapidly. Coldstorm Cleric is a build that makes use of a Flail, such as a Chainlink Flail, and its high damage and Strength scaling. This is paired with the Stormcaller Ash of War to increase Bloodloss build-up, maximizing damage output and the chance to stagger opponents. This build does heavy damage to targets, but it also builds up Frostbite once you add the cold infusion, and blood loss maximizing your damage output.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from All Game",
@@ -1839,7 +1839,7 @@ export const wikiBuilds: Build[] = [
     "name": "Colossal Crusher",
     "stats": "STR / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Giant-Crusher & Highland Axe with Troll's Roar.",
+    "playstyle": "The way this Build works is that you'll run around using the Troll's Roar Ash of War to stagger enemies and then follow up with a Critical Attack finishing them off in a matter of seconds. Troll's Roar has a rather long cast time, making it challenging to pull off most of the time, except that you will have high Poise Armor so you will be able to pull this off even if hit. Colossal Weapons trigger both of these Talismans twice when doing a Critical Attack, making them twice as effective. When facing Bosses consider swapping out these two Talismans for Dragoncrest Greatshield Talisman and Green Turtle Talisman because you won't be doing as many Critical Strikes.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -1886,7 +1886,7 @@ export const wikiBuilds: Build[] = [
     "name": "Colossal Knight",
     "stats": "STR / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 50 setup using Greatsword with War Cry.",
+    "playstyle": "A Strength focused Build that uses the Greatsword to pound enemies into the dirt using Charge Attacks. Learning when to use War Cry and how to use it is important because you don't have a ton of FP and you don't want to waste it needlessly. But be sure when using it to lead enemies with R2, and attack with it before they do so that you stagger them and they cannot get an attack off. Much like the Barbarian Build this build takes advantage of War Cry's change to R2 attacks, allowing you to deal devastating damage.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 50",
@@ -1928,7 +1928,7 @@ export const wikiBuilds: Build[] = [
     "name": "Colossus Guardian",
     "stats": "STR / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 100 setup using Prelate's Inferno Crozier, any Sacred Seal and a Dagger with Barbaric Roar.",
+    "playstyle": "The Colossus Guardian Build is a pure Strength Build that focuses on one-handing a single Colossus Weapon to devastating results. The way this Build works is that you slot the Ash of War: Barbaric Roar onto the Prelate's Inferno Crozier with the Blood Affinity so that you set Hemorrhage on enemies, dealing massive damage and triggering Lord of Blood's Exultation, increasing your damage. Barbaric Roar will overwrite any weapon buff you use, so it's best to choose one with a status effect if you can, and Blood still leaves B scaling in Strength. You can buff with Flame, Grant Me Strength before tough fights and Bosses, and use Bestial Vitality to heal up small damage you might take over the course of a level or dungeon.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 100",
@@ -1978,7 +1978,7 @@ export const wikiBuilds: Build[] = [
     "name": "Crimson Duelist",
     "stats": "ARC / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Rogier's Rapier with Seppuku and Carian Retaliation.",
+    "playstyle": "An Arcane build that uses Rogier's Rapier and Sepukku to bleed enemies to death very quickly. The way this Build works is that you'll buff yourself with Seppuku and use the unique R2 attack of Rogier's Rapier that hits twice to one shot most enemies, triggering blood loss with nearly every R2 attack, boosting your Attack Power from White Mask and Lord of Blood's Exultation, as well as Winged Sword Insignia and Millicent's Prosthesis. This gives you very high Attack Rating very quickly, and is easy to maintain since you can one shot most every enemy quickly. By using Carian Retaliation on a Shield in your left hand you will be have the most possible frames for Parrying, making it easier to Parry than just about any other setup.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -2024,7 +2024,7 @@ export const wikiBuilds: Build[] = [
     "name": "Crucible Knight",
     "stats": "STR / FAI / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Ordovis' Greatsword & Clawmark Seal with Ordovis' Vortex.",
+    "playstyle": "The way this Build works is that you'll use Ordovis' Vortex on Bosses and difficult enemies in order to defeat them quickly. The charged version of this weapon skill has HUGE stagger potential and usually two casts of this will drop a Boss if they aren't dead by then. Golden Vow and Flame, Grant Me Strength are used to buff your damage with your attacks, weapon skill and Spells since they all deal physical damage or fire damage. This skill can be charged to increase its power.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -2078,7 +2078,7 @@ export const wikiBuilds: Build[] = [
     "name": "Crusader",
     "stats": "FAI / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Gargoyle's Greatsword & Erdtree Seal with Barricade Shield & Sword Dance.",
+    "playstyle": "A melee/caster hybrid that focuses on Faith and Block Counters to obliterate enemies with holy or fire damage. This is crucial since you want to be able to change damage types (Fire or Holy) depending on the scenario. You can use Elden Stars to begin Boss fights, particularly on the landscape where they are typically not aggroed until you engage them, and Lightning Spear is a good ranged option, as is Black Flame if you want a Fire option. Many spells recently got buffed so you can test them out, but you have crazy high Incantation Scaling so you'll do fantastic damage.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -2132,7 +2132,7 @@ export const wikiBuilds: Build[] = [
     "name": "Crystal Mage",
     "stats": "INT / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 100 setup using Crystal Staff, Finger Seal with Contagious Fury.",
+    "playstyle": "The Crystal Mage Build is an Intelligence focused Build that uses Crystal and Glintstone Sorceries to dispatch enemies at range. This Build uses the Crystal Staff to boost the damage of both Crystal Torrent and Shattering Crystal. Lusat's Glintstone Staff costs too much FP to use consistently, and you do not meet the requirements to use Carian Regal Staff yet, so this is the next best one when it comes to scaling. You'll use Contagious Fury by keeping your Shield in your left hand, buffing your spell damage by 20% for 30 seconds when you use it.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 100",
@@ -2187,7 +2187,7 @@ export const wikiBuilds: Build[] = [
     "name": "Dark Paladin",
     "stats": "DEX / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 150+ setup using Milady with Golden Vow, Cragblade.",
+    "playstyle": "You can get this weapon a bit later in the game (in Castle Ensis) after clearing the first legacy dungeon or even early on if you decide to explore. Milady is no exception to this since its heavy attack executes two strong swings and if you press the button again, it follows up with another two swings, making it useful and quite effective when it comes to building up attack power, especially once it is paired with the right talismans and other buffs. Milady is a weapon that scales well with the Keen upgrade, which is best for the primary stat of this build, Dexterity. Golden Vow is great for buffing your damage and resistance, also great if you are playing online co-op.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150+",
@@ -2234,7 +2234,7 @@ export const wikiBuilds: Build[] = [
     "name": "Darkmoon Spellblade",
     "stats": "INT / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 100 setup using Dark Moon Greatsword & Carian Glintblade Staff with Moonlight Greatsword.",
+    "playstyle": "A melee mage build that focuses on the use of the Dark Moon Greatsword and other Glintblade Sorceries to destroy its enemies. You can use Unseen Form to help you navigate levels, avoiding ranged enemies that might hit you unsuspectingly, allowing you to range them down with Glintstone Pebble or Magic Glintblade. Loretta's Greatbow is there for very long range when the situation calls for it. It generally goes something like this, buff your Greatsword with L2, cast Magic Glintblade or Greatblade Phalanx and then either hold R2 or charge forward into range and then hold R2 and then hit R2 again. You're trying to time it so that the wave from the Greatsword connects with the enemy around the same time as the spell, or just before, so that the spell staggers after the wave, allowing you an opening for a second wave.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 100",
@@ -2287,7 +2287,7 @@ export const wikiBuilds: Build[] = [
     "name": "Acolyte",
     "stats": "DEX / FAI / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published endgame / ng+ setup using Keen Greatsword, Bolt of Gransax with Ancient Lightning Spear.",
+    "playstyle": "If you don't want to keep respeccing depending on if the boss is resistant to holy, fire or lightning, and also want to play at a meta level (around 150) for the fun of the restriction and PVP concerns, give this a go. This build is designed around Lightning so the personal choice for general PVE is: equip Gravel Stone Seal and Lightning incantations such as Lanseax Glaive and Fortissax's Lightning Spear, and also equip the Bolt of Gransax. Tanks you when you're overwhelmed so you can put down AOEs, as well as target bulky enemies from long range with Bolt of Gransax's ash of war. Also buff the Keen Greatsword with lightning and go to town with poise breaking and knocking down.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from Endgame / NG+",
@@ -2335,7 +2335,7 @@ export const wikiBuilds: Build[] = [
     "name": "Black Blade Slicer",
     "stats": "STR / DEX / FAI / ARC / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published endgame / ng+ setup using Black Knife, Maliketh's Black Blade, Serpent Bow with Blade of Death, Destined Death, Mighty Shot.",
+    "playstyle": "A build that utilizes the Destined Death damage over time effect for PvE. They are very vulnerable to stagger and being stun locked, they get stuck behind ledges(such as the rocks that are around the areas of both fights) and if you get them in a corner (cliffs they can fall off counts as part of a corner as they won't fall off) they will be basically stuck because they always dash back/to the sides and will also be stunlocked by you hitting them. It is recommended using a weapon with good range and stagger, one workable option is a pike upgraded with stone bought with bell bearings and baited the assassin to be on the low side of the ledge, then poked until they escaped then baited them back there.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from Endgame / NG+",
@@ -2391,7 +2391,7 @@ export const wikiBuilds: Build[] = [
     "name": "Champion of Rot",
     "stats": "STR / DEX / FAI / ARC / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Poleblade of the Bud, Antspur Rapier (Keen) with Romina's Purification, The Poison Flower Blooms Twice.",
+    "playstyle": "The Opaline Hardtear is used to all damage negations by 15% for 3 minutes. For enemies where you can't apply Scarlet Rot, you will be relying on the Poleblade of the Bud to deal physical damage, and Pest-Thread Spears as a ranged option. Pest-Thread Spears is also an excellent incantation to use against massive enemies, if you get right under them before casting this, you'll get multiple hits, and this incantation does a high level of stance damage. Your remaining Incantations are more situational or utility; Rotten Butterflies is good as a zone spacer for distant enemies, who may with timing run into the butterfly explosion and start procuring Rot buildup.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -2446,7 +2446,7 @@ export const wikiBuilds: Build[] = [
     "name": "Cipher Prophet",
     "stats": "STR / DEX / INT / FAI / ARC / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published midgame setup using Cipher Pata with Unblockable Blade.",
+    "playstyle": "Cipher Prophet is an extremely easy medium build to use, collect for, and adjust to your liking. Equip one of the sacred Ash of War to your blade for now, and you can do solid melee or throw fireballs at bosses until they croak. Startup: You can grab all this stuff without killing a single boss. First get the horse, snag the Limgrave map, and get the seed in route to get the Beast Crest Heater Shield, pop up on top of the cliff and grab Ash of War: Golden Vow, then get the Saintsbridge Site of Grace after.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from Midgame",
@@ -2493,7 +2493,7 @@ export const wikiBuilds: Build[] = [
     "name": "Death Knight",
     "stats": "INT / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Sword of Night and Flame, Carian Regal Scepter & Frenzied Flame Seal with Night-and-Flame-Stance.",
+    "playstyle": "If you can get the drop on a tough enemy or Boss, you'll place Terra Magica down first to boost your Magic Damage even further, before unloading with Ancient Death Rancor, and then firing off the Night Comet ability of Night and Flame when they get close to you. You'll swap to Ancient Death Rancor for more difficult enemies, and you'll use the Night Comet ability of Sword of Night and Flame to finish them of while they are staggered from Ancient Death Rancor. The way this Build works is that you'll buff with Golden Vow and use Rancor and Sword of Night and Flame to take on regular enemies, using Carian Knight's Shield to Block Counter as needed. Night-and-Flame-Stance (Unique).",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -2545,7 +2545,7 @@ export const wikiBuilds: Build[] = [
     "name": "Death Mage",
     "stats": "INT / FAI / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Sword of Night and Flame, Golden Order Seal & Prince of Death's Staff with Night-and-Flame Stance.",
+    "playstyle": "A mage build that focuses on the use of Death Sorceries and the Prince of Death's Staff. Sword of Night and Flame is your melee option, since Rancorcall and Ancient Death Rancor are useless at point blank range as they will fly over the target and miss. The way this Build works is that you'll buff with Golden Vow and then cast Rancorcall on regular trash enemies, using Explosive Ghostflame or Rykard's Rancor on groups of enemies to AoE them down quickly. Ancient Death Rancor is great against hard to kill enemies and Bosses, especially if you charge it and are standing in Terra Magica when you cast it. It can often stagger bosses or outright kill them before they ever reach you.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -2601,7 +2601,7 @@ export const wikiBuilds: Build[] = [
     "name": "Deathblade",
     "stats": "INT / FAI / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 100 setup using Sword of Night and Flame, Prince of Death's Staff & Golden Order Seal with Night-and-Flame Stance.",
+    "playstyle": "An Intelligence/Faith Build thas uses the Sword of Night and Flame to full effect, while also using both Sorceries and Incantations to dispatch enemies. You also deal incredible damage just with regular melee attacks, as the Sword of Night and Flame has one of the highest Attack Ratings in Elden Ring. If you can get someone to drop you a second one, consider dual wielding them for even more deadly melee attacks. The way this Build works is that you'll prioritize using the magic attack of Sword of Night and Flame, by using things that boost its damage, as well as the damage of your regular weapon attacks. Magic Scorpion Charm, Golden Vow, Spellblade Set and Terra Magica all boost this damage, making it much more deadly.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 100",
@@ -2656,7 +2656,7 @@ export const wikiBuilds: Build[] = [
     "name": "Devonia's Hammer",
     "stats": "STR / FAI / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 150+ setup using Devonia's Hammer with Devonia's Vortex.",
+    "playstyle": "Morgott's Great Rune is also a solid option for increased health, which is beneficial for surviving damage trades. Overall, the Devonia Devastator build is about standing toe-to-toe with bosses, taking hits, and breaking enemy stances with the powerful Devonia's Vortex skill. Devonia's Hammer is a colossal weapon that deals primarily physical damage, with some holy damage, and scales exceptionally well with strength. It also offers decent faith scaling and boasts a fantastic guard boost, making it a powerful choice for heavy hitters.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150+",
@@ -2707,7 +2707,7 @@ export const wikiBuilds: Build[] = [
     "name": "Divine Warrior",
     "stats": "FAI / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 150+ setup using Euporia with Euporia Vortex.",
+    "playstyle": "Next, let's take a closer look at the weapon skill, Euporia Vortex. This skill requires about a second to wind up the blade, after which it starts spinning as you walk forward, hitting enemies repeatedly. This spinning attack is similar to the Spinning Weapon skill or the attack used by the Godskin Apostle boss, making it a familiar mechanic for those who have encountered that enemy. The Divine Warrior build features the Euporia weapon, a hidden weapon that players can find close to the end of the DLC.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150+",
@@ -2758,7 +2758,7 @@ export const wikiBuilds: Build[] = [
     "name": "Double Dragon",
     "stats": "STR / DEX / ARC / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 164 setup using Dane's Footwork with The Poison Flower Blooms Twice, Scarlet Rot.",
+    "playstyle": "A build that focuses on the fighting technique rather than the speed and damage of the attack. The Double Dragon build is a poison and Scarlet rot build focusing on using Dane's Footwork, a unique hand-to-hand weapon, and the Ash of War \"The Poison Flower Blooms Twice. \" The Ash of War \"The Poison Flower Blooms Twice\" is the cornerstone of this build. The weapon chosen for this build is Dane's Footwork.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 164",
@@ -2805,7 +2805,7 @@ export const wikiBuilds: Build[] = [
     "name": "Dragon Dancer",
     "stats": "FAI / ARC / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Regalia of Eochaid & Dragon Communion Seal with Eochaid's Dancing Blade.",
+    "playstyle": "An Arcane Build that focuses on the use of Dragon Incantations. On Bosses you'll buff with Golden Vow and Flame, Grant Me Strength and then use Eochaid's Dancing Blade when you have an opening, followed by a Dragonmaw for devastating damage after your Attack Power has been buffed high from the weapon skill. You can use Dragonmaw on tough to kill mobile enemies, and Agheel's Flame and Ekzykes's Decay on groups of enemies, or when you need to set Scarlet Rot. Greyoll's Roar can be used to debuff a Boss if you need extra damage, just make sure to use it first for best results.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -2859,7 +2859,7 @@ export const wikiBuilds: Build[] = [
     "name": "Dragon God",
     "stats": "FAI / ARC / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 165 setup using Bloodfiend's Fork, Dragon Communion Seal with Sword Dance or Braggart's Roar.",
+    "playstyle": "Golden Vow is good to buff the damage and get more protection while Flame, Grant Me Strength raises the power of spells that deal physical attacks and if you have any incantations that do fire damage. Golden Vow is a spell that you will be using more frequently especially if you are exploring, while Flame, Grant Me Strength is good to use right before you fight a boss. Rotten Breath is considered to be like a weak version of Ekzykes's Decay, and the reason why it's on this build is because you can cast this spell while you're on horseback, this way if you are fighting field bosses, you can cast this spell while mounted. The Dragon God build for Elden Ring's Shadow of the Erdtree is a build that focuses on the use of Dragon Communion Incantations, and uses a new item, the Rock Heart, to further boost the damage of the spells.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 165",
@@ -2912,7 +2912,7 @@ export const wikiBuilds: Build[] = [
     "name": "Dragon Knight",
     "stats": "FAI / ARC / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 100 setup using Any that can use Bloody Slash & Dragon Communion Seal with Bloody Slash & Contagious Fury.",
+    "playstyle": "The way this Build works is that you'll increase your Arcane to make your Spells hit hard, and to boost the damage of your Weapon. You should use an Occult Affinity Weapon, with the Bloody Slash Skill, which scales with Arcane for maximum Bloody Slash damage, but you can use any Skill you want. You'll use Agheel's Flame or Smarag's Glintstone Breath to take out enemies with larger health pools or Bosses, holding down R1 to cast the spell fully twice. Make sure to equip the Scorpion Charm that best suits the breath you intend to use.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 100",
@@ -2969,7 +2969,7 @@ export const wikiBuilds: Build[] = [
     "name": "Dragon Priest",
     "stats": "FAI / ARC / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published beginner setup using Any with No Skill.",
+    "playstyle": "A Faith-based Build that focuses dealing Fire-Damage and using Dragon Spells to maximum effect. The way this Build works is that you'll use Catch Flame to one shot most enemies and two or three shot tough enemies. Dragonfire is there to take out big groups of enemies, as it has a huge AoE cone that can keep dealing damage if you hold down R1.",
     "complexity": "Published guide",
     "phases": {
       "early": "Any",
@@ -3014,7 +3014,7 @@ export const wikiBuilds: Build[] = [
     "name": "Dragon Priestess",
     "stats": "FAI / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 159 setup using Coded Sword, Erdtree Seal with Unblockable Blade.",
+    "playstyle": "The Dragon Priestess build focuses on using Dragon Cult Incantations. The spell has incredible range and can still release projectiles even if the caster is interrupted mid-animation. Charging it up increases its damage, and its significant stance damage allows for breaking boss stances effectively. When a boss is stance broken, a powerful combination involves using Knight's Lightning Spear followed by a charged Ancient Dragons' Lightning Strike. The synergy between these spells makes this build extremely potent in boss fights, often bypassing the challenging second phases of many encounters.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 159",
@@ -3065,7 +3065,7 @@ export const wikiBuilds: Build[] = [
     "name": "Dragon Warrior",
     "stats": "FAI / ARC / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Bandit's Curved Sword x2 with Seppuku x2.",
+    "playstyle": "An Arcane Build that uses Bleed and rapid attacks to build up Attack Power and then unleash deadly Dragon attacks. You can use Ekzykes's Decay to set Scarlet Rot on tough Bosses from range, or to AoE down groups of enemies from a distance. (Note: Patch 1.07 nerfed the additional bleed build up gained from Sepukku and also the status damage done when dual wielding. The way this Build works is that you'll buff with Golden Vow and Seppuku when generally moving about the landscape to attack enemies, only buffing your right hand weapon unless facing something fierce. You can use Blessing's Boon and buff your left hand weapon as well when facing tough enemies or Bosses to further boost damage and surviveability.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -3118,7 +3118,7 @@ export const wikiBuilds: Build[] = [
     "name": "Dragonscale Daimyo",
     "stats": "STR / DEX / VIG",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Dragonscale Blade & Uchigatana with Ice Lightning Sword & Flaming Strike.",
+    "playstyle": "A melee build that focuses on the use of Dragonscale Blade and its weapon skill: Ice Lightning Sword. The way this Build works is that you'll buff your Fire Uchigatana with Flaming Strike and then use Ice Lightning Sword on an enemy or boss in order to deal some damage while also adding Lightning Damage to your Dragonscale Blade, as well as adding Frostbite build up to its attacks. This will allow you very high damage with repeated strikes while dual wielding. Or you can use the Jellyfish Shield in your left hand instead of the Fire Uchigatana, which will allow you to use Ice Lightning Sword while two-handing, buffing your weapon, and then swapping to one hand and using Contagious Fury on the Shield to get even more damage.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -3165,7 +3165,7 @@ export const wikiBuilds: Build[] = [
     "name": "Dragonslayer",
     "stats": "STR / DEX / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 158 setup using Dragon-Hunter's Great Katana with Dragonwound Slash.",
+    "playstyle": "The recommended Great Runes for this build include Radahn's Great Rune for additional health, FP, and stamina, Morgott's Great Rune for extra health, or Malenia's Great Rune for health regeneration upon taking damage and immediately attacking back. This build utilizes the Dragon-Hunter's Great Katana, a new weapon type that combines elements of a katana and a curved great sword. This hybrid weapon has a unique move set, size, and weight, dealing 100% physical damage and featuring scaling in both strength and dexterity. The Dragon Hunter's Great Katana scales evenly with strength and dexterity, providing the highest attack rating when points are equally distributed between these attributes.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 158",
@@ -3214,7 +3214,7 @@ export const wikiBuilds: Build[] = [
     "name": "Drake Knight",
     "stats": "STR / FAI / VIG",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Magma Wyrm's Scalesword & Clawmark Seal with Magma Guillotine.",
+    "playstyle": "A Strength/Faith Build that focuses on the use of the Magma Wyrm's Scalesword and its weapon skill Magma Guillotine. The way this Build works is that you'll use Magma Guillotine on hard to kill enemies and bosses, leaping into them and dealing very high burst damage, with even more damage from the follow up attack if you can get it off. You'll use Golden Vow and Flame, Grant Me Strength for extra damage before Boss fights begin so that you can defeat them even faster. You can add other spells to this build since you use the Clawmark Seal, but those are up to you.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -3265,7 +3265,7 @@ export const wikiBuilds: Build[] = [
     "name": "Duel Sword Duelist",
     "stats": "DEX / FAI / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 160+ setup using Horned Warrior's Sword with Horn Calling.",
+    "playstyle": "Additionally, the Horned Warrior Sword deals 100% physical damage, scaling with Strength, Dexterity, and Faith. This makes it one of the few weapons in the game to scale with Faith while retaining pure physical damage output. The weapon skill, Horn Calling, complements this versatility by delivering 100% Holy damage, giving you the flexibility to adapt your damage type depending on the enemy. The Horned Warrior's Sword is the key weapon for this build.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 160+",
@@ -3315,7 +3315,7 @@ export const wikiBuilds: Build[] = [
     "name": "Elden Lord",
     "stats": "STR / DEX / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Axe of Godfrey & Highland Axe with Regal Roar.",
+    "playstyle": "A Quality (Strength/Dexterity) Build that uses Axe of Godfrey and its weapon skill Regal Roar to pancake foes. The way this Build works is that you'll use Regal Roar on a tough enemy or group of enemies in order to knock them into the air, dealing substantial damage while also changing your R2 and charged R2 attacks and buffing your damage. Roar Medallion and Highland Axe both buff your Roar and follow up attack damage. You'll then proceed to attack with R2s and charged R2s to pound enemies to death quickly, trading damage as necessary, since you'll win every trade.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -3363,7 +3363,7 @@ export const wikiBuilds: Build[] = [
     "name": "Elementalist",
     "stats": "INT / FAI / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Prince of Death's Staff & Golden Order Seal with No Skill.",
+    "playstyle": "An Intelligence/Faith Build that can cast nearly any spell in the game, and only uses ranged magic to destroy enemies. Lightning Spear is your Lightning Damage spell that you'll use to take out enemies weak to Lightning. You can charge it for extra damage as needed and it does +10% damage in the rain. Stone of Guarranq is your ranged Physical Damage spell that can be chained effectively at modest range. You can also use Rock Sling, but it casts slower, though it does have longer range and does more stagger damage.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -3419,7 +3419,7 @@ export const wikiBuilds: Build[] = [
     "name": "Enchanted Knight",
     "stats": "INT / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 50 setup using Carian Glintstone Staff with Ash of War: Barricade Shield.",
+    "playstyle": "A medium-armor melee-based sorcerer Build that allows you to Block with a Shield while attacking with Carian Sword Sorceries in your right hand. Spam Carian Slicer to melt bosses and tough enemies and use Carian Greatsword when mounted or when getting too close to some enemies is risky. Use Carian Piercer against NPC Invaders, and use Glintstone Pebble to tackle flying enemies or enemies you cannot reach with melee attacks. You need to have a well rounded stat spread for this Build since you are playing it like a melee character that uses a Shield, so good Vigor and Endurance helps with Blocking and taking damage.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 50",
@@ -3466,7 +3466,7 @@ export const wikiBuilds: Build[] = [
     "name": "Eochaid Executioner",
     "stats": "STR / ARC / VIG",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Marais Executioner's Sword with Eochaid's Dancing Blade.",
+    "playstyle": "A Strength/Arcane Build that uses the Marais Executioner's Sword or Regalia of Eochaid to deal massive damage via Eochaid's Dancing Blade The way this Build works is that you'll use Eochaid's Dancing Blade on just about every enemy, when you aren't doing Block Counters off of your Blocks. You're goal is always to get at least one enemy with this Skill in order to boost your Attack Power via Rotten Winged Sword Insignia and Millicent's Prosthesis so that subsequent attacks deal more damage. You can buff with Flame, Grant Me Strength as needed, since you do mostly Physical Damage with your attacks and with Eochaid's Dancing Blade.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -3515,7 +3515,7 @@ export const wikiBuilds: Build[] = [
     "name": "Fire Knight Impaler",
     "stats": "DEX / FAI / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 150+ setup using Spear of the Impaler with Messmer's Assault.",
+    "playstyle": "The Fire Knight Impaler build for Elden Ring's Shadow of the Erdtree is a build that utilizes the Spear of the Impaler weapon, a fantastic weapon that does physical and fire damage, and scales with Faith and Dexterity. This build uses Faith (a little over Dexterity) because of its weapon skill, Messmer's Assault, to effectively boost the damage of the skills' first attack, which is 100% fire damage. Before covering the skill of this weapon, there is one thing to mention about the Spear of the Impaler, is that pressing the R2 button or using a heavy attack/charged heavy attack will make the character throw the spear at a decent distance.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150+",
@@ -3566,7 +3566,7 @@ export const wikiBuilds: Build[] = [
     "name": "Flame Dancer",
     "stats": "STR / FAI / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Giant's Red Braid & Clawmark Seal with Flame Dance.",
+    "playstyle": "A Strength/Faith Build that uses the Whip: Giant's Red Braid to great effect, while also slinging Fire Spells. Buff with Golden Vow and Flame, Grant Me Strength as needed to further boost your damage. The way this Build works is that you'll be wielding a Greatshield in order to Block Counter with your Whip. Whips have very long range so you can hit enemies easily with Block Counters, and you'll have a bigger opening due to the Greatshield.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -3620,7 +3620,7 @@ export const wikiBuilds: Build[] = [
     "name": "Flame Guardian",
     "stats": "STR / FAI / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 157 setup using Curved Great Club, Erdtree Seal with Flaming Strike.",
+    "playstyle": "Since the theme of this build is fire or flames, hence the name of the build being \"Flame Guardian\", there are specific items that are a must-have such as the Fire Scorpion Charm and Flame-Shrouding Cracked Tear making any fire-based skills or spells powerful. Specifically for this build, the primary flame spell it uses is the Flame of the Fell God because it summons this large orb of fire that detonates after some time. If timed correctly, executing a combo such as conjuring the spell, and then aggressively attacking the target with the Flaming Strike skill with normal attacks will apply significant damage after the orb detonates. The Flame Guardian build for Elden Ring features the Curved Great Club weapon or as one of the community members has pointed it to be \"Bonk, but in cursive\".",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 157",
@@ -3675,7 +3675,7 @@ export const wikiBuilds: Build[] = [
     "name": "Freezing Battlemage",
     "stats": "INT / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Lusat's Glintstone Staff & Carian Glintstone Staff with Contagious Fury.",
+    "playstyle": "A melee mage build that uses Carian Slicer and other Carian Sword Sorceries to their fullest! You'll use Adula's Moonblade for larger enemies that are hard to hit with Carian Slicer and for AoE groups, and the damage of this Spell and all Cold Sorceries is boosted by 10% because of the Snow Witch Hat. Carian Piercer is there for NPC invaders or actual invaders, as it has incredible hit boxes, and allows you to roll catch easily. The way this Build works is that you'll use Carian Slicer to its fullest by casting it with Lusat's Glintstone Staff and wielding Carian Glintstone Staff in the other hand or by using Contagious Fury from the Jellyfish Shield.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -3729,7 +3729,7 @@ export const wikiBuilds: Build[] = [
     "name": "Frenzied Acolyte",
     "stats": "FAI / ARC / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 100 setup using Dragon Communion Seal, Frenzied Flame Seal, Gravel Stone Seal, Godslayer's Seal & any melee Weapon that can take an Ash of War with Bloodhound's Step.",
+    "playstyle": "An Arcane/Faith Build that focuses on casting incantations from range, only meleeing when absolutely necessary. Black Flame is there when you don't need either of these to kill enemies, and will conserve some FP, as well as deal damage over time based on the Max HP of the target. Lightning Spear can be cast when Fire is not a good damage type. You'll buff with Golden Vow and Flame, Grant Me Strength as necessary. Often time you won't need these to one shot most enemies, but if you aren't killing most enemies in one cast then you'll want to use Golden Vow. Use Flame, Grant Me Strength for Boss encounters or tough enemies.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 100",
@@ -3783,7 +3783,7 @@ export const wikiBuilds: Build[] = [
     "name": "Frost Knight",
     "stats": "INT / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 100 setup using Clayman's Harpoon & any Staff with Ice Spear & Carian Retaliation.",
+    "playstyle": "The Frost Knight Build is a melee focused Build that uses the Ice Spear Ash of War to deal Magic Damage at range, and to set the Frostbite Status Effect reliably on enemies. This Build uses Ice Spear to add even more Magic Damage to the Clayman's Harpoon, and to range down enemies from a distance. It also sets the Frostbite Status Effect with enough hits, wiping out a chunk of enemy HP, increasing the damage they take, and reducing their Stamina recovery. Additionally, Ice Spear does tons of Stance damage at range, allowing you to break enemy stances easily, allowing for frequent critical attacks. When combined with Block Counters, that also do very high stance damage, you can soften enemies up as they approach and then finish them with Block Counters or stagger them and then finish them.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 100",
@@ -3836,7 +3836,7 @@ export const wikiBuilds: Build[] = [
     "name": "Frost Paladin",
     "stats": "STR / DEX / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Zamor Curved Sword & Clawmark Seal with Zamor Ice Storm.",
+    "playstyle": "The way this Build works is that you'll use the Zamor Curved Sword and its weapon skill Zamor Ice Storm to devastating effect. Zamor Ice Storm deals exclusively Magic Damage and sets Frostbite, despite the weapon having no Magic Damage itself, nor any Intelligence scaling. However, it deals very high damage, particularly when boosted by Shard of Alexander and Magic Scorpion Charm. Because you don't need to focus on your damaging stats (STR and DEX) as much, because they don't boost the damage of Zamor Ice Storm, this allows you to drop points into Faith to pick up other buffs like Golden Vow, which will further boosts you Zamor Ice Storm damage, which is great.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -3885,7 +3885,7 @@ export const wikiBuilds: Build[] = [
     "name": "Frost-Fu Monk",
     "stats": "STR / DEX / INT / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150+ setup using Dryleaf Arts with Divine Beast Frost Stomp.",
+    "playstyle": "Since the theme of this build is \"Frost\", it uses the Cold infusion and switched the skill from its default to the Divine Beast Frost Stomp. Imbuing the weapon with the Cold infusion is just about the same damage output that you get if you go for the Heavy infusion. Naturally, with the cold infusion, you'll get the frostbite buildup from using Divine Beast Frost Stomp plus more damage, and it can also make your targets flinch in the middle of your long combos. The Frost-Fu Monk build highlights a new weapon type, Hand-to-Hand Arts, specifically the Dryleaf Arts weapon. The weapon can be obtained as a drop after defeating Dryleaf Dane. Approach the NPC and use the May the Best Win gesture to trigger the boss fight.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150+",
@@ -3934,7 +3934,7 @@ export const wikiBuilds: Build[] = [
     "name": "Ghostblade",
     "stats": "STR / DEX / INT / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published all game setup using Death's Poker, Staff of Loss with Ghostflame Ignition.",
+    "playstyle": "Ghostblade is a quality build that utilizes Death's Poker and its unique weapon skill Ghostflame Ignition. This skill primarily scales with intelligence to heavy damage to targets. Ghostblade build is a quality build that relies on a Death's Poker to deal with normal attacks to its enemies and even burst down bosses with its unique skill, the Ghostflame Ignition. The way how this build behaves is the user will focus on using the Ghostflame Ignition as the main damage dealer to enemies. This skill can be utilized in two different ways, first after pressing R2, quickly pressing R1 will let the user cast a fire trail that continuously deals damage to enemies. The R1 variant of this skill is a great opener in boss fights or any other enemies since the target tries to close its distance to the user, it will already suffer damage over time from the flame trail and also build Frostbite.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from All Game",
@@ -3984,7 +3984,7 @@ export const wikiBuilds: Build[] = [
     "name": "Gladiator",
     "stats": "STR / DEX / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published all game setup using Highland Axe with Stamp (Upward Cut).",
+    "playstyle": "Gladiator is a strength build that utilizes a cold-infused Highland Axe and a Redmane Shield. Primarily scales with strength and heavily relies on Stamp (Upward Cut) to shell out damage and takes advantage of the hyper armor that it provides that can brace incoming damage. Leading to stance breaks and critical strikes. The Gladiator build is a straightforward but aggressive build that relies on cold-infused Highland Axe for damage.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from All Game",
@@ -4032,7 +4032,7 @@ export const wikiBuilds: Build[] = [
     "name": "Godslayer",
     "stats": "STR / DEX / FAI / VIG",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Godslayer's Greatsword & any Sacred Seal with The Queen's Black Flame.",
+    "playstyle": "A Dexterity/Faith/Strength Build that focuses exclusively on the use of Godslayer's Greatsword. The way this Build works is that you'll use The Queen's Black Flame to dispatch the toughest enemies and bosses in Elden Ring, while using R1 and R2 attacks on normal enemies. You'll buff with Golden Vow and Flame, Grant Me Strength as necessary to further boost damage when needed. The Queen's Black Flame has a rather long wind up making it hard to land without trading damage, which is why you will have high Poise from your Armor (over 100) ideally, which will allow you to shrug off even the hardest hitting attacks and still keep using this Skill.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -4083,7 +4083,7 @@ export const wikiBuilds: Build[] = [
     "name": "Gold Breaker",
     "stats": "STR / DEX / FAI / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published ng+ setup using Marika's Hammer with Gold Breaker, Golden Vow.",
+    "playstyle": "The Gold Breaker Build is an \"NG+\" build that utilizes Marika's Hammer, a weapon you acquire by trading the Elden Remembrance with Enia at Roundtable Hold after defeating the final boss in Elden Ring. Even though it was tempting not to create a build that focuses on the weapon, in practice that there is much more the hammer weapon can offer and this build has come up with a build that players can resort to if they want to use Marika's Hammer. Marika's Hammer is the primary equipment used for this build, although the weapon has holy damage (considered the worst damage type in general), it deals both Physical and Holy damage but most of it comes from Physical damage. It also has great scaling in terms of potential multiple playthroughs because the weapon scales with Strength, Dexterity, and Faith which are stats you would eventually improve to get more value out of the weapon.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from NG+",
@@ -4132,7 +4132,7 @@ export const wikiBuilds: Build[] = [
     "name": "Golden Champion",
     "stats": "DEX / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Ornamental Straight Sword & any Sacred Seal with Golden Tempering & Golden Parry.",
+    "playstyle": "A Dexterity-based tank build that can Block-Counter, Dual Wield and Parry all in one setup. Ornamental Straight Sword is actually a \"paired weapon\" allowing you to single hand or dual wield them by pressing Triangle + R1. The way this Build works is that you'll buff with Golden Tempering, increasing your Holy Damage and changing your R2 to a special flurry that hits repeatedly with both swords, even if only one is currently equipped. You can use Golden Vow as necessary as well to help with more difficult areas and bosses,",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -4183,7 +4183,7 @@ export const wikiBuilds: Build[] = [
     "name": "Golden Sword Sage",
     "stats": "INT / FAI / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Coded Sword, Sword of Night and Flame, and Golden Order Seal with Unblockable Blade & Barricade Shield.",
+    "playstyle": "A Faith/Intelligence Build that focuses on the use of Holy Damage and Golden Order Incantations. Triple Rings of Light is used to deal with enemies that dodge when you fling spells, like Black Knife Assassins, Bloodhound Knights, or Godskin Apostles. It deals slightly more damage than Discus of Light on average, but costs about 3x the FP, so avoid using it regularly. The way this Build works is that you'll be wielding the Coded Sword, which deals 100% Holy Damage and only scales with Faith.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -4239,7 +4239,7 @@ export const wikiBuilds: Build[] = [
     "name": "Goldeneye Bow",
     "stats": "DEX / FAI / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 100 setup using Erdtree Bow, Black Bow & Finger Seal with Mighty Shot & Barrage.",
+    "playstyle": "A purely ranged Bow Build that focuses on dealing Holy Damage and Bleed, while casting some Incantations. You'll use Barrage and quick shots with the Black Bow to set Hemorrhage on targets that are too hard to kill at range, or range is simply not an option using Blood Arrows. You can also pop on the Silver Tear Mask and use the Swarm of Flies spell to assist you here. The way this Build works is that you'll buff with Golden Vow and you'll use Golden Arrows to take down targets from a distance with your Erdtree Bow using Mighty Shot. Some fights you won't be able to stay far away and that's when you'll swap to your Black Bow. Blessing of the Erdtree is used to keep your HP at full so you gain extra damage and should be used before boss fights, or when you need to heal but aren't in immediate danger.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 100",
@@ -4292,7 +4292,7 @@ export const wikiBuilds: Build[] = [
     "name": "Gravity God",
     "stats": "STR / DEX / VIG",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Fallingstar Beast Jaw & any Sacred Seal with Gravity Bolt.",
+    "playstyle": "A melee build that uses a ranged weapon ability to stagger and deal fantastic damage while remaining safely. The way this Build works is that you'll buff with Golden Vow as you travel around using Gravity Bolt at will to destroy enemies before they can even attack you once. Because Gravity Bolt staggers most enemies in one cast, even if it doesn't kill them it will often disable them preventing them from reaching you. Gravity Bolt does mostly Physical Damage, which is great against just about every enemy type in the game, and the stagger it provides allows you to stun lock many difficult enemies and Bosses repeatedly from a safe distance.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -4342,7 +4342,7 @@ export const wikiBuilds: Build[] = [
     "name": "Gravity Sorcerer",
     "stats": "INT / FAI / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 156 setup using Carian Regal Scepter with No Skill.",
+    "playstyle": "Gravity Well is outperformed by Collapsing Stars, which deals about 40% more damage and is more FP efficient, making it the preferred choice. Meteorite of Astel is chosen over the regular Meteorite spell due to its higher damage output and faster summoning of meteors, despite its higher FP cost. This spell is particularly effective when used in combination with the Cerulean Hidden Tear, allowing for continuous casting without consuming FP. The first aspect to consider for a Gravity Sorcerer build is the choice of staff.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 156",
@@ -4394,7 +4394,7 @@ export const wikiBuilds: Build[] = [
     "name": "Grim Reaper",
     "stats": "STR / ARC / VIG",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Grave Scythe & Dragon Communion Seal with Stormcaller.",
+    "playstyle": "Poison Armament and Poison Mist are useful against Bleed Immune enemies, providing you an option in these cases. You can also use Mushroom Crown and Kindred of Rot's Exultation in these cases to keep your Attack Power high. The way this Build works is that you'll buff your Scythe with Bloodflame Blade and use Stormcaller to rapidly strike enemies or Bosses for high damage and decent Bleed Build Up. The Grave Scythe has native Bleed Build Up on hit, and when combined with Bloodflame Blade, this only becomes more effective.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -4448,7 +4448,7 @@ export const wikiBuilds: Build[] = [
     "name": "Guardian Golem",
     "stats": "STR / VIG / END",
     "role": "Published build",
-    "playstyle": "Published all game setup using Golem's Halberd with Royal Knight's Resolve.",
+    "playstyle": "A Strength build that focuses on the use of the Golem's Halberd for devastating damage. Royal Knight's Resolve is quite cheap FP wise, and buffs your next attack by 80%, which allows for your Charged R2s to hit like a truck, and also your Block Counters as well. Use this as often as needed, particularly in Boss fights to make them go faster. The way this Build works is that you'll two-hand the Golem's Halberd getting very high Attack Rating and you can use just about any attack with it effectively.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from All Game",
@@ -4496,7 +4496,7 @@ export const wikiBuilds: Build[] = [
     "name": "Haima Hoplite",
     "stats": "STR / INT / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published all game setup using Clayman's Harpoon, Academy Glintstone Staff with Repeating Thrust, Impaling Thrust.",
+    "playstyle": "Haima Hoplite is based on Strength and Intelligence stat attributes to utilize the Clayman's Harpoon's Physical and Magic damage. Paired with the Impaling Thrust and Repeating Thrust Ashes of War, this build can stance-break targets or even burst down bosses with highly damaging repeating thrusts. The Haima Hoplite build is a Strength and Intelligence build that relies on a Clayman's Harpoon to deal damage to targets. As mentioned, the user will rely on its physical and magic damage when dealing damage to targets. Using the Academy Glintstone Staff will let the user buff the Clayman Harpoon's Magic Damage by imbuing the weapon with Scholar's Armament. In this manner, Clayman Harpoon's repeating thrust can easily score high damage numbers due to added damage from the Scholar Armament.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from All Game",
@@ -4547,7 +4547,7 @@ export const wikiBuilds: Build[] = [
     "name": "Hellfire Herald",
     "stats": "FAI / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 100 setup using Iron Greatsword x2 with Royal Knight's Resolve x2.",
+    "playstyle": "A Dual-Wielding Greatsword Build that flattens enemies with Jump Attacks while using both Fire and Holy Damage. The way this Build works is that you'll use two Royal Knight's Resolves on two Iron Greatswords either setting them both Flame Art or both Sacred depending on the enemies you are facing. An Intelligence/Faith Build thas uses the Sword of Night and Flame to full effect, while also using both Sorceries and Incantations to dispatch enemies. Golden Vow increases your overall damage and defenses, allowing you to deal even more damage while becoming even tankier. Flame, Grant Me Strength allows you buff both your Fire and Physical Damage, and when you have two Flame Art infused Iron Greatswords that's a huge damage boost.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 100",
@@ -4599,7 +4599,7 @@ export const wikiBuilds: Build[] = [
     "name": "Howling Starfist",
     "stats": "DEX / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Star Fist, Highland Axe & Frenzied Flame Seal with Beast's roar.",
+    "playstyle": "A Dexterity Build that uses Fists to set Bleeding and to range down enemies with Beast's Roar. Charged R2 attacks are very good with the Star Fist because they deal exceptional stance damage, and also count as two-hits, dealing incredible damage and building up Bleed faster than some other Fist R2s. Use them when you can. The way this Build works is that you'll buff with Bloodflame Blade as necessary in order to add more Bleeding build up to your Star Fist, which you will be dual wielding. Attacking repeatedly will not only increase your Attack Power thanks to Rotten Winged Sword Insignia, but also because you will eventually trigger Hemorrhage, triggering White Mask and Lord of Blood's Exultation, further boosting Attack Power.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -4648,7 +4648,7 @@ export const wikiBuilds: Build[] = [
     "name": "Inquisitor",
     "stats": "STR / DEX / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Ghiza's Wheel with Contagious Fury.",
+    "playstyle": "A Quality (Strength/Dexterity) Build that focuses on the use of the Ghiza's Wheel Colossal Weapon for optimal damage. When the wheel spins after an R2 or charged R2, you'll often trigger Hemorrhage in one attack, which will trigger Lord of Blood's Exultation and White Mask if you're using it. This boosts your Attack Power even higher, and you'll often trigger Millicent's Prosthesis at the same time, getting even higher attack rating. Spinning Wheel does not trigger Hemorrhage easily, and does not trigger Winged Sword Insignia or Millicent's Prosthesis, so it's not particularly useful for tough enemies so this build does not use it often. Instead you'll use Jump Attack, buff with Contagious Fury to further boost your R2 damage, and use Charged R2s for even more damage and stagger.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -4696,7 +4696,7 @@ export const wikiBuilds: Build[] = [
     "name": "Knight Blade",
     "stats": "DEX / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150+ setup using Backhand Blade with Blind Spot.",
+    "playstyle": "The Knight Blade is a build that highlights a new weapon, the Backhand Blade. The weapon is not optimized for block countering due to its low guard boost, but it has a cool spinning attack that can attack multiple enemies at once if you manage to pull off a block counter. The weapon's attack chain covers a large AoE, making it excellent for clearing out groups of smaller enemies. Blind Spot allows you to sidestep an attack and strike from behind, with iFrames that let you dodge through attacks and reposition mid-combo.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150+",
@@ -4743,7 +4743,7 @@ export const wikiBuilds: Build[] = [
     "name": "Kung Fu Katarist",
     "stats": "FAI / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published all game setup using Katar, Erdtree Seal with Impaling Thrust.",
+    "playstyle": "The Kung Fu Katarist heavily relies on the weapon Katar, buffed with Electrify Armament to deal with lightning-imbued consecutive attacks and inflict high damage numbers. Since the Katar can do thrust damage, it can wield the Impaling Thrust Ashes of War to break enemy defenses and stances. The Kung Fu Katarist is a hyper-aggressive build that deals the majority of its damage by inflicting lightning-imbued consecutive attacks on targets. Users need to ensure to use the Electrify Armament before engaging in a fight to reach high damage potential. If the enemy is resistant to lightning attacks, on the other hand, the build is equipped with the following incantation, Bloodflame Blade and Order's Blade to be versatile in combat. In this manner, it will allow the user to use a different kind of element to buff the katar before engaging in combat.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from All Game",
@@ -4798,7 +4798,7 @@ export const wikiBuilds: Build[] = [
     "name": "Flying Mantis",
     "stats": "DEX / FAI / VIG / END",
     "role": "Published build",
-    "playstyle": "Published endgame / ng+ setup using Grave Scythe in main hand, Scythe in off-hand with Ash of War: Chilling Mist with Keen affinity on main hand, Ash of War: Hoarfrost Stomp with Frost affinity on offhand..",
+    "playstyle": "Jumping attack focused build with wide sweeps applying bleed and frostbite. Main method of attacking is the mid-air L1, which does a wide sweep with both scythes in a large arc, dealing both huge upfront damage and applying both frostbite and bleed. Chilling Mist doubles frost output, once frostbite is applied, switch to your sacred seal to cast Black Flame Blade, then jump back in and to reset the frostbite bar, doing additional health % damage from the Black Flame DoT. No block option, so stay mobile.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from Endgame / NG+",
@@ -4844,7 +4844,7 @@ export const wikiBuilds: Build[] = [
     "name": "Ghostflame Warrior",
     "stats": "STR / INT / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published endgame / ng+ setup using Helphen's Steeple, Academy Glintstone Staff (Optional) with Ruinous Ghostflame.",
+    "playstyle": "An RL150 build using the Helphen's Steeple and its weapon skill Ruinous Ghostflame to deal high Magic Damage and Frostbite. Use Ruinous Ghostflame for tougher Enemys and Bosses this weapon skill adds 110 Magic Damage and 80 Frostbite Buildup, Focus on Charged attacks for Stance breaks and high damage. The Helphen's Steeple is found in Mountaintops of the Giants dropped by a Tibia Mariner near Castle Sol (Elden Ring Map link) and the Academy Glintstone Staff is dropped by Glintstone Sorcerers found in Raya Lucaria Academy or found on Thops' body after his questline (Elden Ring Map link). The ghostflame adds magic damage to attacks, and also has a bitterly cold bite.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from Endgame / NG+",
@@ -4886,7 +4886,7 @@ export const wikiBuilds: Build[] = [
     "name": "Knight of Thorns",
     "stats": "INT / FAI / ARC / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published shadow of the erdtree setup using Ripple Blade with Wild Strikes.",
+    "playstyle": "Since this build takes place so late in the game, class doesn't really feel relevant for it, so use whichever you want. For flasks, use whatever you want, but it is recommended having at least 5 Cerulean flasks for consistent casting. It is recommended casting as close to an enemy as possible because according to the friend it's more effective that way. For weapons, it is recommended the Ripple Blade for its pure Arcane scaling, but you could use any Blood Loss weapon too.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from Shadow of the Erdtree",
@@ -4936,7 +4936,7 @@ export const wikiBuilds: Build[] = [
     "name": "Level 30 Poison/Bleed Wretch",
     "stats": "DEX / ARC / VIG",
     "role": "Published PvP build",
-    "playstyle": "Published 30 setup using Warhawk's Talon +2 (Left), Cane Sword +2 (Right), Reduvia +1 with Ash of War: Carian Retaliation (Shield), Ash of War: Poisonous Mist and/or Ash of War: Poison Moth Flight (Swords), Reduvia Blood Blade.",
+    "playstyle": "Strong but balanced low-level invasion build that uses Radagon's Soreseal, applies poison increasing its attack power, and uses Reduvia as a finisher. Both swords used can be replaced with your preference, as long as you can power stance and apply poison affinity to both. Starting off, power stance your straight swords. Power stancing is using each sword in a different hand, then executing attacks with L1 on controller; right click on PC.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 30",
@@ -4980,7 +4980,7 @@ export const wikiBuilds: Build[] = [
     "name": "Level 60 St. Trina's Confessor",
     "stats": "STR / DEX / INT / VIG / END",
     "role": "Published PvP build",
-    "playstyle": "Published 60 setup using Sword of St Trina +3, Sword of St Trina +3 (Off-hand), Death's Poker +3, Pulley Crossbow (Off-hand) +3 with Mists of Slumber (Sword of St. Trina), Ghostflame Ignition (Death's Poker).",
+    "playstyle": "The build revolves around applying sleep with the Sword of St Trina's power stance, with a Pulley Crossbow as off-hand, using Sleepbone Bolts for a close to medium range 3 shot sleep burst. Death's Poker is there for a stylish finisher or for higher poise targets, though it doesn't apply sleep but frostbite. To start off, power stance your Swords of St. Trina. Power stancing is using each sword in a different hand, then executing attacks with L1 on controller; right click on PC.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 60",
@@ -5027,7 +5027,7 @@ export const wikiBuilds: Build[] = [
     "name": "Lightning Dragoon",
     "stats": "STR / DEX / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Bolt of Gransax & Cleanrot Spear with Ancient Lightning Spear & Sacred Phalanx.",
+    "playstyle": "A Quality (Strength/Dexterity) melee build that uses the Bolt of Gransax and a Greatshield to electrifying effect You'll use Ancient Lightning Spear to pick off enemies at range as needed, particularly difficult enemies that can be killed quickly with it, or using it against Bosses when melee is not the best option. Ancient Lightning Spear hits much harder than the Lightning Spear Incantation, and costs about the same FP with this setup, and has much more range as well. The way this Build works is that you'll buff with Golden Vow and you'll Block Counter as necessary.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -5078,7 +5078,7 @@ export const wikiBuilds: Build[] = [
     "name": "Lightning Lancer",
     "stats": "STR / DEX / FAI / MND / END",
     "role": "Published build",
-    "playstyle": "Published 100 setup using Treespear & Clawmark Seal/Gravel Stone Seal with Sacred Order, Golden Vow, & Barricade Shield.",
+    "playstyle": "A tanky Faith Build that allow for the use of offensive and defensive Incantations while playing in melee. The Sword Sage is a combination of Intelligence and Faith, using the Sword of Night and Flame and Death Sorceries. The way this Build works is that you increase your Intelligence and Faith high enough to use Sword of Night and Flame and Ancient Death Rancor, which requires 34 Int and 24 Faith. You'll use Golden Vow, Electrify Armament and Blessing's Boon to buff before tough fights, like boss encounters. Golden Vow boosts your overall damage (including spells), as well as defenses. Electrify Armament buffs your Lighting Damage on your melee attacks by a lot, and Blessing's Boon heals you over time.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 100",
@@ -5124,7 +5124,7 @@ export const wikiBuilds: Build[] = [
     "name": "Mad King",
     "stats": "DEX / FAI / ARC / VIG",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Morgott's Cursed Sword, Dragon Communion Seal & Frenzied Flame Seal with Cursed-Blood Slice.",
+    "playstyle": "An Arcane/Faith/Dexterity Build that focuses on the use of Madness and Morgott's Cursed Sword. The way this Build works is that you'll use your high Arcane to build up Bleed and Madness quickly via attacks and spells. Swarm of Flies is a good opener on tough enemies that you can then use Cursed-Blood Slice against to set Hemorrhage, as well deal a good amount of damage. Unendurable Frenzy can be used in boss fights after popping the Cerulean Hidden Tear to melt Bosses in just a few seconds. Just hold the button down and stay out of range of the enemy's attacks and you're golden. Frenzied Burst is great for picking off enemies at long range when needed.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -5178,7 +5178,7 @@ export const wikiBuilds: Build[] = [
     "name": "Magic Archer",
     "stats": "STR / INT / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 50 setup using Horn Bow, Misbegotten Shortbow and Lazuli Glintstone Sword x2 with Rain of Arrows & Mighty Shot.",
+    "playstyle": "This Build focuses primarily on the use of the Horn Bow and Magic Arrows to deal solid damage at long distances with the Mighty Shot skill. Not only does the Horn Bow deal Magic Damage natively, but it also increases the damage you deal with Magic Arrows, making them the go to choice for this Build. You can use Rain of Arrows on your Shortbow in order to set status effects like Poison or Bleed on tough enemies, and it conserves more arrows than Barrage, but has a pretty high FP cost at 20. Archery skill performed from a low stance.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 50",
@@ -5220,7 +5220,7 @@ export const wikiBuilds: Build[] = [
     "name": "Magic Dragonknight",
     "stats": "ARC / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Ripple Blade & Dragon Communion Seal with Contagious Fury.",
+    "playstyle": "Smarag's Glintstone Breath is your go to Dragon Spell, as it deals a ton of damage, and outperforms Borealis's Mist in the majority of cases, except when enemies have huge HP pools, setting Frostbite may benefit you more here if you can't kill the Boss fast enough with Smarag's Glintstone Breath. Agheel's Flame is a nice Fire alternative to Smarag's Glintstone Breath, and you should use the Fire Scorpion Charm instead of Magic Scorpion Charm when using this one. Ezyke's Decay is good against tough enemies that you may need the Scarlet Rot status effect against, but it isn't always needed. Use the Cerulean Hidden Tear when beginning Boss fights to remove FP cost for 10 seconds, in order to nuke Bosses before they can even attack.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -5273,7 +5273,7 @@ export const wikiBuilds: Build[] = [
     "name": "Magma Blade",
     "stats": "STR / DEX / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 171 setup using Magma Blade with Magma Shower, Flame Spit.",
+    "playstyle": "The Magma Spitter build is introduced, centered around the Magma Blade—a weapon available in the base game rather than a DLC addition. The video emphasizes that while there are numerous builds utilizing this weapon online, this particular build incorporates new items to enhance its effectiveness, making it stand out. Another key component of the build is the Oil-Soaked Tear, which debuffs enemies by coating them in oil, making them more vulnerable to fire damage. This effect is especially potent when combined with the Flame-Shrouding Cracked Tear in the Flask of Wondrous Physick, further enhancing the fire damage output. The guide suggests using a single Magma Blade rather than dual-wielding, as the weapon skill utilizes only one blade, making dual-wielding unnecessary unless focusing solely on the dual-wield moveset.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 171",
@@ -5320,7 +5320,7 @@ export const wikiBuilds: Build[] = [
     "name": "Magus",
     "stats": "DEX / INT / VIG",
     "role": "Published build",
-    "playstyle": "Published 50 setup using Rapier with Ash of War: Glintblade Phalanx.",
+    "playstyle": "A melee-mage Build that uses Scholar's Armament and Glintstone Phalanx to deal Critical Damage to enemies. Use Glintstone Pebble to thin out enemies or to reach enemies you cannot get with melee attacks, or on horseback as necessary. Use Carian Greatsword when outnumbered or when on horseback to dispatch enemies easily. The way this Build works is that you'll buff your Rapier with Scholar's Armament and then hit L2 to use Glintstone Phalanx. Make sure you use the Keen version of this Ash of War or you won't be able to buff it! Glintstone Phalanx usually staggers enemies in one or two bursts, so be ready to deal Critical Damage with your Rapier which has a Critical Rating of 130 which is pretty damn good.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 50",
@@ -5366,7 +5366,7 @@ export const wikiBuilds: Build[] = [
     "name": "Maternal Mage",
     "stats": "INT / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 150+ setup using Carian Regal Scepter with No Skill.",
+    "playstyle": "Glintstone Nail will be your go-to ranged projectile spell that you'll often use. It does 100% magic damage, it has a bit of tracking, and it can be charged up for extra damage, pretty reliable to attack targets and killing them even before they know you're there. The next spell is Glintstone Nails, which is a multiple-projectile version of the Glintstone Nail. The fourth spell this build has is Cherishing Fingers.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150+",
@@ -5419,7 +5419,7 @@ export const wikiBuilds: Build[] = [
     "name": "Messmer Flame",
     "stats": "STR / FAI / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 165 setup using Fire Knight's Greatsword with Flame Skewer.",
+    "playstyle": "The Messmer Flame Build combines the Fire Knight Ash of War with the Fire Knight's Greatsword and several Messmer Flame spells from the DLC. Fire Knight's Greatsword is a Colossal Sword with a high attack rating. It has been infused with the Flame Spear Ash of War set to Flame Art infusion, resulting in a weapon that deals significant fire damage. The Flame-Shrouding Cracked Tear is used to boost fire damage and the Oil-Soaked Tear to debuff enemies, making them take increased fire damage when near the player. This is particularly effective in close-range combat.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 165",
@@ -5469,7 +5469,7 @@ export const wikiBuilds: Build[] = [
     "name": "Meteor Mage",
     "stats": "INT / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Carian Regal Scepter, Meteorite Staff, & Frenzied Flame Seal with Spinning Weapon.",
+    "playstyle": "An Intelligence Mage Build that uses Gravity Sorceries that deal both Physical and Magic Damage to cataclysmic effect. The way this Build works is that you'll hold the Meteorite Staff in your left hand in order to give you a passive increase to Gravity Sorcery damage (+30%). You'll then cast with the Carian Regal Scepter in your right hand because it has better Sorcery Scaling at higher Intelligence levels. Rock Sling is there when you need Physical Damage, or are trying to stagger a Boss. It's hard to use in close quarters so it's very situational.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -5522,7 +5522,7 @@ export const wikiBuilds: Build[] = [
     "name": "Meteoric Marauder",
     "stats": "STR / ARC / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 164 setup using Ancient Meteoric Ore Greatsword with White Light Charge.",
+    "playstyle": "The weapon skill, White Light Charge, charges you forward in a line for 10 FP, thrusting into the target for modest damage. While the initial damage isn't very high, the follow-up detonation deals significant damage in a small AOE. This skill is an excellent gap closer, particularly useful against bosses that move quickly or have combo attacks that end behind you. The Meteoric Marauder build for Elden Ring's Shadow of the Erdtree DLC centers around the Ancient Meteoric Ore Greatsword, obtainable from the Ruined Forge of Starfall Past without encountering a boss, making it easily accessible. This build features a 'bonk' weapon, emphasizing strength and arcane attributes. The Ancient Meteoric Ore Sword scales predominantly with these attributes, offering a high attack rating that deals both physical and magic damage, a rare combination in Elden Ring.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 164",
@@ -5570,7 +5570,7 @@ export const wikiBuilds: Build[] = [
     "name": "Moonlight Crusader",
     "stats": "INT / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Dark Moon Greatsword & Carian Regal Scepter with Moonlight Greatsword.",
+    "playstyle": "An Intelligence Build that uses the Dark Moon Greatsword and spells to range down enemies from a distance. Terra Magica boosts all Magic Damage when standing inside its area of effect, so this includes Moonlight Greatsword and any melee attacks you do while inside it, since the Greatsword does some Magic Damage as well. Use this to boost your damage when needed. The way this Build works is that you'll be using the Moonlight Greatsword ability of the Dark Moon Greatsword to change the R2 attack into a wave that can stagger enemies at range when fully charged. This wave deals 100% Magic Damage, which is why this build raises Intelligence very high, even though the Greatsword can scale with other stats. Casting Greatblade Phalanx and then hitting with a fully-charged wave from Moonlight Greatsword will stagger most enemies and some Bosses.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -5622,7 +5622,7 @@ export const wikiBuilds: Build[] = [
     "name": "Moonveil Resurrected",
     "stats": "DEX / INT / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 160+ setup using Moonveil with Transient Moonlight.",
+    "playstyle": "Though previously affected by several nerfs, Moonveil's weapon skill, Transient Moonlight, has now regained its potency, making it an excellent choice for dealing massive damage. This build takes advantage of these improvements, shifting away from relying on stance breaks and instead focusing on pure damage output through the weapon skill. The key to this build lies in the use of Transient Moonlight, which fires waves of magic that vary in damage depending on whether the horizontal or vertical slash is used. In terms of armor, the build features a mix of the Okina Mask, two pieces of the Nox Swordstress Set, and the All-Knowing Gauntlets, reaching 51 Poise with the help of the Bull-Goat's Talisman.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 160+",
@@ -5669,7 +5669,7 @@ export const wikiBuilds: Build[] = [
     "name": "Moonveil Samurai",
     "stats": "DEX / INT / VIG",
     "role": "Published build",
-    "playstyle": "Published 50 setup using Moonveil with Transient Moonlight.",
+    "playstyle": "A melee-mage Build that uses Transient Moonlight to stagger enemies and deal critical damage. Use Loretta's Greatbow to take out difficult enemies at range, and use Glintstone Pebble to do the same when they aren't quite as far away. The way this Build works is that you use Transient Moonlight with R2 instead of R1 to stagger enemies and then critically strike them. Using the Assassin's Cerulean Dagger and Carian Filigreed Crest recovers the cost of using Transient Moonlight so that you never run out of FP.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 50",
@@ -5715,7 +5715,7 @@ export const wikiBuilds: Build[] = [
     "name": "Moonveil Shinobi",
     "stats": "DEX / INT / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 100 setup using Moonveil, Uchigatana and any Staff with Transient Moonlight & Glinstone Phalanx.",
+    "playstyle": "A melee-mage Build that uses Transient Moonlight and Glintstone Phalanx to stagger enemies and to set both Hemorrhage and Frostbite on them. You'll move to melee range using L2 and R2 to use Transient Moonlight, staggering enemies with the combination of both the Phalanx and Moonveil as they hit at roughly the same time. Make sure to Critically Strike enemies you stagger to regain FP if they are not Bosses, since you likely won't need to spam dual wield attacks to finish them off. Sheathe blade, holding it at the hip in a composed stance.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 100",
@@ -5766,7 +5766,7 @@ export const wikiBuilds: Build[] = [
     "name": "Nebula Knight",
     "stats": "DEX / INT / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Wing of Astel and any Staff with Nebula.",
+    "playstyle": "A Dexterity/Intelligence Build that uses the Wing of Astel to great effect by capitalizing on its weapon skill Nebula. Nebula is really your go to for Boss encounters, and it shoots out star clusters in front of you that explode dealing Magic Damage. You can cast Nebula and then follow up with a Charged R2 for great stagger damage, or just spam Nebula. The Nebula Knight Build uses a combination of Block Counters and the weapon skill of Wing of Astel: Nebula to handle any situation effectively.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -5817,7 +5817,7 @@ export const wikiBuilds: Build[] = [
     "name": "Nightclaw",
     "stats": "DEX / INT / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 168 setup using Claws of Night with Scattershot Throw.",
+    "playstyle": "The \"Nightclaw\" build is centered around the new DLC weapon, the Claws of Night. This claw weapon stands out as a unique and powerful tool in the player's arsenal. Not only is it a dexterity-scaling weapon, but it also deals both physical and magic damage—an unusual combination that sets it apart from most other weapons in the game. Malenia's Great Rune can also be effective, providing health regeneration upon taking damage, which synergizes with the build's aggressive playstyle.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 168",
@@ -5864,7 +5864,7 @@ export const wikiBuilds: Build[] = [
     "name": "Noble Swordsman",
     "stats": "STR / DEX / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published all game setup using Noble's Slender Sword with Square Off.",
+    "playstyle": "The Noble Swordsman Build is Dexterity build and an essential \"all-game\" build that players can use throughout the entirety of the game. This build uses a single straight sword, it does not come equipped with any other weapon or shield, and it is phenomenal for stance-breaking and critical attacks. To make this build work, first off, you need to acquire a straight sword, and these weapons are either the Noble's Slender Sword or Lordsworn's Straight Sword weapon. A few other notes to highlight is that this build is versatile, you can use \"Grease\" items to coat and buff your weapon with different elements depending on the weakness of the enemy or boss you are fighting. Also, you may want to stack up with the Exalted Flesh which temporarily boosts the Physical Attack.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from All Game",
@@ -5912,7 +5912,7 @@ export const wikiBuilds: Build[] = [
     "name": "Paladin",
     "stats": "STR / FAI / VIG / END",
     "role": "Published build",
-    "playstyle": "Published beginner setup using Any one-handed and a Sacred Seal with Ash of War: Barricade Shield & Ash of War: Golden Vow.",
+    "playstyle": "A tanky healer who can buff and defend allies, allowing them to take the brunt of blows while their team burns things down. Before engaging in combat you'll summon your Spirit Ashes and then buff you and them with Golden Vow to increase damage and defenses. Use Barricade Shield when facing Bosses or tough enemies to be able to tank while your summons or companions burn enemies down. Boosting Faith will also increase your damage and healing/buffs so prioritize this over Strength, and only use Strength to meet weapon and shield requirements.",
     "complexity": "Published guide",
     "phases": {
       "early": "Any one-handed and a Sacred Seal",
@@ -5957,7 +5957,7 @@ export const wikiBuilds: Build[] = [
     "name": "Perfect Paladin",
     "stats": "STR / FAI / VIG / END",
     "role": "Published build",
-    "playstyle": "Published all levels setup using Miquellan Knight's Sword & Clawmark Seal with Sacred Blade.",
+    "playstyle": "A Strength/Faith Build that focuses on the use of Block Counters and buffs to slash enemies to pieces. Sacred Blade is exceptional since patch 1.07 and using it point blank will both deal damage with the weapon and the holy wave, making it deadly up close. It also buffs your weapon for more damage and for longer, allowing you to get more out of it even after you've used it. Use this periodically to rebuff your weapon and when you need a ranged attack.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from All Levels",
@@ -6009,7 +6009,7 @@ export const wikiBuilds: Build[] = [
     "name": "Piercing Paladin",
     "stats": "DEX / FAI / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 161 setup using Leda's Sword with Needle Piercer.",
+    "playstyle": "Leda's Sword primarily deals physical damage, with a bit of holy damage, and scales mostly with dexterity, though it also has some strength and faith scaling. The weapon skill, Needle Piercer, also does a mix of physical and holy damage, with the majority being physical. To maximize damage, you'll want to increase dexterity and bring faith up to 25 to use incantations like Golden Vow and Flame, Grant Me Strength, which significantly enhance the weapon and skill's performance. Leda's Sword features an excellent move set, perfect for chaining attacks and building up attack power through successive hits.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 161",
@@ -6058,7 +6058,7 @@ export const wikiBuilds: Build[] = [
     "name": "Pyromancer",
     "stats": "FAI / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Erdtree Seal & Giant's Seal with No Skill.",
+    "playstyle": "A Faith spellcaster Build that only uses Fire Magic to burn enemies to a crisp. Giantsflame Take This is your Boss killer and is useful against tough enemies and tightly packed groups. It's expensive so don't use it all the time, just when you need it. You'll use Golden Vow to buff yourself, increasing your spell damage as well as defenses, and you can use Flame, Grant Me Strength for tougher fights and Bosses. Is a Dragon killer, and is very effective against enemies you can get under, or that are very large in size, since each column can hit for very good damage. Flame of the Fell God works well as a setup spell cast before you aggro a tough enemy or at the beginning of a Boss fight when it's closing the distance to you.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -6112,7 +6112,7 @@ export const wikiBuilds: Build[] = [
     "name": "Pyromancer Perfumer",
     "stats": "DEX / FAI / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 150+ setup using Firespark Perfume Bottle, Golden Order Seal with Quickstep or Bloodhound's Step.",
+    "playstyle": "However, it makes such a difference when you dual wield this weapon, this way, your character will attack with both hands and it triggers this cool cross-pattern animation, allowing for more damage. The charged heavy attack is even mind-blowing to use, it will make the character do this twirling move and scatter this delayed AOE attack of flames. And even if it's delayed, you can cast this early, and by the time an enemy approaches you, it detonates, damaging and even making them flinch, allowing for follow-up attacks or even using another charged heavy attack. The Pyromancer Perfumer build for Elden Ring's Shadow of the Erdtree showcases the new weapon type, Perfume Bottles, and This build uses the Firespark Perfume Bottle.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150+",
@@ -6163,7 +6163,7 @@ export const wikiBuilds: Build[] = [
     "name": "Red Lightning",
     "stats": "FAI / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Erdtree Seal & Gravel Stone Seal with No Skill.",
+    "playstyle": "A Faith Build that focuses on the use of Dragon Cult Incantations that deal Lightning Damage. The way this Build works is that you'll only be casting Incantations for your damage, and all of these Spells deal Lightning Damage. You can of course sub in other spells against Lightning Resistant enemies, but Lightning in general is a pretty good damage type. Lansseax's Glaive does like a sweet in front of you of Red Lightning and it deals damage in an AoE behind that.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -6217,7 +6217,7 @@ export const wikiBuilds: Build[] = [
     "name": "Red Rogue",
     "stats": "DEX / ARC / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 150+ setup using Reduvia with Reduvia Blood Blade.",
+    "playstyle": "The Red Rogue build for Elden Ring features the Reduvia dagger weapon, it is recommended to if you are starting your journey for the first time or a New Game Plus, choose the Bandit class at it can utilize this weapon from the get-go upon obtaining the weapon, the class will also have met all the stat requirements of the Reduvia Dagger. This is a simple and straightforward build that will work in the Shadow of the Erdtree expansion because of how much Bleed build-up it can apply to the enemies. To boost the damage of this weapon and other factors such as a faster build-up of the Bleed status effect and the effectiveness of the weapon's skill, this build has added tons of points to Arcane, which is a must to work. Ideally, you want to have something that provides you with at least 51 Poise so that you can trade hits.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150+",
@@ -6265,7 +6265,7 @@ export const wikiBuilds: Build[] = [
     "name": "Rime Ronin",
     "stats": "DEX / INT / VIG",
     "role": "Published build",
-    "playstyle": "Published all game setup using Nagakiba & Black Bow with Chilling Mist.",
+    "playstyle": "The second use is by using Cold Bone Arrows to help set the Frostbite Status Effect at range, either after you've stripped it off or leading with it in a fight to get some Frostbite built up before you use Chilling Mist. The way this Build works is that you'll lead off with Chilling Mist, using it to set the Frostbite Status Effect on your target, while simultaneously buffing your Cold Nagakiba with even more Frostbite Build up. Frostbite will allow you to deal more damage to your target, while ripping off 10% of the targets max HP. You can use the Black Bow in 2 ways.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from All Game",
@@ -6312,7 +6312,7 @@ export const wikiBuilds: Build[] = [
     "name": "Royal Knight",
     "stats": "STR / INT / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Royal Greatsword & Clayman's Harpoon with Wolf's Assault & Ice Spear.",
+    "playstyle": "Wolf's Assault does devastating damage if you can land the first hit, and the AoE will often one shot groups of enemies, and both of these hits build up Frostbite, though the normal weapon attacks of the Royal Greatsword do not. You can swap to the Clayman's Harpoon, using the Cold version for better Strength scaling, and to help set the Frostbite status effect more easily. You'll use Ice Spear with it to range enemies when needed, using to Stance Break enemies by filling their stagger meter now and then. The way this Build works is that you'll swap between using the Royal Greatsword and Clayman's Harpoon depending on the circumstances, while Blocking with your Eclipse Greatshield and using Guard Counters for massive damage and Critical Attacks.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -6362,7 +6362,7 @@ export const wikiBuilds: Build[] = [
     "name": "Samurai",
     "stats": "DEX / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published beginner setup using Uchigatana and Longbow with Ash of War: Unsheathe & Ash of War: Mighty Shot.",
+    "playstyle": "This Build plays just like a Samurai by picking off targets with your Long Bow, using Mighty Shot to deal increased damage when needed. Swapping to Uchigatana when enemies close the distance to you, using Unsheathe to deal incredible damage. Unsheathe is not only fast, it deals high damage, and gap closes all in one rapid motion for minimal FP cost. A melee-mage Build that uses Transient Moonlight to stagger enemies and deal critical damage. The way this Build works is that you use Transient Moonlight with R2 instead of R1 to stagger enemies and then critically strike them. Using the Assassin's Cerulean Dagger and Carian Filigreed Crest recovers the cost of using Transient Moonlight so that you never run out of FP.",
     "complexity": "Published guide",
     "phases": {
       "early": "Uchigatana and Longbow",
@@ -6404,7 +6404,7 @@ export const wikiBuilds: Build[] = [
     "name": "Samurai Sniper",
     "stats": "DEX / FAI / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 150+ setup using Albinauric Bow, Nagakiba, Erdtree Seal with Lightning Slash, Mighty Shot.",
+    "playstyle": "The Albinauric Bow is the bow weapon this build uses because out of all the bows, the Albinauric Bow scales best in Dexterity, which is something that is best paired with Lightning Arrows to deal significant damage. The Samurai Sniper build utilizes the Albinauric Bow and the Lightning Nagakiba weapon, and this build is something anyone can try and use for exploration purposes, especially, when you start your journey in Shadow of the Erdtree. The ash of war or skill that is used on this build is Lightning Slash, a skill that calls down a bolt of lightning into the weapon and creates an explosive shock upon swinging the weapon. After a period of time, the lightning effect will remain on the weapon, allowing the player to deal lightning damage.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150+",
@@ -6454,7 +6454,7 @@ export const wikiBuilds: Build[] = [
     "name": "Sanguine Samurai",
     "stats": "DEX / ARC / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Rivers of Blood, Sacrificial Axe, and Dragon Communion Seal with Corpse Piler.",
+    "playstyle": "You'll use Rivers of Blood as your \"default\" attack, because this build raises the cost of it via Carian Filigreed Crest, and give you FP back with Sacrificial Axe. This combined with 30 or so Mind allows you to pretty much use it at will, as long as you have a few FP flasks. If you manage to acquire Millicent's Prosthesis and Rotten Sword Insignia you can actually use both, but you will need someone to drop you one or the other. The way this Build works is that you will carry Rivers of Blood in your right hand, and use Sacrificial Axe and Dragon Communion Seal in your left.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -6504,7 +6504,7 @@ export const wikiBuilds: Build[] = [
     "name": "Sanguine Spellblade",
     "stats": "INT / FAI / ARC / VIG",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Albinauric Staff, Dragon Communion Seal, Staff of the Guilty & Rogier's Rapier with Seppuku.",
+    "playstyle": "An Arcane/Intelligence Build that focuses on the use of Thorn Sorceries to make enemies bleed at range. The way this Build works is that you'll use Seppuku on your Rapier to add to its Bleed Infused Build Up, and also trigger Lord of Blood's Exultation on yourself. This will boost your sorcery damage, so that you can one shot most enemies with Briars of Punishment. You can buff also with Golden Vow if you need more damage, and you can use Blessing of the Erdtree if you find you are taking too much damage from your own spells, though Taker's Cameo should offset this in most cases. Be sure to use Terra Magica when starting boss fights for increased damage, and use Roger's Rapier to melee enemies that get close to you re-triggering Lord of Blood's Exultation.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -6558,7 +6558,7 @@ export const wikiBuilds: Build[] = [
     "name": "Savage Slasher",
     "stats": "ARC / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 150+ setup using Great Katana with Savage Lion's Claw, Overhead Stance.",
+    "playstyle": "What's great about this weapon is it has a hybrid set of moves of a curved sword and katana that has better poise damage and reach when you're using certain movements such as a jump attack or a running-dash attack. The default skill of this weapon is Overhead Stance, a move that allows the character to switch their posture into this samurai pose, bringing the weapon over their head. And by pressing the R2 button executes a triple slash, while R1 will make the character attack with a single forward slash. Unfortunately, the set itself does not have the recommended number of Poise, however, you can still make it work by pairing a specific talisman to this build.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150+",
@@ -6606,7 +6606,7 @@ export const wikiBuilds: Build[] = [
     "name": "Scarlet Spear",
     "stats": "DEX / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Rotten Crystal Spear x2 with Charge Forth & Viper Bite.",
+    "playstyle": "A Dexterity Build that focuses on the use of dual spears and the Scarlet Rot and Poison status effects. The way this Build works is that you'll use dual wield two Rotten Crystal Spears to not only apply Scarlet Rot, but also build up your Attack Power quickly via very fast L1 attacks thanks to the Winged Sword Insignia and Millicent's Prosthesis. Dual Spear attacks are some of the fastest in Elden Ring, and they attack faster than many R1 attacks of other weapons. Additionally, Spears deal Thrust Damage which deals increased damage to enemies in the forward motion of their attack (called Counter Damage).",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -6653,7 +6653,7 @@ export const wikiBuilds: Build[] = [
     "name": "Scorching Slayer",
     "stats": "STR / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 100 setup using Gargoyle's Twinblade & any Sacred Seal with Flame of the Redmanes.",
+    "playstyle": "A melee focused build that uses Flames of the Redmanes to stagger enemies and bring them to their knees. The way this Build works is that you'll buff with Bloodflame Blade to increase your damage and to help set Hemorrhage on enemies. Despite the fact this weapon has no native Bleed Buildup, it can still do so somewhat effectively due to the speed at which it attacks. Additionally, when Flames of the Redmanes is cast while Bloodflame Blade is active, you will also apply this to enemies as well.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 100",
@@ -6704,7 +6704,7 @@ export const wikiBuilds: Build[] = [
     "name": "Serpent Samurai",
     "stats": "DEX / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Serpentbone Blade & Uchigatana (or Wakizashi) with Double Slash, Poison Moth Flight & Parry.",
+    "playstyle": "A Dexterity Build that uses poison to great effect using the Serpentbone Blade and the Uchigatana. The way this Build works is that you'll be dual wielding the Serpentbone Blade and Uchigatana (or Wakizashi) most of the time, using L1 for dual wield combos when you want, or L2 for Double Slash if you need it. The idea is to set the Poison Status effect using a Poison infused Uchigatana and Serpentbone Blade to boost Attack Power, as well as striking repeatedly to boost Attack Power, to crank out high damage per strike. It works well to single hand the Serpentbone Blade when facing difficult enemies that don't stagger easily in order to use the Charged R2 attacks, which usually stagger them in two uses, often finishing them off quickly. Because you have high Poise, you can often swing through at least one attack from them.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -6751,7 +6751,7 @@ export const wikiBuilds: Build[] = [
     "name": "Shadow Sunflower Blossom",
     "stats": "STR / FAI / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 160+ setup using Shadow Sunflower Blossom with Shadow Sunflower Headbutt.",
+    "playstyle": "A build that utilizes the Shadow Sunflower Blossom to deal heavy damage against enemies and bosses. The Sunflower Smasher build in Elden Ring focuses on using the Shadow Sunflower Blossom, a colossal hammer obtained by defeating the Scadu Tree Avatar and exchanging its remembrance at the Roundtable Hold. This colossal weapon excels at stance damage, making it ideal for breaking enemy poise. The Holy-Shrouding Cracked Tear is used to boost holy damage, while the Stonebarb Cracked Tear helps with stance breaking in boss fights. Several Great Runes are viable, including Radahn's Great Rune for FP, stamina, and health boosts, Malenia's Great Rune for health regeneration when trading damage, or Morgott's Great Rune for increased health.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 160+",
@@ -6803,7 +6803,7 @@ export const wikiBuilds: Build[] = [
     "name": "Shadowblade",
     "stats": "DEX / ARC / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 150+ setup using Smithscript Dagger with Scattershot Throw, Piercing Throw.",
+    "playstyle": "In the Shadow of the Erdtree DLC, the Shadow Blade build focuses on using the Smithscript Dagger, a unique throwing blade that allows for ranged attacks with every strike, whether it's a running attack, jumping attack, or heavy attack. Despite its long-range capability, the Smithscript Dagger has lower damage output, requiring multiple attacks to deal significant damage. Players will find that, although the weapon provides range, enemies often close the distance quickly, making it essential to learn how to maintain effective spacing during combat. Dexterity with Piercing Throw is ideal for exploration and dealing with elite enemies, while the blood setup with Scattershot Throw excels in situations requiring rapid bleed buildup.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150+",
@@ -6852,7 +6852,7 @@ export const wikiBuilds: Build[] = [
     "name": "Silent Spearcaller",
     "stats": "INT / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Death Ritual Spear, Carian Regal Scepter & Staff of Loss with Spearcall Ritual.",
+    "playstyle": "A stealth melee build that uses the Death Ritual Spear to range down targets or stab them to death up close. This typically allows you another backstab, if you did one already, or to kill them using one of the afore mentioned Spells or abilities. The way this Build works is that you'll buff yourself with Unseen Form, making you hard to see vs enemies. You can then cast Night Shard, Night Comet or simply use Spearcall Ritual or backstab if you can get close enough. During Boss fights you won't be able to hide, so you'll need to drop Terra Magica and try to spam Spearcall Ritual as much as possible, or case Night Comet if more prudent.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -6904,7 +6904,7 @@ export const wikiBuilds: Build[] = [
     "name": "Slumbering Swordstress",
     "stats": "STR / DEX / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Sword of St. Trina x2 with Mists of Slumber.",
+    "playstyle": "A Quality (Strength/Dexterity) Build that uses Sleep to dispatch enemies very quickly. The way this Build works is that you'll use two Sword of St. Trina to dual wield attack enemies and set them asleep quickly while fighting them. Dual Wield attacks hit more rapidly than single attacks, allowing you to build up enemy Sleep bars much more quickly. You can use Mists of Slumber to begin the fight, often putting enemies to sleep quickly, but if not your right hand weapon will be buffed with more Sleep build up. This will allow you to put the enemy to sleep more easily with follow up attacks.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -6951,7 +6951,7 @@ export const wikiBuilds: Build[] = [
     "name": "Sorcerer",
     "stats": "DEX / INT / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published endgame / ng+ setup using Meteorite Staff with Determination.",
+    "playstyle": "It can no longer be used to increase the damage of sorceries or incantations. An advancement of the Mage Build showcasing what to use next and where to go in terms of a caster only type of Build around level 50 or so. Glintstone Pebble will be your bread and butter to pick off enemies through out levels, and even works well against some Bosses because of its long range. Acquiring the Meteorite Staff will greatly increase your damage, and you'll be using this staff until much higher Intelligence levels.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from Endgame / NG+",
@@ -6999,7 +6999,7 @@ export const wikiBuilds: Build[] = [
     "name": "Sorcery Sentinel",
     "stats": "STR / DEX / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Watchdog's Staff & any Sacred Seal with Sorcery of the Crozier.",
+    "playstyle": "A Quality Build (Strength/Dexterity) that deals solid melee damage, and can eliminate enemies at range with magic damage. The way this Build works is that you'll use Jump Attacks and regular attacks with the Watchdog's Staff to defeat enemies or break their Stance and then Critically Strike them. You'll have high Physical Strike Damage with this Build, which is one of the best damage types to have.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -7049,7 +7049,7 @@ export const wikiBuilds: Build[] = [
     "name": "Soul Samurai",
     "stats": "DEX / INT / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Nagakiba & Academy Glintstone Staff with Double Slash.",
+    "playstyle": "The way this Build works is that you'll use Unseen Form and the Black Knife Set to sneak up on enemies getting easy backstabs and attacks. You can use Greatblade Phalanx when you know enemies are going to come at you, and cast Freezing Mist on tough enemies and Bosses to soften up their defenses via the Frostbite status effect. Loretta's Greatbow is useful for situations where you need some long range or things will be markedly more difficult, and you can use Carian Retaliation to parry projectiles, which is great. Cast Founding Rain of Stars at the beginning of Boss fights when they start to come at you, and try to fight around the AoE it creates for best results. Try to dodge and use Double Slash while they are still in the AoE of FRoS. Scholar's Armament is your buff to really boost your damage over the top of a magic infused or cold infused Nagakiba.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -7106,7 +7106,7 @@ export const wikiBuilds: Build[] = [
     "name": "Spellblade",
     "stats": "DEX / INT / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published endgame / ng+ setup using Demi-Human Queen's Staff and Estoc with Ash of War: Impaling Thrust.",
+    "playstyle": "A melee-focused Mage Build that uses magic to enhance and deal damage up close to enemies. The way this Build works is that you'll buff your Rapier or Estoc with Scholar's Armament to double your melee damage or so early on, allowing you to one or two shot most enemies. Make sure that you have both your Staff and Weapon out at the same time or you won't be able to buff it. You can use Glintstone Pebble to thin enemies when their are many to prevent yourself from being swarmed, and also to hit enemies that you can't get to physically.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from Endgame / NG+",
@@ -7152,7 +7152,7 @@ export const wikiBuilds: Build[] = [
     "name": "Spellsword",
     "stats": "STR / INT / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published all game setup using Claymore x1, Academy Glintstone Staff with Glintblade Phalanx.",
+    "playstyle": "Primarily scales with strength and intelligence and heavily relies on periodic stance-breaking and critical hits. On the other hand, since this build involves Academy Glintstone Staff and having 50 intelligence, you do have options to add more spells but consider keeping it to a minimum so you can maximize the original build setup of the Spellblade. Spellblade build is an aggressive build that relies on a Claymore to deal major damage to its enemy. Follow up with Academy Glintstone Staff that further boosts overall damage by buffing Claymore with Scholar Armament. Glintblade Phalanx on the other hand is a great addition to the Spellblade's repertoire as it further enhances the stance-breaking capabilities of the build.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from All Game",
@@ -7202,7 +7202,7 @@ export const wikiBuilds: Build[] = [
     "name": "Spellthief",
     "stats": "DEX / INT / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 150+ setup using Glintstone Kris with Glintstone Dart, Carian Retaliation.",
+    "playstyle": "The Spellthief build features the Glintstone Kris dagger, although the weapon itself doesn't feature anything major, however, it has a 110 Critical Rating which is average for a dagger weapon, it has decent damage, it's a light weapon, and comes with a unique weapon skill, the Glintstone Dart that works similarly to a sorcery spell, Glintstone Pebble. The difference with Glintstone Dart is after casting the dart, you can follow up with a thrusting attack which is completely optional. What's great about this is you can poke enemies from afar, potentially spamming the dart, but in some cases, if an enemy tries to close in, you can immediately use the thrusting attack for that advantage. The build comes with a shield and this build uses the Carian Knight's Shield, not only does it fit the theme but it's something it is recommended to since the build has high Intelligence.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150+",
@@ -7250,7 +7250,7 @@ export const wikiBuilds: Build[] = [
     "name": "Star-Lined Samurai",
     "stats": "DEX / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 151 setup using Star-Lined Sword with Onze's Line of Stars.",
+    "playstyle": "One of the features of the Star-Lined Sword's weapon skill, Onze's Line of Stars, is its effectiveness in cleaving through multiple enemies. This skill provides longer reach than the sword itself, allowing you to strike targets that would normally be out of range. Mastering this weapon involves learning to judge when to use a single press of L2 for that extended reach and when to rely on regular attacks. The Star-Lined Sword stands out due to its dual damage type, dealing both physical and magic damage.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 151",
@@ -7297,7 +7297,7 @@ export const wikiBuilds: Build[] = [
     "name": "Level 75 Sanguine Lightning Assassin",
     "stats": "STR / DEX / END",
     "role": "Published PvP build",
-    "playstyle": "Published 75 setup using Bolt of Gransax, Dragon King's Cragblade with Ancient Lightning Spear, Thundercloud Form, Bloodhound's Step, Beast's Roar.",
+    "playstyle": "Medium level invasion build with emphasis on high damage output from stealth. Designed to combat multiple Furled Finger/Hunter enemies by taking out the host in a single, powerful attack. Be prepared to use the Flask of Wondrous Physick. A lot of hosts in this level range will go down in a single hit, however if they have either obtained or been given higher level gear, you will need to buff with the FoWP. If they have any Great Runes equipped, a gold circle icon will appear next to their health bar, ALWAYS assume it's Godrick's Great Rune and use the FoWP to get the increase in damage, you will need it.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 75",
@@ -7344,7 +7344,7 @@ export const wikiBuilds: Build[] = [
     "name": "Level 80/90 Sorcerer Duelist",
     "stats": "STR / INT / VIG",
     "role": "Published PvP build",
-    "playstyle": "Published 80 setup using Azur's Glintstone Staff with Optional parry/quickstep etc.. The source's obsolete chain-casting note is not used.",
+    "playstyle": "Carian Slicer has amazing damage and will stagger anyone with 30 or lower poise (at this level not everyone invests in this), so combining this with the extra cast speed gives you a reliable melee weapon that hits harder and comes out faster than most others in the game. Swift Glintstone Shard is an excellent poke tool at medium range, and can be chained into a quick-cast Comet which allows for a surprising burst of damage (this will often roll catch if they're charging towards you and try to roll through the SGS). Throw in Carian Piercer for poke builds (UGS crouch/power stance thrusting/BHS spammers) and Eternal Darkness for casters and this build has very competitive all-rounder. PvP duel build for meta level 80-90, combining versatile and high-damage spells with decent poise and life pool for trading. The source's obsolete chain-casting note is not used.",
     "complexity": "Published legacy guide",
     "phases": {
       "early": "Published from 80",
@@ -7399,7 +7399,7 @@ export const wikiBuilds: Build[] = [
     "name": "Roundtable Assassin",
     "stats": "DEX / FAI / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published endgame / ng+ setup using Ornamental Straight Swords (R1), Miséricorde (R2) with Assassin's Gambit, Poison Moth Flight.",
+    "playstyle": "Lightweight and focusing on stealth and critical hits. Start your class with the Stonesword Keys (2x) keepsakes, defeat the Grafted Scion tutorial boss for a good, fitting, easy-to-upgrade main weapon for regular engagements. Once there, use your stonesword keys to get Crepus's Black-Key Crossbow and the Assassin's Prayerbook. You now have access to everything you need to win a few tough fights easy with the use of scarlet rot on the crossbow, giving you access to mid-game areas.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from Endgame / NG+",
@@ -7448,7 +7448,7 @@ export const wikiBuilds: Build[] = [
     "name": "Silent Spellblade",
     "stats": "STR / INT / VIG",
     "role": "Published build",
-    "playstyle": "Published endgame / ng+ setup using Dark Moon Greatsword, and either Staff of Loss with Moonlight Greatsword.",
+    "playstyle": "A cunning Dark Moon Greatsword build for Ranni the Witch fanatics, wielding the Greatsword into Journey 2+ while cosplaying the Black Knife Assassin for stealth and/or aesthetics. Being unheard and unseen makes using the Dark Moon Greatsword that much less of a hitch, plus it helps that the Black Knife set looks. The choice of staff is circumstantial. For the armor the armor is chosen to resemble Black Knife Assassin, but trade the Black Knife Greaves for Fire Prelate's.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from Endgame / NG+",
@@ -7503,7 +7503,7 @@ export const wikiBuilds: Build[] = [
     "name": "Twin Axe Death Knight",
     "stats": "STR / DEX / FAI / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 150+ setup using Death Knight's Twin Axes with Blinkbolt: Twinaxe.",
+    "playstyle": "The Death Knight's Twin Axes are a paired weapon, so they can be wielded as a single axe or as dual axes at reduced weight. The paired move set for axes is not the strongest of the paired weapons, but it holds its own for versatility and damage, and the weapon deals lightning damage alongside its physical damage. The requirements are modest for a level 150 build — 14 Strength, 12 Dexterity and 16 Faith — and the weapon scales with all three. Using Blinkbolt: Twinaxe Using it reactively to something already coming at you will get you hit. Used on anticipation instead, it becomes an evasion tool: you can pass through attacks that would otherwise land heavily, and it covers a wide range of them.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150+",
@@ -7553,7 +7553,7 @@ export const wikiBuilds: Build[] = [
     "name": "Starscourge",
     "stats": "STR / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Starscourge Greatsword & Sacrificial Axe with Starcaller Cry.",
+    "playstyle": "A Strength Build that uses the Starscourge Greatsword and its devastating weapon skill: Starcaller Cry. Make sure you use the follow up attack to finish off tougher to kill enemies, since it does far more damage than the cry itself. The way this Build works is that you'll use Sacrificial Axe in your offhand and Starscourge Greatsword in your right. When you dual wield the Starscourge Greatsword, since it's a paired weapon, you will still technically have the Axe equipped, which will provide you 4 FP every time you kill an enemy.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -7599,7 +7599,7 @@ export const wikiBuilds: Build[] = [
     "name": "Storm Arrow",
     "stats": "STR / DEX / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 153 setup using Ansbach's Longbow, Albinauric Bow with Fan Shot, Mighty Shot.",
+    "playstyle": "The Storm Arrow Build features a pure bow build designed specifically for the DLC. Utilizing Ansbach's Longbow and the Albinauric Bow, this build is challenging to play but rewarding for those who master it. The build uses two bows: Ansbach's Longbow and the Albinauric Bow. The Albinauric Bow, equipped with Mighty Shot, delivers high damage and is ideal for picking off enemies from a distance. The Albinauric Bow is particularly effective in situations where precision and conservation of arrows are crucial, such as in legacy dungeons or the open landscape.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 153",
@@ -7647,7 +7647,7 @@ export const wikiBuilds: Build[] = [
     "name": "Storm Blessed",
     "stats": "STR / DEX / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 165 setup using Messmer Soldier's Spear with Royal Knight's Resolve, Storm Wall.",
+    "playstyle": "A build that utilizes the Greatspear Messmer Soldier's Spear to deal heavy amounts of damage. The Storm bessed build focuses on maximizing the potential of the Messmer Soldier's Spear and utilizing a medium shield to enhance both offensive and defensive capabilities. The Messmer Soldier's Spear, a weapon classified as a great spear rather than a standard spear, serves as the centerpiece of this build. The decision to use the heavy infusion is twofold: first, it maximizes the weapon's strength scaling, and second, it synergizes with the newly introduced Two-Handed Sword Talisman, which increases damage while two-handing.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 165",
@@ -7694,7 +7694,7 @@ export const wikiBuilds: Build[] = [
     "name": "Stormblade",
     "stats": "DEX / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published all levels setup using Flamberge with Storm Blade.",
+    "playstyle": "A Dexterity warrior that focuses on melee attacks and the liberal use of Storm Blade to annihilate foes at any distance. The idea here is that you replace your regular R1 and R2 attacks with L2 since it: a) swings faster, b) deals more damage and c) can be used at range or in melee. The way this Build works is that you'll buff with Golden Vow and Electrify Armament if needed while on the landscape, attacking enemies at range with Storm Blade, and dealing extra damage when they are in melee range due to the hit box of the weapon itself and the added Lightning Damage from Electrify Armament. When you face bosses you'll want to buff with Flame, Grant Me Strength, Golden Vow and Bloodflame Blade and then get into melee range ASAP and start spamming Storm Blade.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from All Levels",
@@ -7746,7 +7746,7 @@ export const wikiBuilds: Build[] = [
     "name": "Stormblade Samurai",
     "stats": "DEX / INT / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 151 setup using Great Katana with Storm Blade.",
+    "playstyle": "This build is an evolution of the Storm Blade build, initially featuring the Flamberge and Storm Blade weapon skill to devastate enemies. The addition of the Great Katana, which offers higher damage and longer reach compared to the Flamberge, enhances the build further. The great katana is set to the Keen infusion, emphasizing dexterity for maximum damage. The Storm Blade Samurai build, effectively combines Storm Hawk arrows and the Storm Blade Ash of War, along with a new talisman to significantly boost damage output.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 151",
@@ -7793,7 +7793,7 @@ export const wikiBuilds: Build[] = [
     "name": "Supreme Samurai",
     "stats": "DEX / VIG / END",
     "role": "Published build",
-    "playstyle": "Published all game setup using Nagakiba with Unsheathe.",
+    "playstyle": "A pure DEX Build that uses the Nagakiba and Grease to have the best damage for any situation, coupled with extremely high mobility. The way this Build works is that you'll focus on using Unsheathe during difficult encounters or during 1v1 type situations. The R1 attack is much faster than the R2, but deals less Stance damage and is ideal for situations where you don't know what the enemy is going to do, since it comes out faster than the R2 attack. Skill of swordsmen from the Land of Reeds.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from All Game",
@@ -7841,7 +7841,7 @@ export const wikiBuilds: Build[] = [
     "name": "Sword Sage",
     "stats": "INT / FAI / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published 50 setup using Sword of Night and Flame & Meteorite Staff with Night-and-Flame Stance.",
+    "playstyle": "The Sword Sage is a combination of Intelligence and Faith, using the Sword of Night and Flame and Death Sorceries. The way this Build works is that you increase your Intelligence and Faith high enough to use Sword of Night and Flame and Ancient Death Rancor, which requires 34 Int and 24 Faith. Sword of Night and Flame has an amazing Weapon Art that allows you to do a Comet-like beam with L2 and R1 that does insane damage and has great range. Ancient Death Rancor does incredible stagger damage to enemies, allowing you to pin them down if you spam this, which is fantastic solo and in co op play. It's particularly good against fast moving enemies and bosses that are hard to hit with Sword of Night and Flame's Weapon arts",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 50",
@@ -7886,7 +7886,7 @@ export const wikiBuilds: Build[] = [
     "name": "Sword Saint",
     "stats": "STR / DEX / FAI / VIG",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Sacred Relic Sword, Sword of Milos, and any Sacred Seal with Wave of Gold.",
+    "playstyle": "A Dexterity/Faith/Strength Build that focuses on using the Sacred Relic Sword and Wave of Gold. The way this Build works is that you'll use Wave of Gold to take out packs of large enemies and on Bosses that aren't Holy Damage Resistant. This build uses Carian Filigreed Crest and Sword of Milos to help manage FP, so you can use Wave of Gold often and not worry about how much FP it costs. When facing Holy Resistant enemies you'll use Jump Attacks to take them out, since Sword of Milos deals 100% Physical Damage, and Sacred Relic Sword deals about 63% Physical Damage.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -7936,7 +7936,7 @@ export const wikiBuilds: Build[] = [
     "name": "Swordsman of St. Trina",
     "stats": "STR / DEX / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 153 setup using Velvet Sword of St. Trina, Lordsworn's Straight Sword (Cold) with Mists of Eternal Sleep, Square Off.",
+    "playstyle": "This weapon, an upgrade from the original Sword of St. Trina, boasts better stats and introduces the Eternal Sleep status effect. While many bosses in the game are immune to sleep, this build demonstrates how to effectively use sleep as a backup strategy. The main differences between the Velvet Sword of St. Trina and the original Sword of St. Trina are the damage types and status effects. The Mists of Eternal Sleep weapon skill is crucial, dealing 70 Eternal Sleep buildup with the spray and an additional 42 when the weapon connects. Buffing the weapon increases the Eternal Sleep buildup to 57 on regular attacks, making it more effective than the weapon skill itself. Always rebuff your weapon to maximize the buildup effect.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 153",
@@ -7984,7 +7984,7 @@ export const wikiBuilds: Build[] = [
     "name": "Templar",
     "stats": "FAI / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 50 setup using Noble's Slender Sword with Ash of War: Golden Vow, Ash of War: Sacred Blade, Ash of War: Barricade Shield.",
+    "playstyle": "Golden Vow is used when Cooperating to buff your group, or your Spirit Summons if you are using a group of them. Sacred Blade is much better when playing solo, as it gives you a ranged option, and buffs your damage considerably for a short while, though it has a long wind up making it hard to use mid boss fight. Aspects of the Crucible: Tail is your AoE clear spell, and can be replaced with any other AoE when you get one, but it does substantial stagger damage as well, and can drop Trolls and other large enemies with 2 casts. The way this Build works is that you Block Counter off of attacks into your Shield by pressing R2.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 50",
@@ -8029,7 +8029,7 @@ export const wikiBuilds: Build[] = [
     "name": "Thundering Swordspear",
     "stats": "DEX / VIG",
     "role": "Published build",
-    "playstyle": "Published 100 setup using Guardian's Swordspear & Finger Seal with Thunderbolt.",
+    "playstyle": "A melee focused build that uses Lighting to strike enemies at range, and to boost damage in melee. The way this Build works is that you'll buff with Golden Vow as you make your way around the game, one shotting most easy enemies with Thunderbolt from range, or even tough enemies as necessary. Thunderbolt scales off of base weapon damage and Dexterity scaling, and this is why this build uses the Guardian's Swordspear. It has very high base damage and A scaling in Dexterity, and doesn't require much Strength investment.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 100",
@@ -8081,7 +8081,7 @@ export const wikiBuilds: Build[] = [
     "name": "Tower Knight",
     "stats": "STR / DEX / INT / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 150+ setup using Morning Star with Cragblade.",
+    "playstyle": "This build utilizes the Morning Star hammer weapon and the Cragblade ash of war to easily break the stance or \"stance break\" against enemies. This build uses the Morning Star weapon. A hammer weapon fits well for this build since charged heavy attacks from a hammer deal 36 stance damage, and block counters also deal 36 stance damage. This is important since most bosses in Elden Ring have about 80 Stance while others have 100+ (120 for example for Godrick the Grafted).",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150+",
@@ -8131,7 +8131,7 @@ export const wikiBuilds: Build[] = [
     "name": "Vampiric Knight",
     "stats": "DEX / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Butchering Knife with Prayerful Strike.",
+    "playstyle": "A melee build that focuses on out healing damage taken while shredding enemies to death with the Butchering Knife. The way this Build works is that you'll stack healing over time effects so that you keep gaining health while trading damage. Icon Shield and Blessed Dew Talisman both heal you over time, and Butchering Knife heals you for 1% of your max HP per strike. Wild Strikes is a fantastic Ash of War for this Weapon because it strikes rapidly helping to trigger that 1% heal more often as well as increasing your Attack Power via Rotten Winged Sword Insignia, and it has hyper Armor making it difficult for you to be interrupted.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -8178,7 +8178,7 @@ export const wikiBuilds: Build[] = [
     "name": "Vanquisher",
     "stats": "STR / DEX / VIG / MND",
     "role": "Published build",
-    "playstyle": "Published all game setup using Dragon Halberd with Spinning Slash.",
+    "playstyle": "The Vanquisher Build is an \"all-game\" build that players can use fairly at the beginning of the game and until the end. The highlight of this build is the Dragon Halberd weapon, making it special because of the skill that is associated, which is the Ash of War: Spinning Slash that buffs the damage with Ice Lightning by 160 Lightning Damage and 80 Frost build up for 45 seconds. Not only does it have great damage, but the weapon has a decent guard boost. The Dragon Halberd weapon can be acquired in the early stages of the game if you're playing for the first time, and this is dropped by the Dragonkin Soldier boss located in Siofra River.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from All Game",
@@ -8229,7 +8229,7 @@ export const wikiBuilds: Build[] = [
     "name": "Venomous Bloodblade",
     "stats": "STR / DEX / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150 setup using Scavenger's Curved Sword & Bandit's Curved Sword (if you can get a second Scavenger's Curved Sword from someone that would be better) with Poisonous Mist & Seppuku.",
+    "playstyle": "A Quality Build that uses Bleed and Poison to boost Attack Power extremely high while dual wielding Curved Swords. You'll then swing repeatedly with L1, blending enemies down quickly to trigger both Millicent's Prosthesis and Rotten Winged Sword Insignia to further increase your Attack Power, giving you an Attack Rating of well over 1k with each Curved Sword. This allows you to attack rapidly with very high damage, with the occasional Hemorrhage proc, and while the enemy remains Poisoned. The way this Build works is that you'll typically buff your left-hand weapon with Seppuku to increase its Bleed build up and damage and to trigger Lord of Blood's Exultation. Then you'll lead most fights with Poisonous Mist in order to set Poisoned to also boost your Attack Power by 30% thanks to the Mushroom Crown and Kindred of Rot's Exultation.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150",
@@ -8277,7 +8277,7 @@ export const wikiBuilds: Build[] = [
     "name": "Void Knight",
     "stats": "DEX / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published 150+ setup using Sword of Night with Witching Hour Slash, Revenge of the Night.",
+    "playstyle": "The Void Knight build for Elden Ring's Shadow of the Erdtree highlights a new weapon and shield exclusively found in the DLC, the Sword of Night and the Shield of Night. The Sword of Night is a standard weapon, it has bloodloss buildup, scales and has pretty decent Dexterity, it has magic damage but majority of it being physical, and it comes with a unique weapon skill, the Witching Hour Slash. This skill makes the character hold its weapon to the side, and pulling the character forward while attacking with a fast triple slash. Since the weapon does not have a good reach unlike other katanas, the skill actually has great range when used, making it possible to land your hits on the targeted enemy.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150+",
@@ -8325,7 +8325,7 @@ export const wikiBuilds: Build[] = [
     "name": "Warrior Wizard",
     "stats": "INT / VIG",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Carian Regal Scepter, Lusat's Glintstone Staff, & Carian Glintstone Staff with No Skill.",
+    "playstyle": "A melee mage build that focuses on destroying enemies up close with weapon spells. Loretta's Greatbow is there for a ranged option in case you need to pick off an enemy or two safely, and you can drop Terra Magica before using it to boost your damage further. The way this Build works is that you'll main using Carian Slicer as your primary attack using the Carian Regal Scepter in your right hand to cast, and Carian Glintstone Staff in your left to buff its damage. Gavel of Haima can be chained if you cast with alternating staffs, R1, L1, R1, L1 etc, allowing you to keep staggering an enemy or boss for modest damage. This makes guard breaks happen often, allowing you more opening to attack.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -8380,7 +8380,7 @@ export const wikiBuilds: Build[] = [
     "name": "Warrior of Waves",
     "stats": "STR / DEX / INT / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published all game setup using Ruins Greatsword with Wave of Destruction.",
+    "playstyle": "This build primarily focuses on the use of the Ruins Greatsword weapon, a colossal sword that has fantastic scaling and devastating power once it is fully upgraded. The default skill for this weapon is the Wave of Destruction, a devastating weapon skill that shows the character raising the weapon and slamming it on the ground to release a vertical wave of gravity magic. The weapon skill damage scares primarily with weapon level. The Ruins Greatsword weapon is a colossal weapon that requires 50 STR and 16 INT.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from All Game",
@@ -8430,7 +8430,7 @@ export const wikiBuilds: Build[] = [
     "name": "Waterfowl Warrior",
     "stats": "DEX / VIG / END",
     "role": "Published build",
-    "playstyle": "Published 150-200 setup using Hand of Malenia with Waterfowl Dance.",
+    "playstyle": "Unlike other Katana Builds, Hemorrhage doesn't play a huge roll in this Build because Waterfowl Dance doesn't build up Bleed fast at all, so don't worry about it, and don't try to maximize Bleeding Build Up. The way this Build works is that you'll use the regular attacks of Hand of Malenia to deal with regular enemies, two-handing it in order to gain max damage and keep your equip load a bit lighter for more armor with higher Poise. You'll use Waterfowl Dance on tough to kill enemies, packs of enemies and Bosses, using your high Poise and hyper armor of the skill to strike them repeatedly for very high damage, triggering Millicent's Prosthesis and Winged Sword Insignia, boosting repeated L2 damage. Stamina is an issue for this Build because Waterfowl Dance eats it up, and you likely won't be able to use 3 consecutive L2 pulls twice, without waiting for your Stamina to replenish.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from 150-200",
@@ -8477,7 +8477,7 @@ export const wikiBuilds: Build[] = [
     "name": "Zealous Fury Templar",
     "stats": "FAI / VIG / MND / END",
     "role": "Published build",
-    "playstyle": "Published endgame / ng+ setup using Blasphemous Blade with Taker's Flames.",
+    "playstyle": "Early on you will want to farm for a Brass Shield and the Golden Vow ashes. You will want to target medium rolls throughout this build, start with raising Vigor to 15 then STR to 16 and DEX to 13 for the Claymore, this weapon offers slashes and stabs. From here you can play sword and shield or talisman and shield with the early incantations, use Golden Vow to buff, you heal to heal and fire spells for damage. By level 40 you should have about 20 Vigor, 14 Mind, 14 Endurance and 24 Faith and can level as you choose, want more hp, then go Vigor, more FP go Mind, need more stamina (use the turtle talisman) or equip load go Endurance and when those feel good go Faith for damage.",
     "complexity": "Published guide",
     "phases": {
       "early": "Published from Endgame / NG+",

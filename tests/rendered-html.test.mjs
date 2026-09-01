@@ -98,7 +98,7 @@ test("ships the curated, complete wiki and sourced build catalogues with the ful
   assert.doesNotMatch(sourcedBuilds, /Guard counters/);
   assert.match(data, /build\("quality-knight"[\s\S]*?\["Longsword", "Claymore", "Quality Great .*?", "Milady \+ Wing Stance"\]/);
   assert.match(data, /build\("colossal-hammer"[\s\S]*?\["Large Club", "Great Club", "Giant-Crusher", "Anvil Hammer"\]/);
-  assert.match(sourcedBuilds, /Lordsworn’s Greatsword remains equipped from Gatefront until Rykard/);
+  assert.match(sourcedBuilds, /Build the run around Taker’s Flames/);
   assert.match(sourcedBuilds, /Bloodhound’s Fang Finesse/);
 });
 

@@ -106,6 +106,27 @@ test("the optional Gurranq route accounts for every Deathroot and the hostile ch
 
 const statCodes = (build) => DAMAGE_STATS.filter((stat) => build.stats.toUpperCase().includes(stat));
 
+test("the selectable catalogue has stable contiguous numbers and distinct researched guidance", async () => {
+  const catalogue = await loadCatalogue();
+  try {
+    assert.equal(catalogue.selectableBuilds.length, 200);
+    assert.deepEqual(catalogue.selectableBuilds.map((build) => catalogue.catalogueNumber(build)), Array.from({ length: 200 }, (_, index) => index + 1));
+    for (const build of catalogue.selectableBuilds) {
+      assert.equal(catalogue.catalogueNumber({ ...build }), catalogue.catalogueNumber(build), `${build.name} numbering depends on object identity`);
+      assert.ok(build.playstyle.length >= 200, `${build.name} lacks a detailed combat description`);
+      assert.doesNotMatch(build.playstyle, /^Published .* setup using /i, `${build.name} retained generic importer prose`);
+      for (const phase of PHASES) {
+        const stage = catalogue.stageLoadout(build, phase);
+        assert.ok(stage.weapon && stage.skill && stage.stats, `${build.name} ${phase} lacks actionable progression`);
+      }
+    }
+    assert.equal(new Set(catalogue.selectableBuilds.map((build) => build.playstyle.toLowerCase())).size, 200, "build descriptions must be unique");
+    assert.equal(catalogue.catalogueNumber("meme-jar-jar"), 200);
+  } finally {
+    await catalogue.close();
+  }
+});
+
 test("every generated progression bridge is source-backed, timely and stat-compatible", async () => {
   const catalogue = await loadCatalogue();
   try {

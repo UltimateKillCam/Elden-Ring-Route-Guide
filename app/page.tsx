@@ -1,7 +1,7 @@
 "use client";
 
 import { Component, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from "react";
-import { builds, selectableBuilds, chapters, itemGuides, sources, stageLoadout, type Build, type Chapter, type PhaseKey } from "./data";
+import { builds, catalogueNumber, selectableBuilds, chapters, itemGuides, sources, stageLoadout, type Build, type Chapter, type PhaseKey } from "./data";
 import { findMapItem, findMapItems, findMapRoutePoint, type MapItem } from "./map-items";
 import { deferredPickupGate, literalItemName, PHASE_START, type PickupGate } from "./progression";
 import { splitArmourSpecification } from "./equipment-data";
@@ -190,7 +190,7 @@ function matchesCollection(build: Build, collection: string) {
 
 function sortBuilds(candidates: Build[], order: string) {
   const sorted = [...candidates];
-  if (order === "Catalogue order") return sorted.sort((a, b) => builds.indexOf(a) - builds.indexOf(b));
+  if (order === "Catalogue order") return sorted.sort((a, b) => (catalogueNumber(a) ?? Number.MAX_SAFE_INTEGER) - (catalogueNumber(b) ?? Number.MAX_SAFE_INTEGER));
   if (order === "Collection") return sorted.sort((a, b) => a.collection.localeCompare(b.collection) || a.name.localeCompare(b.name));
   if (order === "Attribute") return sorted.sort((a, b) => buildClassification(a).attributes.localeCompare(buildClassification(b).attributes) || a.name.localeCompare(b.name));
   if (order === "Combat focus") return sorted.sort((a, b) => a.mechanic.localeCompare(b.mechanic) || a.name.localeCompare(b.name));
@@ -440,6 +440,28 @@ function EquipmentTimeline({ build, plannedClass, levelOffset = 0 }: { build: Bu
       {snapshot.source && <a className="borrowed-source" href={snapshot.source.url} target="_blank" rel="noreferrer">Loadout reference: {snapshot.source.buildName} ↗</a>}
     </article>
   ))}</div>;
+}
+
+const PHASE_LABELS: Record<PhaseKey, string> = { early: "Early game", mid: "Mid game", late: "Late game", dlc: "DLC" };
+
+function PhaseProgression({ build }: { build: Build }) {
+  return <>
+    <div className="loadout-section-title"><p className="eyebrow">Four-stage plan</p><h3>What to use in each phase</h3><p>These are the build-specific loadouts used by the route. Temporary sourced bridges are identified explicitly.</p></div>
+    <div className="loadout-stages">{PHASE_ORDER.map((phase) => {
+      const stage = stageLoadout(build, phase);
+      return <article key={phase}>
+        <header><span>{PHASE_LABELS[phase]}</span><small>{stage.level}</small></header>
+        <div className="loadout-weapon"><small>Main weapon</small><strong>{stage.weapon}</strong></div>
+        <dl>
+          <div><dt>Combat action</dt><dd>{stage.skill}</dd></div>
+          <div><dt>Off-hand</dt><dd>{stage.offhand}</dd></div>
+          {stage.spells.length > 0 && <div><dt>Spells</dt><dd>{stage.spells.map((spell) => <span key={spell}>{spell}</span>)}</dd></div>}
+          <div><dt>Stat direction</dt><dd>{stage.stats}</dd></div>
+        </dl>
+        {stage.borrowedFrom && <a className="borrowed-source" href={stage.borrowedFrom.url} target="_blank" rel="noreferrer">Temporary bridge from {stage.borrowedFrom.buildName} ↗</a>}
+      </article>;
+    })}</div>
+  </>;
 }
 
 function orderPickupTasks(tasks: Task[], chapter: Chapter) {
@@ -1275,11 +1297,13 @@ function FullBuildDetails({ build, onClose, assignLabel, onAssign }: { build: Bu
       <section className="loadout-dialog" role="dialog" aria-modal="true" aria-label={`${build.name} full build`}>
         <button className="drawer-close" onClick={onClose} aria-label="Close build detail">×</button>
         <div className="loadout-title">
-          <div><p className="eyebrow">Build {builds.indexOf(build) + 1} of {builds.length}</p><h2>{build.name}</h2><p>{build.playstyle}</p></div>
+          <div><p className="eyebrow">Build {catalogueNumber(build)} of {selectableBuilds.length}</p><h2>{build.name}</h2><p>{build.playstyle}</p></div>
           <div className="drawer-meta"><span>{build.collection}</span><span>{classification.attributes}</span><span>{classification.range}</span><span>{build.mechanic}</span><span>Start: {plannedClass}{build.startingClass === "Not specified" ? " · calculated" : ""}</span><span>{build.complexity}</span></div>
         </div>
         <a className="build-source" href={build.source.url} target="_blank" rel="noreferrer">Source: {build.source.label} ↗</a>
         {build.quest && <div className="quest-callout"><strong>Quest dependency</strong><span>{build.quest}</span></div>}
+        <PhaseProgression build={build} />
+        <div className="loadout-section-title"><p className="eyebrow">Acquisition timeline</p><h3>When equipment changes</h3><p>The route delays every item until its chapter and keeps the previous valid equipment until the replacement is collected.</p></div>
         <EquipmentTimeline build={build} plannedClass={plannedClass} />
         {onAssign && <button type="button" className="assign-build-button" onClick={onAssign}>{assignLabel || "Choose this build"}</button>}
       </section>
@@ -1363,10 +1387,10 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
             const selected = candidate.id === players[activePlayer].buildId;
             const classification = buildClassification(candidate);
             return <article className={selected ? "selected" : ""} key={candidate.id}>
-              <header><div><span>{String(builds.indexOf(candidate) + 1).padStart(2, "0")}</span><small>{candidate.complexity}</small></div><h3>{candidate.name}</h3><p>{classification.attributes} · {classification.range}</p><b className="collection-pill">{candidate.collection}</b>{candidate.guideCategories?.length ? <p className="guide-groups">{candidate.guideCategories.join(" · ")}</p> : null}</header>
+              <header><div><span>{String(catalogueNumber(candidate)).padStart(3, "0")}</span><small>{candidate.complexity}</small></div><h3>{candidate.name}</h3><p>{classification.attributes} · {classification.range}</p><b className="collection-pill">{candidate.collection}</b>{candidate.guideCategories?.length ? <p className="guide-groups">{candidate.guideCategories.join(" · ")}</p> : null}</header>
               <p className="setup-playstyle">{candidate.playstyle}</p>
               <div className="build-facts"><span><small>Starting class</small>{plannerStartingClass(candidate)}{candidate.startingClass === "Not specified" ? " (calculated)" : ""}</span><span><small>Combat focus</small>{candidate.mechanic}</span></div>
-              <div className="weapon-timeline">{(["early", "mid", "late", "dlc"] as PhaseKey[]).map((phase) => { const stage = stageLoadout(candidate, phase); return <div key={phase}><small>{phase}{stage.borrowedFrom ? " · sourced bridge" : ""}</small><span>{stage.weapon}</span></div>; })}</div>
+              <div className="weapon-timeline">{(["early", "mid", "late", "dlc"] as PhaseKey[]).map((phase) => { const stage = stageLoadout(candidate, phase); return <div key={phase}><small>{phase}{stage.borrowedFrom ? " · sourced bridge" : ""}</small><span>{stage.weapon}</span><em>{stage.skill}</em></div>; })}</div>
               <footer><button type="button" onClick={() => setDetail(candidate)}>Full loadout</button><button type="button" className={selected ? "assigned" : ""} onClick={() => chooseBuild(candidate)}>{selected ? "Assigned" : `Assign to ${players[activePlayer].name}`}</button></footer>
             </article>;
           })}
@@ -1845,8 +1869,8 @@ function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, act
         <p className="eyebrow">Your company</p>
         {expedition.players.map((player) => {
           const selected = builds.find((candidate) => candidate.id === player.buildId)!;
-          const phase = chapter.act === "Shadow of the Erdtree" ? "dlc" : chapterIndex < 3 ? "early" : chapterIndex < 9 ? "mid" : "late";
-          return <div className="company-member" key={player.id} style={{ "--player": player.color } as React.CSSProperties}><span>{player.name.slice(0, 1).toUpperCase()}</span><div><strong>{player.name}</strong><small>{selected.name}</small><p>{selected.phases[phase]}</p></div></div>;
+          const loadout = stageLoadout(selected, phaseForChapter(chapter));
+          return <div className="company-member" key={player.id} style={{ "--player": player.color } as React.CSSProperties}><span>{player.name.slice(0, 1).toUpperCase()}</span><div><strong>{player.name}</strong><small>{selected.name}</small><p>{loadout.weapon}</p></div></div>;
         })}
         <div className="mode-note"><strong>{expedition.mode === "solo" ? "Solo route" : expedition.mode === "standard" ? "Standard co-op rules" : "Seamless rules"}</strong><p>{expedition.mode === "solo" ? "Boss rewards use the full solo payout and every pickup belongs to this character." : expedition.mode === "standard" ? "World-state steps are tracked for every player. Rotate hosts and tick each copy." : "The route follows host progression. Individual pickups remain assigned separately."}</p></div>
       </aside>
@@ -1869,6 +1893,8 @@ function SelectedBuildsView({ expedition, viewerPlayerId }: { expedition: Expedi
     <div className="selected-build-heading" style={{ "--player": player.color } as React.CSSProperties}><div><p className="eyebrow">{player.name}&apos;s build</p><h3>{build.name}</h3><p>{build.playstyle}</p></div><dl><div><dt>Starting class</dt><dd>{plannedClass}{build.startingClass === "Not specified" ? " (calculated)" : ""}</dd></div><div><dt>Attributes</dt><dd>{classification.attributes}</dd></div><div><dt>Range</dt><dd>{classification.range}</dd></div><div><dt>Combat focus</dt><dd>{build.mechanic}</dd></div></dl></div>
     <a className="build-source" href={build.source.url} target="_blank" rel="noreferrer">Source: {build.source.label} ↗</a>
     {build.quest && <div className="quest-callout"><strong>Quest dependency</strong><span>{build.quest}</span></div>}
+    <PhaseProgression build={build} />
+    <div className="loadout-section-title"><p className="eyebrow">Acquisition timeline</p><h3>When equipment changes</h3><p>The route delays every item until its chapter and keeps the previous valid equipment until the replacement is collected.</p></div>
     <EquipmentTimeline build={build} plannedClass={plannedClass} levelOffset={expedition.levelOffset ?? 0} />
   </section>;
 }
@@ -1894,7 +1920,7 @@ function CodexView({ expedition, catalogueOnly = false }: { expedition?: Expedit
           const owners = expedition?.players.filter((player) => player.buildId === candidate.id) || [];
           const classification = buildClassification(candidate);
           return <article className="build-card" key={candidate.id} onClick={() => setSelected(candidate)} tabIndex={0} onKeyDown={(event) => { if (event.key === "Enter") setSelected(candidate); }}>
-            <div className="build-card-top"><span className="build-number">{String(builds.indexOf(candidate) + 1).padStart(2, "0")}</span><div className="difficulty"><i />{candidate.complexity}</div></div>
+            <div className="build-card-top"><span className="build-number">{String(catalogueNumber(candidate)).padStart(3, "0")}</span><div className="difficulty"><i />{candidate.complexity}</div></div>
             <h3>{candidate.name}</h3><p className="stats">{classification.attributes} · {classification.range}</p><b className="collection-pill">{candidate.collection}</b>{candidate.guideCategories?.length ? <p className="guide-groups">{candidate.guideCategories.join(" · ")}</p> : null}<p>{candidate.playstyle}</p>
             <div className="build-facts"><span><small>Starting class</small>{plannerStartingClass(candidate)}{candidate.startingClass === "Not specified" ? " (calculated)" : ""}</span><span><small>Combat focus</small>{candidate.mechanic}</span></div>
             <div className="mini-phases"><span>{stageLoadout(candidate, "early").weapon}</span><i>→</i><span>{stageLoadout(candidate, "dlc").weapon}</span></div>

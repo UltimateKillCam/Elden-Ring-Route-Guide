@@ -47,6 +47,11 @@ const correctSourceText = (value) => value
   .replace(/\bCarian Filigree Crest\b/g, "Carian Filigreed Crest")
   .replace(/\bAssasin's Cerulean Dagger\b/g, "Assassin's Cerulean Dagger")
   .replace(/\bGreat-Jars Arsenal\b/g, "Great-Jar's Arsenal")
+  .replace(/\bSord Lance\b/g, "Sword Lance")
+  .replace(/\bLighting Spear\b/g, "Lightning Spear")
+  .replace(/\bEarly one\b/g, "Early on")
+  .replace(/\boutpit\b/g, "output")
+  .replace(/\btheir teams burns\b/g, "their team burns")
   .replace(/\bFlame-Shrouded Cracked Tear\b/g, "Flame-Shrouding Cracked Tear")
   .replace(/\bSacred Scorpion Charm\/Fire Scorpion Charm\b/g, "Fire Scorpion Charm");
 
@@ -124,6 +129,61 @@ const cleanWikiText = (value = "") => correctSourceText(text(value
   .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_, page, label) => label || page)
   .replace(/'{2,}/g, "")
   .replace(/\{\{([^{}|]+)(?:\|[^{}]*)?\}\}/g, "$1")));
+
+function sourceSection(source, headingPattern) {
+  const headings = [...source.matchAll(/<htmltag\b[^>]*tagname=["']h2["'][^>]*>(.*?)<\/htmltag>|^={2,}\s*(.*?)\s*={2,}\s*$/gim)];
+  const headingIndex = headings.findIndex((match) => headingPattern.test(cleanWikiText(match[1] || match[2] || "")));
+  if (headingIndex < 0) return "";
+  const start = headings[headingIndex].index + headings[headingIndex][0].length;
+  const end = headings[headingIndex + 1]?.index ?? source.length;
+  return source.slice(start, end);
+}
+
+function sourceProse(value) {
+  return value
+    .replace(/\{\|[\s\S]*?\|\}/g, " ")
+    .replace(/<div\b[^>]*>[\s\S]*?<\/div>/gi, " ")
+    .replace(/<youtube>[\s\S]*?<\/youtube>/gi, " ")
+    .split(/\n\s*\n+/)
+    .map((paragraph) => cleanWikiText(paragraph))
+    .filter((paragraph) => paragraph.length >= 24 && !/^(?:Related Elden Ring Builds|Category:|https?:\/\/)/i.test(paragraph));
+}
+
+function sourceGameplay(source, fallback) {
+  const why = sourceProse(sourceSection(source, /^Why Play\b/i));
+  const how = sourceProse(sourceSection(source, /^How to Play\b/i));
+  const gear = sourceProse(sourceSection(source, /\bBuild Gear$/i));
+  const stats = sourceProse(sourceSection(source, /\bBuild Stats and Attributes$/i));
+  const sentences = (paragraphs) => paragraphs.flatMap((paragraph) => {
+    const protectedText = paragraph.replace(/\bSt\./g, "St<dot>").replace(/(\d)\.(\d)/g, "$1<dot>$2");
+    return (protectedText.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || []).map((sentence) => sentence.replace(/<dot>/g, ".").trim());
+  });
+  const useful = (sentence) => /\b(?:use|using|cast|attack|strike|block|guard|counter|critical|stealth|dodge|roll|jump|shoot|fire|charge|buff|debuff|stance|skill|spell|weapon|bow|shield|staff|seal|damage|range|melee|boss|enemy|frost|bleed|poison|rot|sleep|madness|stagger|poise)\b/i.test(sentence)
+    && !/\b(?:attribute allocation|at level \d+ (?:are|is)|anything above those numbers|to use everything in this build|check that against your Endurance|full set comes to|no longer applies its buff|has been patched)\b/i.test(sentence)
+    && !/^\d+(?:\.\d+)? in total\b/i.test(sentence);
+  const whySentences = sentences(why);
+  const howSentences = sentences(how);
+  const gearSentences = sentences(gear);
+  const statSentences = sentences(stats);
+  const selected = [
+    ...whySentences.filter(useful).slice(0, 3),
+    ...howSentences.filter(useful).slice(0, 3),
+  ]
+    .filter((sentence, index, values) => values.findIndex((candidate) => candidate.toLowerCase() === sentence.toLowerCase()) === index);
+  for (const supplements of [gearSentences, statSentences]) {
+    for (const sentence of supplements.filter(useful)) {
+      if (selected.length >= 4) break;
+      if (!selected.some((candidate) => candidate.toLowerCase() === sentence.toLowerCase())) selected.push(sentence);
+    }
+  }
+  if (!selected.length) return fallback;
+  let result = "";
+  for (const sentence of selected) {
+    if (result && `${result} ${sentence}`.length > 900) break;
+    result = `${result}${result ? " " : ""}${sentence}`;
+  }
+  return result || fallback;
+}
 
 export function parseBuildLoadoutWikitext(source) {
   if (typeof source !== "string" || !source.trim()) throw new Error("Fextralife build wikitext is empty.");
@@ -273,12 +333,14 @@ export function parseFextralifeBuildPage({ title, wikitext, categories = [] }) {
     if (!talismans.some((item) => item.includes("Winged Sword Insignia"))) talismans.push("Winged Sword Insignia");
   }
   talismans = [...new Set(talismans)].slice(0, 4);
+  const fallbackPlaystyle = `Published ${level.toLowerCase()} setup using ${weapon}${usable(skill) ? ` with ${skill}` : ""}.`;
+  const researchedPlaystyle = sourceGameplay(wikitext, fallbackPlaystyle);
   return {
     id: `fextra-${anchor}`,
     name,
     stats: statCodes(statsText),
     role: pvp ? "Published PvP build" : "Published build",
-    playstyle: `Published ${level.toLowerCase()} setup using ${weapon}${usable(skill) ? ` with ${skill}` : ""}.${legacyPatchBuilds.has(name) ? " The source's obsolete chain-casting note is not used." : ""}`,
+    playstyle: `${researchedPlaystyle}${legacyPatchBuilds.has(name) ? " The source's obsolete chain-casting note is not used." : ""}`,
     complexity: legacyPatchBuilds.has(name) ? "Published legacy guide" : "Published guide",
     phases,
     tags: ["fextralife", pvp ? "pvp" : "pve", phase, mechanic.toLowerCase().replace(/\s+/g, "-"), ...(legacyPatchBuilds.has(name) ? ["legacy-source"] : []), ...(memeAnchors.has(anchor) ? ["meme", "cosplay"] : [])],
@@ -319,6 +381,12 @@ export function parseFextralifeBuilds(pages, { expectedCount = EXPECTED_BUILD_CO
   const missingAdditions = requiredAdditions.filter((name) => !records.some((record) => record.name === name));
   if (expectedCount === EXPECTED_BUILD_COUNT && missingAdditions.length) throw new Error(`Verified Fextralife additions are missing: ${missingAdditions.join(", ")}`);
   if (expectedCount === EXPECTED_BUILD_COUNT && records.filter((record) => record.tags.includes("pvp")).length !== 4) throw new Error("Expected exactly four published PvP builds.");
+  if (expectedCount === EXPECTED_BUILD_COUNT) {
+    const genericDescriptions = records.filter((record) => /^Published .* setup using /i.test(record.playstyle));
+    if (genericDescriptions.length) throw new Error(`Fextralife source guidance is missing for: ${genericDescriptions.map((record) => record.name).join(", ")}`);
+    const duplicateDescriptions = records.filter((record, index) => records.findIndex((candidate) => candidate.playstyle.toLowerCase() === record.playstyle.toLowerCase()) !== index);
+    if (duplicateDescriptions.length) throw new Error(`Duplicate Fextralife gameplay descriptions: ${duplicateDescriptions.map((record) => record.name).join(", ")}`);
+  }
   return records;
 }
 

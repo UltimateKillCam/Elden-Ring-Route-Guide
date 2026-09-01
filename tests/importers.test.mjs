@@ -17,15 +17,22 @@ const buildFixture = {
 | armor = [https://qa8.wiki.fextralife.com/Divine_Beast_Head Divine Beast Head|target=_blank]
 | skills = [[Shadow Sunflower Headbutt]]
 | flask = Equal Charges
-| crystaltear = [[Holy-Shrouding Cracked Tear]], [[Stonebarb Cracked Tear]]
-}}`,
+ | crystaltear = [[Holy-Shrouding Cracked Tear]], [[Stonebarb Cracked Tear]]
+}}
+<htmltag tagname="h2" class="bonfire">Why Play the Shadow Sunflower Blossom Build in Elden Ring</htmltag>
+Use the colossal flower's broad normal swings to control groups, then save its unique skill for long boss openings. Holy damage is the main payoff, while the weapon's physical damage keeps ordinary enemies manageable.
+<htmltag tagname="h2" class="bonfire">How to Play the Shadow Sunflower Blossom Build</htmltag>
+Use Shadow Sunflower Headbutt only when all three slams can land without trading through a boss combo.
+<htmltag tagname="h2" class="bonfire">Related Elden Ring Builds</htmltag>`,
 };
 
 test("Fextralife build parsing is bounded and preserves known source corrections", () => {
   const records = parseFextralifeBuilds([buildFixture], { expectedCount: 1 });
   assert.equal(records[0].publishedLoadout.weapon, "Shadow Sunflower Blossom");
   assert.equal(records[0].phases.dlc, "Shadow Sunflower Blossom");
-  assert.equal(records[0].playstyle, "Published shadow of the erdtree · level 160 setup using Shadow Sunflower Blossom with Shadow Sunflower Headbutt.");
+  assert.match(records[0].playstyle, /broad normal swings to control groups/);
+  assert.match(records[0].playstyle, /all three slams can land without trading/);
+  assert.doesNotMatch(records[0].playstyle, /Related Elden Ring Builds/);
   assert.equal(records[0].publishedLoadout.armour, "Divine Beast Head");
   assert.deepEqual(records[0].guideCategories, ["Strength Builds", "SOTE Builds"]);
   assert.deepEqual(records[0].publishedLoadout.talismans, []);
