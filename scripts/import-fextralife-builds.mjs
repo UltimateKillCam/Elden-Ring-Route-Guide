@@ -1,14 +1,26 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 const root = process.cwd();
-const sourcePath = resolve(root, "work", "fextralife-builds.html");
 const outputPath = resolve(root, "app", "wiki-builds.ts");
-const html = await readFile(sourcePath, "utf8");
+const wikiApi = "https://eldenring.wiki.fextralife.com/api.php";
+const sourceCategory = "Build_Guides";
+const userAgent = "TarnishedTogetherRoutePlanner/1.0 (personal build-planner data import)";
+const EXPECTED_BUILD_COUNT = 171;
+const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+const phaseOverrides = new Map([
+  ["Knight of Thorns", "dlc"], ["Acolyte", "late"], ["Black Blade Slicer", "late"],
+  ["Cipher Prophet", "mid"], ["Flying Mantis", "late"], ["Ghostflame Warrior", "late"],
+  ["Roundtable Assassin", "late"], ["Silent Spellblade", "late"], ["Zealous Fury Templar", "late"],
+  ["Level 30 Poison/Bleed Wretch", "late"], ["Level 60 St. Trina's Confessor", "late"],
+  ["Level 75 Sanguine Lightning Assassin", "late"], ["Level 80/90 Sorcerer Duelist", "late"],
+]);
 
 const decode = (value) => value
   .replace(/&nbsp;|&#160;/gi, " ")
   .replace(/&amp;/gi, "&")
+  .replace(/&middot;/gi, "·")
   .replace(/&quot;/gi, '"')
   .replace(/&#39;|&apos;/gi, "'")
   .replace(/&lt;/gi, "<")
@@ -23,41 +35,33 @@ const text = (value = "") => decode(value
   .replace(/\s+,/g, ",")
   .trim();
 
+const correctSourceText = (value) => value
+  .replace(/[’‘]/g, "'")
+  .replace(/[“”]/g, '"')
+  .replace(/\bShadown Sunflower Blossom\b/g, "Shadow Sunflower Blossom")
+  .replace(/\bKnight Comet\b/g, "Night Comet")
+  .replace(/\bEkzyke's Decay\b/g, "Ekzykes's Decay")
+  .replace(/\bGreat Glinstone Shard\b/g, "Great Glintstone Shard")
+  .replace(/\bPrince of Death Staff\b/g, "Prince of Death's Staff")
+  .replace(/\bFlame Grant me Strength\b/gi, "Flame, Grant Me Strength")
+  .replace(/\bCarian Filigree Crest\b/g, "Carian Filigreed Crest")
+  .replace(/\bAssasin's Cerulean Dagger\b/g, "Assassin's Cerulean Dagger")
+  .replace(/\bGreat-Jars Arsenal\b/g, "Great-Jar's Arsenal")
+  .replace(/\bFlame-Shrouded Cracked Tear\b/g, "Flame-Shrouding Cracked Tear")
+  .replace(/\bSacred Scorpion Charm\/Fire Scorpion Charm\b/g, "Fire Scorpion Charm");
+
 const splitItems = (value) => value
-  .split(/,|\s+&\s+|\s+or\s+/i)
-  .map((item) => item.trim())
-  .filter(Boolean);
+  .replace(/Flame, Grant Me Strength/gi, (match) => match.replace(",", "<comma>"))
+  .replace(/Burn, O Flame!/gi, (match) => match.replace(",", "<comma>"))
+  .replace(/Flame, Fall Upon Them/gi, (match) => match.replace(",", "<comma>"))
+  .replace(/O, Flame!/gi, (match) => match.replace(",", "<comma>"))
+  .split(/,|\.\s+|\s+(?:&|and\/or|and|or)\s+/i)
+  .map((item) => item.replace(/<comma>/g, ",").trim())
+  .map((item) => item.replace(/^(?:and|or)\s+/i, "").trim())
+  .map((item) => item === "Rancor" ? "Rancorcall" : item)
+  .filter((item) => item && !/^(?:n\/?a|none|not specified by source)$/i.test(item));
 
-const buildHeadings = [...html.matchAll(/<h3 class="bonfire"><a id="([^"]+)"><\/a>([\s\S]*?)<\/h3>/gi)];
-const buildAnchors = new Set(buildHeadings.map((match) => match[1].toLowerCase()));
-const seen = new Set();
-const seenNames = new Set();
-const records = [];
 const memeAnchors = new Set(["blueballer", "kungfukatarist"]);
-
-const categoryRanges = [
-  ["Intelligence Builds", 'title="Elden Ring Builds#intelligence" href="/Builds#intelligence"', 'title="Elden Ring Builds#faith" href="/Builds#faith"'],
-  ["Faith Builds", 'title="Elden Ring Builds#faith" href="/Builds#faith"', 'title="Elden Ring Builds#arcane" href="/Builds#arcane"'],
-  ["Arcane Builds", 'title="Elden Ring Builds#arcane" href="/Builds#arcane"', 'title="Elden Ring Builds#strength" href="/Builds#strength"'],
-  ["Strength Builds", 'title="Elden Ring Builds#strength" href="/Builds#strength"', 'title="Elden Ring Builds#dexterity" href="/Builds#dexterity"'],
-  ["Dexterity Builds", 'title="Elden Ring Builds#dexterity" href="/Builds#dexterity"', "See all our SOTE Builds"],
-  ["All SOTE Builds", "See all our SOTE Builds", "See all our Best Builds"],
-];
-
-const fextraCategories = new Map();
-for (const [category, startMarker, endMarker] of categoryRanges) {
-  const start = html.indexOf(startMarker);
-  const end = html.indexOf(endMarker, start + startMarker.length);
-  if (start < 0 || end < 0) continue;
-  const anchors = [...html.slice(start, end).matchAll(/href="\/Builds#([^"]+)"/gi)]
-    .map((match) => match[1].toLowerCase())
-    .filter((anchor) => buildAnchors.has(anchor));
-  for (const anchor of anchors) {
-    const categories = fextraCategories.get(anchor) || [];
-    if (!categories.includes(category)) categories.push(category);
-    fextraCategories.set(anchor, categories);
-  }
-}
 
 function cleanName(rawHeading) {
   return text(rawHeading)
@@ -67,40 +71,43 @@ function cleanName(rawHeading) {
     .trim();
 }
 
-function phaseFor(heading) {
-  const lower = heading.toLowerCase();
-  if (/shadow of the erdtree|\bsote\b|\bdlc\b/.test(lower)) return "dlc";
-  if (/all game|beginner/.test(lower)) return "early";
-  const level = Number(lower.match(/level\s*(\d+)/)?.[1] || 0);
+function phaseFor(name, fields, source) {
+  const override = phaseOverrides.get(name);
+  if (override) return override;
+  const descriptor = `${fields.tagline || ""} ${fields.level || ""} ${source.slice(0, 1500)}`.toLowerCase();
+  if (/shadow of the erdtree|\bsote\b|\bdlc\b/.test(descriptor)) return "dlc";
+  if (/beginner|low-level/.test(descriptor)) return "early";
+  const level = Number(`${fields.level || ""} ${fields.tagline || ""}`.match(/(?:level\s*)?(\d{2,3})/i)?.[1] || 0);
   if (level && level <= 40) return "early";
-  if (level && level <= 80) return "mid";
+  if (level && level <= 90) return "mid";
+  if (/all[ -]?game/.test(descriptor)) return "late";
   return "late";
 }
 
-function levelFor(heading, phase) {
-  const explicit = heading.match(/\(([^)]*(?:Level|Beginner|Shadow of the Erdtree|All Game|Journey)[^)]*)\)/i)?.[1];
-  if (explicit) return text(explicit);
+function levelFor(fields, phase) {
+  const explicit = correctSourceText(text(fields.level || fields.tagline || ""));
+  if (explicit) return explicit;
   return { early: "Beginner / all game", mid: "Midgame", late: "Endgame / NG+", dlc: "Shadow of the Erdtree" }[phase];
 }
 
 function statCodes(value) {
   const replacements = [
-    ["Strength", "STR"], ["Dexterity", "DEX"], ["Intelligence", "INT"],
-    ["Faith", "FAI"], ["Arcane", "ARC"], ["Vigor", "VIG"],
-    ["Mind", "MND"], ["Endurance", "END"],
+    [/\b(?:strength|str)\b/i, "STR"], [/\b(?:dexterity|dex)\b/i, "DEX"], [/\b(?:intelligence|int)\b/i, "INT"],
+    [/\b(?:faith|fai|fth)\b/i, "FAI"], [/\b(?:arcane|arc)\b/i, "ARC"], [/\b(?:vigor|vig)\b/i, "VIG"],
+    [/\b(?:mind|mnd|min)\b/i, "MND"], [/\b(?:endurance|end)\b/i, "END"],
   ];
-  const codes = replacements.filter(([name]) => new RegExp(`\\b${name}\\b`, "i").test(value)).map(([, code]) => code);
+  const codes = replacements.filter(([pattern]) => pattern.test(value)).map(([, code]) => code);
   return [...new Set(codes)].join(" / ") || "Source stats";
 }
 
 function mechanicFor(value) {
   const lower = value.toLowerCase();
   if (/parry|critical|backstab/.test(lower)) return "Critical attacks";
+  if (/bleed|hemorrhage|poison|scarlet rot|frostbite|sleep|madness/.test(lower)) return "Status buildup";
   if (/block counter|guard counter|barricade|greatshield|shield crash/.test(lower)) return "Guard counters";
   if (/jump attack|claw talisman|raptor's black feathers/.test(lower)) return "Jump attacks";
   if (/charged|war cry|roar/.test(lower)) return "Charged attacks";
   if (/stance|stagger|colossal|great hammer/.test(lower)) return "Stance damage";
-  if (/bleed|hemorrhage|poison|scarlet rot|frostbite|sleep|madness/.test(lower)) return "Status buildup";
   if (/bow|crossbow|greatbow|cannon|arrow/.test(lower)) return "Ranged attacks";
   if (/sorcer|incantation|spell|seal|staff/.test(lower)) return "Spell damage";
   if (/successive|dual wield|powerstance|twinblade|fist|claw/.test(lower)) return "Light attacks";
@@ -112,89 +119,245 @@ function startingClass(value) {
   return classes.find((candidate) => new RegExp(`\\b${candidate}\\b`, "i").test(value)) || "Not specified";
 }
 
-for (let index = 0; index < buildHeadings.length; index += 1) {
-  const match = buildHeadings[index];
-  const anchor = match[1].toLowerCase();
-  if (seen.has(anchor)) continue;
-  const end = buildHeadings[index + 1]?.index ?? html.length;
-  const block = html.slice(match.index + match[0].length, end);
-  const fields = {};
+const cleanWikiText = (value = "") => correctSourceText(text(value
+  .replace(/\[https?:\/\/[^\s\]]+\s+([^|\]]+)(?:\|[^\]]*)?\]/g, "$1")
+  .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_, page, label) => label || page)
+  .replace(/'{2,}/g, "")
+  .replace(/\{\{([^{}|]+)(?:\|[^{}]*)?\}\}/g, "$1")));
 
-  for (const listItem of block.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi)) {
-    const itemHtml = listItem[1];
-    const strongLabel = itemHtml.match(/^\s*<strong>([\s\S]*?)<\/strong>\s*:/i);
-    const plain = text(itemHtml);
-    const plainLabel = plain.match(/^([^:]{2,42}):\s*(.+)$/);
-    const label = text(strongLabel?.[1] || plainLabel?.[1] || "");
-    if (!label) continue;
-    const rawValue = strongLabel
-      ? itemHtml.slice((strongLabel.index || 0) + strongLabel[0].length)
-      : plainLabel?.[2] || "";
-    fields[label] ??= text(rawValue);
+export function parseBuildLoadoutWikitext(source) {
+  if (typeof source !== "string" || !source.trim()) throw new Error("Fextralife build wikitext is empty.");
+  const start = source.search(/\{\{\s*Template:BuildLoadout\b/i);
+  if (start < 0) throw new Error("Could not locate Template:BuildLoadout.");
+  let depth = 0;
+  let end = -1;
+  for (let index = start; index < source.length - 1; index += 1) {
+    const pair = source.slice(index, index + 2);
+    if (pair === "{{") { depth += 1; index += 1; }
+    else if (pair === "}}") {
+      depth -= 1;
+      index += 1;
+      if (depth === 0) { end = index + 1; break; }
+    }
   }
+  if (end < 0) throw new Error("Template:BuildLoadout is not closed.");
+  const rawFields = {};
+  let activeKey;
+  for (const line of source.slice(start, end).split("\n")) {
+    const parameter = line.match(/^\s*\|\s*([a-z][a-z0-9]*)\s*=\s*(.*)$/i);
+    if (parameter) {
+      activeKey = parameter[1].toLowerCase();
+      rawFields[activeKey] = parameter[2];
+    } else if (activeKey && !/^\s*\}\}/.test(line)) rawFields[activeKey] += ` ${line.trim()}`;
+  }
+  const fields = Object.fromEntries(Object.entries(rawFields).map(([key, value]) => [key, cleanWikiText(value)]));
+  if (!fields.name) throw new Error("Template:BuildLoadout has no name.");
+  return fields;
+}
 
-  const heading = text(match[2]);
-  const weapon = fields["Main Weapon"] || fields["Main Weapon/s"] || fields.Weapon || fields["Right Hand"] || "Not specified by source";
-  const hasBuildFields = fields.Class || fields.Weapon || fields["Main Weapon"] || fields["Main Weapon/s"];
-  if (!hasBuildFields) continue;
+const pageUrl = (title) => `https://eldenring.wiki.fextralife.com/${encodeURIComponent(title.replace(/ /g, "_"))}`;
+const usable = (value) => value && !/^(?:n\/?a|none|-+|not specified)$/i.test(value);
+const combine = (...values) => values.filter(usable).join("; ") || "Not specified by source";
+const primaryChoice = (value) => usable(value) ? value.split(/\s+or\s+/i)[0].trim() : "";
+const idSlug = (name) => name.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+const sourceCategories = (categories) => [...new Set(categories
+  .map((category) => category.replace(/^Category:/, "").replace(/_/g, " "))
+  .filter((category) => /^(?:PvE|PvP|Strength|Dexterity|Intelligence|Faith|Arcane) Builds$/.test(category)))];
 
-  const phase = phaseFor(heading);
-  const level = levelFor(heading, phase);
+const fieldFallbacks = new Map([
+  ["Knight of Thorns", {
+    class: "Any", primarystats: "Arcane, Vigor", secondarystats: "Mind, Faith, Intelligence",
+    weapon: "Ripple Blade or any blood-loss weapon", offhand: "Albinauric Staff or Staff of the Guilty", skills: "Wild Strikes",
+    talismans: "Lord of Blood's Exultation, Graven-Mass Talisman, Dragoncrest Greatshield Talisman, Radagon Icon",
+    armor: "Alberich's Set", spells: "Impenetrable Thorns", flask: "At least 5 Cerulean, remaining Crimson",
+  }],
+  ["Level 30 Poison/Bleed Wretch", { talismans: "Radagon's Soreseal" }],
+  ["Level 80/90 Sorcerer Duelist", { weapon: "Azur's Glintstone Staff" }],
+]);
+const fieldOverrides = new Map([
+  ["All-Knowing Sage", {
+    skills: "Night-and-Flame Stance",
+    talismans: "Godfrey Icon, Graven-Mass Talisman, Flock's Canvas Talisman, Magic Scorpion Charm",
+  }],
+  ["Acolyte", { weapon: "Keen Greatsword, Bolt of Gransax", sealstaff: "Frenzied Flame Seal, Erdtree Seal or Gravel Stone Seal", spells: "Golden Vow, Flame Grant Me Strength, Bloodflame Blade, Electrify Armament, Greyoll's Roar" }],
+  ["Black Blade Slicer", {
+    weapon: "Black Knife, Maliketh's Black Blade, Serpent Bow", skills: "Blade of Death, Destined Death, Mighty Shot",
+    talismans: "Rotten Winged Sword Insignia, Shard of Alexander, Crucible Feather Talisman, Radagon Icon",
+  }],
+  ["Champion of Rot", { offhand: "Dragon Communion Seal" }],
+  ["Cipher Prophet", {
+    weapon: "Cipher Pata", offhand: "Finger Seal", skills: "Unblockable Blade",
+    talismans: "Two Fingers Heirloom, Green Turtle Talisman", spells: "Golden Vow", armor: "Knight Set",
+  }],
+  ["Flying Mantis", { talismans: "Claw Talisman" }],
+  ["Silent Spellblade", {
+    talismans: "Shard of Alexander, Magic Scorpion Charm, Godfrey Icon, Dragoncrest Greatshield Talisman",
+    crystaltear: "Greenburst Crystal Tear, Magic-Shrouding Cracked Tear",
+  }],
+  ["Zealous Fury Templar", { weapon: "Blasphemous Blade", offhand: "Brass Shield", talismans: "Claw Talisman", skills: "Taker's Flames" }],
+  ["Level 60 St. Trina's Confessor", {
+    talismans: "Radagon's Soreseal, Winged Sword Insignia, Green Turtle Talisman, Dragoncrest Greatshield Talisman",
+  }],
+  ["Level 75 Sanguine Lightning Assassin", {
+    weapon: "Bolt of Gransax, Dragon King's Cragblade", skills: "Ancient Lightning Spear, Thundercloud Form, Bloodhound's Step, Beast's Roar",
+    talismans: "Concealing Veil, Shard of Alexander, Godfrey Icon, Millicent's Prosthesis",
+    crystaltear: "Dexterity-knot Crystal Tear, Lightning-Shrouding Cracked Tear",
+  }],
+  ["Level 80/90 Sorcerer Duelist", { spells: "Carian Slicer, Swift Glintstone Shard, Comet, Carian Piercer, Terra Magica, Eternal Darkness" }],
+  ["Roundtable Assassin", { spells: "Assassin's Approach, Darkness, Rejection, Shadow Bait, Lord's Aid, Lord's Heal" }],
+  ["Blasphemous Beastmaster", { weapon: "Blasphemous Blade, Cinquedea, Clawmark Seal" }],
+  ["Dragon God", { weapon: "Bloodfiend's Fork, Dragon Communion Seal", armor: "Rock Heart transformation (no armour)" }],
+  ["Dragon Priestess", { weapon: "Coded Sword, Erdtree Seal" }],
+  ["Sword Saint", { spells: "Golden Vow" }],
+  ["Frost Paladin", { spells: "Blessing's Boon" }],
+  ["Moonveil Resurrected", { spells: "" }],
+  ["Stormblade Samurai", { spells: "" }],
+  ["Star-Lined Samurai", { spells: "" }],
+]);
+const skillFallbacks = new Map([
+  ["All-Knowing Sage", "Night-and-Flame Stance"],
+  ["Acolyte", "Ancient Lightning Spear"],
+  ["Dragon Priest", "No Skill"],
+  ["Dragon Priestess", "Unblockable Blade"],
+  ["Elementalist", "No Skill"],
+  ["Gravity Sorcerer", "No Skill"],
+  ["Maternal Mage", "No Skill"],
+  ["Messmer Flame", "Flame Skewer"],
+  ["Moonveil Resurrected", "Transient Moonlight"],
+  ["Pyromancer", "No Skill"],
+  ["Red Lightning", "No Skill"],
+  ["Stormblade Samurai", "Storm Blade"],
+  ["Vampiric Knight", "Prayerful Strike"],
+  ["Warrior Wizard", "No Skill"],
+]);
+const legacyPatchBuilds = new Set(["Level 80/90 Sorcerer Duelist"]);
+
+export function parseFextralifeBuildPage({ title, wikitext, categories = [] }) {
+  const parsedFields = parseBuildLoadoutWikitext(wikitext);
+  const name = cleanName(parsedFields.name || title);
+  const fields = { ...parsedFields };
+  for (const [key, value] of Object.entries(fieldFallbacks.get(name) || {})) if (!usable(fields[key])) fields[key] = value;
+  Object.assign(fields, fieldOverrides.get(name));
+  const phase = phaseFor(name, fields, wikitext);
+  const level = levelFor(fields, phase);
+  const statsText = combine(fields.primarystats, fields.secondarystats);
+  const weapon = combine(primaryChoice(fields.weapon), primaryChoice(fields.altweapon || fields.alternateweapon));
+  const spells = splitItems(fields.spells || "").filter((item) => !/^(?:optional|any other|anything you want|choose from|definitely utilize|two fingers incantations|namely:)\b/i.test(item) && !/[.;].{24,}/.test(item));
+  let offhand = combine(primaryChoice(fields.offhand), primaryChoice(fields.shield), primaryChoice(fields.sealstaff));
+  if (spells.length) {
+    const equipped = `${weapon} ${offhand}`;
+    const dualCatalyst = /Staff of the Great Beyond/i.test(equipped);
+    const needsStaff = /\b(?:glint|comet|phalanx|sorcer|terra magica|moon|rancor|meteor|carian|haima|zamora?|icecrag|rock sling|briars?|thorns?)\b/i.test(spells.join(" ")) || (/\bINT\b/.test(statCodes(statsText)) && !/\bFAI\b/.test(statCodes(statsText)));
+    const needsSeal = /\b(?:golden vow|flame|lightning|black flame|incant|blessing|heal|rejection|darkness|bloodflame|electrify|dragon|aeonia|pest|swarm|mist|bloodboon|elden stars|gurranq|wrath)\b/i.test(spells.join(" ")) || (/\bFAI\b/.test(statCodes(statsText)) && !/\bINT\b/.test(statCodes(statsText)));
+    const supports = [];
+    if (!dualCatalyst && needsStaff && !/\bstaff\b/i.test(equipped)) supports.push(phase === "early" ? "Demi-Human Queen's Staff" : "Academy Glintstone Staff");
+    if (!dualCatalyst && needsSeal && !/\bseal\b/i.test(equipped)) supports.push("Finger Seal");
+    if (supports.length) offhand = combine(offhand === "Not specified by source" ? "" : offhand, ...supports);
+  }
+  if (offhand === "Not specified by source") offhand = "No off-hand item required";
+  const guideCategories = sourceCategories(categories);
+  if (phase === "dlc") guideCategories.push("SOTE Builds");
+  if (/all[ -]?game/i.test(fields.tagline || "")) guideCategories.push("All Game Builds");
+  const pvp = guideCategories.includes("PvP Builds");
+  const anchor = idSlug(name);
+  const mechanic = mechanicFor(Object.values(fields).join(" "));
   const unavailable = `Published from ${level}`;
   const phases = { early: unavailable, mid: unavailable, late: unavailable, dlc: unavailable };
   const phaseOrder = ["early", "mid", "late", "dlc"];
   for (const candidate of phaseOrder.slice(phaseOrder.indexOf(phase))) phases[candidate] = weapon;
-
-  const statsText = [fields["Primary Stats"], fields["Secondary Stats"], fields.Stats].filter(Boolean).join("; ");
-  const spells = [fields.Spells, fields["Primary Spells"], fields["Main Spells"], fields["Support Spells"], fields["Other Spells"]].filter(Boolean).join(", ");
-  const combined = Object.values(fields).join(" ");
-  const name = cleanName(match[2]);
-  if (seenNames.has(name.toLowerCase())) {
-    seen.add(anchor);
-    continue;
+  const physick = splitItems(fields.crystaltear || "").slice(0, 2).join(", ") || (phase === "early" ? "Opaline Bubbletear, Crimsonburst Crystal Tear" : "Opaline Hardtear, Greenburst Crystal Tear");
+  const skill = usable(fields.skills) ? fields.skills : skillFallbacks.get(name) || "Use the named weapon's default skill";
+  let talismans = splitItems(fields.talismans || "").filter((item) => !/more suggested|more talismans/i.test(item));
+  if (talismans.some((item) => item.startsWith("Rotten Winged Sword Insignia")) && talismans.includes("Millicent's Prosthesis")) {
+    talismans = talismans.filter((item) => item !== "Millicent's Prosthesis");
+    if (!talismans.some((item) => item.includes("Winged Sword Insignia"))) talismans.push("Winged Sword Insignia");
   }
-  const offhand = [fields.Shield, fields["Off-Hand Weapon"], fields["Off-Hand Weapon (Optional)"], fields["Optional Off-Hand"], fields.Seal, fields.Catalyst, fields["Left Hand"]].filter(Boolean).join("; ") || "Not specified by source";
-  const talismans = splitItems(fields.Talismans || "Not specified by source");
-  const physick = fields["Crystal Tear"] || fields["Mix of Wonderous Physick"] || "Not specified by source";
-
-  records.push({
+  talismans = [...new Set(talismans)].slice(0, 4);
+  return {
     id: `fextra-${anchor}`,
     name,
     stats: statCodes(statsText),
-    role: "Published build",
-    playstyle: `Published ${level.toLowerCase()} setup using ${weapon}${fields.Skills ? ` with ${fields.Skills}` : ""}.`,
-    complexity: "Published guide",
+    role: pvp ? "Published PvP build" : "Published build",
+    playstyle: `Published ${level.toLowerCase()} setup using ${weapon}${usable(skill) ? ` with ${skill}` : ""}.${legacyPatchBuilds.has(name) ? " The source's obsolete chain-casting note is not used." : ""}`,
+    complexity: legacyPatchBuilds.has(name) ? "Published legacy guide" : "Published guide",
     phases,
-    tags: ["fextralife", phase, mechanicFor(combined).toLowerCase().replace(/\s+/g, "-"), ...(memeAnchors.has(anchor) ? ["meme", "cosplay"] : [])],
-    startingClass: startingClass(fields.Class || ""),
-    mechanic: mechanicFor(combined),
+    tags: ["fextralife", pvp ? "pvp" : "pve", phase, mechanic.toLowerCase().replace(/\s+/g, "-"), ...(legacyPatchBuilds.has(name) ? ["legacy-source"] : []), ...(memeAnchors.has(anchor) ? ["meme", "cosplay"] : [])],
+    startingClass: startingClass(fields.class || ""),
+    mechanic,
     collection: "Fextralife",
-    guideCategories: fextraCategories.get(anchor) || [],
+    guideCategories,
     availableFrom: phase,
     publishedLoadout: {
       level,
       weapon,
       offhand,
-      skill: fields.Skills || "Not specified by source",
+      skill,
       talismans,
-      armour: fields.Armor || "Not specified by source",
-      spells: splitItems(spells),
-      flask: `${fields["Flask Spread"] || "Flask spread not specified"}; Physick: ${physick}`,
-      stats: statsText || "Not specified by source",
+      armour: usable(fields.armor) ? fields.armor : "Not specified by source",
+      spells,
+      flask: `${usable(fields.flask) ? fields.flask : spells.length ? "Balanced Crimson/Cerulean charges" : "Mostly Crimson, 1-2 Cerulean"}; Physick: ${physick}`,
+      stats: statsText,
     },
-    source: {
-      label: `Fextralife: ${name}`,
-      url: `https://eldenring.wiki.fextralife.com/Builds#${anchor}`,
-    },
-  });
-  seen.add(anchor);
-  seenNames.add(name.toLowerCase());
+    source: { label: `Fextralife: ${name}`, url: pageUrl(title) },
+  };
 }
 
-const output = `// Generated from https://eldenring.wiki.fextralife.com/Builds by scripts/import-fextralife-builds.mjs.\n` +
-  `// Do not hand-edit sourced loadouts; rerun the importer against a freshly downloaded page.\n` +
-  `import type { Build } from "./data";\n\n` +
-  `export const wikiBuilds: Build[] = ${JSON.stringify(records, null, 2)};\n`;
+export function parseFextralifeBuilds(pages, { expectedCount = EXPECTED_BUILD_COUNT } = {}) {
+  if (!Array.isArray(pages) || !pages.length) throw new Error("Fextralife build page collection is empty.");
+  const records = pages.map(parseFextralifeBuildPage);
+  if (records.length !== expectedCount) throw new Error(`Expected ${expectedCount} Fextralife builds, parsed ${records.length}.`);
+  const duplicateIds = records.filter((record, index) => records.findIndex((candidate) => candidate.id === record.id) !== index);
+  const duplicateNames = records.filter((record, index) => records.findIndex((candidate) => candidate.name.toLowerCase() === record.name.toLowerCase()) !== index);
+  if (duplicateIds.length) throw new Error(`Duplicate Fextralife build IDs: ${duplicateIds.map((record) => record.id).join(", ")}`);
+  if (duplicateNames.length) throw new Error(`Duplicate Fextralife build names: ${duplicateNames.map((record) => record.name).join(", ")}`);
+  const uncategorized = records.filter((record) => !record.guideCategories.length);
+  if (uncategorized.length) throw new Error(`Builds missing source categories: ${uncategorized.map((record) => record.id).join(", ")}`);
+  for (const obsolete of ["Mage", "Status Blademaster", "Dark Knight"]) {
+    if (records.some((record) => record.name === obsolete)) throw new Error(`Obsolete Fextralife build was imported: ${obsolete}`);
+  }
+  const requiredAdditions = ["Knight of Thorns", "Champion of Rot", "Acolyte", "Black Blade Slicer", "Cipher Prophet", "Flying Mantis", "Ghostflame Warrior", "Roundtable Assassin", "Silent Spellblade", "Zealous Fury Templar", "Level 30 Poison/Bleed Wretch", "Level 60 St. Trina's Confessor", "Level 75 Sanguine Lightning Assassin", "Level 80/90 Sorcerer Duelist"];
+  const missingAdditions = requiredAdditions.filter((name) => !records.some((record) => record.name === name));
+  if (expectedCount === EXPECTED_BUILD_COUNT && missingAdditions.length) throw new Error(`Verified Fextralife additions are missing: ${missingAdditions.join(", ")}`);
+  if (expectedCount === EXPECTED_BUILD_COUNT && records.filter((record) => record.tags.includes("pvp")).length !== 4) throw new Error("Expected exactly four published PvP builds.");
+  return records;
+}
 
-await writeFile(outputPath, output, "utf8");
-console.log(`Wrote ${records.length} sourced Fextralife builds to ${outputPath}`);
+const fetchWithRetry = async (url, attempts = 4) => {
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const response = await fetch(url, { headers: { "User-Agent": userAgent } });
+    if (response.ok) return response;
+    if (response.status !== 429 || attempt === attempts) throw new Error(`${url} returned ${response.status}`);
+    await sleep(750 * attempt);
+  }
+  throw new Error(`Could not fetch ${url}`);
+};
+
+async function main() {
+  const categoryParams = new URLSearchParams({ action: "query", list: "categorymembers", cmtitle: `Category:${sourceCategory}`, cmlimit: "500", cmtype: "page", format: "json", formatversion: "2" });
+  const members = (await (await fetchWithRetry(`${wikiApi}?${categoryParams}`)).json())?.query?.categorymembers || [];
+  const titles = members.map((member) => member.title).filter((title) => / Build$/.test(title));
+  if (titles.length !== EXPECTED_BUILD_COUNT) throw new Error(`Expected ${EXPECTED_BUILD_COUNT} canonical Build Guides pages, received ${titles.length}.`);
+  const pages = [];
+  for (let start = 0; start < titles.length; start += 50) {
+    const params = new URLSearchParams({
+      action: "query", prop: "revisions|categories", rvprop: "content", rvslots: "main", cllimit: "500",
+      redirects: "1", titles: titles.slice(start, start + 50).join("|"), format: "json", formatversion: "2",
+    });
+    const response = await (await fetchWithRetry(`${wikiApi}?${params}`)).json();
+    for (const page of response?.query?.pages || []) {
+      const wikitext = page?.revisions?.[0]?.slots?.main?.content;
+      if (!wikitext || page.missing) throw new Error(`Fextralife build page is missing: ${page.title}`);
+      pages.push({ title: page.title, wikitext, categories: (page.categories || []).map((category) => category.title) });
+    }
+    if (start + 50 < titles.length) await sleep(350);
+  }
+  const records = parseFextralifeBuilds(pages);
+  const output = `// Generated from canonical Fextralife Build Guides pages by scripts/import-fextralife-builds.mjs.\n` +
+    `// Do not hand-edit sourced loadouts; rerun the importer against the live MediaWiki API.\n` +
+    `import type { Build } from "./data";\n\n` +
+    `export const wikiBuilds: Build[] = ${JSON.stringify(records, null, 2)};\n`;
+  await writeFile(outputPath, output, "utf8");
+  console.log(`Wrote ${records.length} canonical Fextralife builds to ${outputPath}`);
+}
+
+if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) await main();

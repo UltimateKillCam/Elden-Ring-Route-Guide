@@ -1,6 +1,6 @@
 # Tarnished Together — application plan
 
-Status: planning only; no application code has been started.
+Status: implemented and under continuous content verification.
 
 ## 1. Product decision
 
@@ -10,8 +10,8 @@ The experience is a guided expedition rather than a database: create a party, ch
 
 ## 2. Verified scope baseline
 
-- Content baseline: Elden Ring App/Regulation **1.16.1**, still the newest patch listed by Bandai Namco on 1 August 2026.
-- The unreleased Tarnished Pack is excluded from version one. It launches on 28 August 2026 and adds starting classes, armour, and Torrent customisations.
+- Locally verified content baseline: Elden Ring App/Regulation **1.17**, checked 1 September 2026.
+- The Tarnished Pack's two starting classes, eight armaments, four armour sets and two altered variants are represented. Its invasion events and cosmetic Torrent customisations remain outside the build planner's route scope.
 - Base-game route: all 15 Remembrance bosses, required intermediate bosses, selected-build quests, important missables, Elden Beast, then DLC.
 - DLC route: all 10 Remembrance bosses plus Bayle and required intermediate encounters.
 - DLC access is gated behind Starscourge Radahn and Mohg, Lord of Blood.
@@ -160,6 +160,7 @@ Test representative 2-, 4-, and 6-player parties; test both multiplayer modes; v
 ## 12. Sources used for this plan
 
 - Bandai Namco, [Patch Notes Version 1.16.1](https://en.bandainamcoent.eu/elden-ring/news/elden-ring-patch-notes-version-1161)
+- Bandai Namco, [Patch Notes Version 1.17](https://en.bandainamcoent.eu/elden-ring/news/elden-ring-patch-notes-version-117)
 - Bandai Namco, [How to enter the Realm of Shadow](https://en.bandainamcoent.eu/elden-ring/news/elden-ring-how-enter-the-realm-of-shadow)
 - Bandai Namco, [How to strengthen your character in Shadow of the Erdtree](https://en.bandainamcoent.eu/elden-ring/news/elden-ring-how-strengthen-your-character-shadow-of-the-erdtree)
 - Bandai Namco, [Tarnished Pack availability and contents](https://en.bandainamcoent.eu/elden-ring/news/how-get-new-elden-ring-classes-weapons-and-torrent-skin-customizations)
@@ -168,4 +169,3 @@ Test representative 2-, 4-, and 6-player parties; test both multiplayer modes; v
 - Eldenpedia, [Ranni the Witch](https://eldenring.wiki.gg/wiki/Ranni_the_Witch)
 - Eldenpedia, [Remembrances](https://eldenring.wiki.gg/wiki/Remembrances)
 - MapGenie, [Elden Ring interactive map](https://mapgenie.io/elden-ring)
-

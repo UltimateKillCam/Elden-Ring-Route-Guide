@@ -1,7 +1,7 @@
 "use client";
 
 import { Component, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from "react";
-import { builds, chapters, itemGuides, sources, stageLoadout, type Build, type Chapter, type PhaseKey } from "./data";
+import { builds, selectableBuilds, chapters, itemGuides, sources, stageLoadout, type Build, type Chapter, type PhaseKey } from "./data";
 import { findMapItem, findMapItems, findMapRoutePoint, type MapItem } from "./map-items";
 import { deferredPickupGate, literalItemName, PHASE_START, type PickupGate } from "./progression";
 import { splitArmourSpecification } from "./equipment-data";
@@ -23,8 +23,18 @@ import {
   type StatKey,
   type UpgradePath,
 } from "./run-planner";
-import { findWeaponUpgradeRecord, weaponUpgradePath } from "./weapon-upgrades";
+import { findWeaponUpgradeRecords, weaponUpgradePath } from "./weapon-upgrades";
 import { QUEST_STEP_GUIDES } from "./quest-route";
+import { isAccessRequirementTask, missingAccessRequirements } from "./access-graph";
+import { buffForPickup, buffRoutine, buffSupportItems, buffsForLoadout } from "./buffs";
+import {
+  ALL_OPTIONAL_QUEST_TRACK_IDS,
+  OPTIONAL_QUEST_TRACKS,
+  expandQuestTrackIds,
+  optionalQuestTracksForLabel,
+  requiredQuestTracksForParty,
+  type QuestTrackId,
+} from "./quest-tracks";
 
 type Mode = "solo" | "standard" | "seamless";
 type View = "route" | "selected" | "codex" | "party";
@@ -47,7 +57,19 @@ type Expedition = {
   checkpointStats?: Record<string, Partial<AttributeBlock>>;
   checkpointWeaponLevels?: Record<string, number>;
   runeBossSelections?: Record<string, string[]>;
+  /** Undefined means a legacy save created before quest selection and keeps all tracks enabled. */
+  optionalQuestTracks?: QuestTrackId[];
 };
+type RemoteExpeditionState = {
+  enabled?: boolean;
+  requiresJoin?: boolean;
+  revision?: number;
+  source?: string;
+  expedition?: Expedition | null;
+  you?: string | null;
+  error?: string;
+};
+type LanInfo = { joinCode: string; address: string; players: Array<{ id: string; name: string; code: string }> };
 type SaveLibrary = { activeId: string | null; saves: Record<string, Expedition> };
 type Task = {
   id: string;
@@ -63,6 +85,7 @@ type Task = {
   optional?: boolean;
   runeBossId?: string;
   mapQuery?: string;
+  questTrack?: QuestTrackId;
 };
 
 const PLAYER_COLORS = ["#d8ad62", "#7db6a8", "#b987aa", "#7698c8", "#c5775e", "#a7a36c"];
@@ -70,6 +93,7 @@ const STORAGE_KEY = "tarnished-together-expedition-v1";
 const SAVE_LIBRARY_KEY = "tarnished-together-save-library-v2";
 
 const newSaveId = () => `run-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+const responseJson = <T,>(response: Response) => response.json() as Promise<T>;
 
 class RouteErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
@@ -85,7 +109,7 @@ const makePlayers = (count: number): Player[] =>
   Array.from({ length: count }, (_, index) => ({
     id: `player-${index + 1}`,
     name: `Tarnished ${index + 1}`,
-    buildId: builds[index % builds.length].id,
+    buildId: selectableBuilds[index % selectableBuilds.length].id,
     color: PLAYER_COLORS[index],
   }));
 
@@ -96,8 +120,8 @@ const wikiUrl = (item: string) => {
 
 const ATTRIBUTE_FILTERS = ["All builds", "Strength", "Dexterity", "Intelligence", "Faith", "Arcane", "Ranged"];
 const COLLECTION_FILTERS = ["All sources", "Curated", "Fextralife", "Other guides", "Meme / cosplay"];
-const FEXTRA_CATEGORY_FILTERS = ["All Fextralife groups", ...Array.from(new Set(builds.flatMap((candidate) => candidate.guideCategories || [])))];
-const MECHANIC_FILTERS = ["All focuses", ...Array.from(new Set(builds.map((candidate) => candidate.mechanic))).sort()];
+const FEXTRA_CATEGORY_FILTERS = ["All Fextralife groups", ...Array.from(new Set(selectableBuilds.flatMap((candidate) => candidate.guideCategories || [])))];
+const MECHANIC_FILTERS = ["All focuses", ...Array.from(new Set(selectableBuilds.map((candidate) => candidate.mechanic))).sort()];
 const SORT_OPTIONS = ["Catalogue order", "Collection", "Attribute", "Combat focus", "Starting class", "Name"];
 const PHASE_ORDER: PhaseKey[] = ["early", "mid", "late", "dlc"];
 
@@ -132,8 +156,8 @@ function buildClassification(build: Build) {
   };
 }
 
-function plannerStartingClass(build: Build) {
-  return build.startingClass === "Not specified" ? planBuildStatTarget(build, 170).origin.name : build.startingClass;
+function plannerStartingClass(build: Build): Build["startingClass"] {
+  return build.startingClass === "Not specified" ? planBuildStatTarget(build, 170).origin.name as Build["startingClass"] : build.startingClass;
 }
 
 function buildSearchText(build: Build) {
@@ -175,6 +199,8 @@ function sortBuilds(candidates: Build[], order: string) {
 }
 
 const inferGuide = (item: string, chapter: Chapter) => {
+  const buff = buffForPickup(item);
+  if (buff) return `Area: ${chapter.region}. ${buff.acquisition}`;
   const exact = Object.entries(itemGuides).find(([key]) => item.includes(key));
   if (exact) return `Area: ${chapter.region}. ${exact[1]}`;
   const marker = findMapItem(item, mapLayerForChapter(chapter)) || findMapItem(item);
@@ -188,8 +214,24 @@ const inferGuide = (item: string, chapter: Chapter) => {
 type LoadoutPickup = { item: string; slot: string };
 
 const cleanItemName = (value: string) => value.toLowerCase().replace(/[+＋]\d+/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+const pickupItemIdentity = (value: string) => literalItemName(value);
+const pickupTaskKey = (value: string) => pickupItemIdentity(value).replace(/\+/g, "plus-").replace(/ /g, "-");
+const stableLabelId = (chapterId: string, label: string) => `${chapterId}-step-${cleanItemName(label).replace(/ /g, "-").slice(0, 96)}`;
+const mapCategoriesForSlot = (slot?: string) => {
+  if (!slot) return undefined;
+  if (/physick/i.test(slot)) return /flask/i;
+  if (/talisman/i.test(slot)) return /talisman/i;
+  if (/armour/i.test(slot)) return /armor/i;
+  if (/spell/i.test(slot)) return /spell/i;
+  if (/skill/i.test(slot)) return /ash/i;
+  if (/weapon|off-hand|catalyst/i.test(slot)) return /weapon|shield/i;
+  return undefined;
+};
+
 function loadoutPickups(loadout: ReturnType<typeof stageLoadout>, chapter: Chapter): LoadoutPickup[] {
   const layer = mapLayerForChapter(chapter);
+  const buffPickups = buffsForLoadout(loadout).map((buff) => ({ item: buff.acquisitionItem, slot: buff.kind === "ash" ? "skill" : "buff spell" }));
+  const supportPickups = buffSupportItems(loadout);
   const fields: Array<{ slot: string; values: string[]; categories: RegExp }> = [
     { slot: "weapon", values: [loadout.weapon], categories: /weapon|shield|ash/i },
     { slot: "off-hand", values: [loadout.offhand], categories: /weapon|shield/i },
@@ -199,13 +241,15 @@ function loadoutPickups(loadout: ReturnType<typeof stageLoadout>, chapter: Chapt
     { slot: "spell", values: loadout.spells, categories: /spell/i },
     { slot: "Physick tear", values: [loadout.flask], categories: /flask/i },
   ];
-  const pickups: LoadoutPickup[] = [];
+  const pickups: LoadoutPickup[] = [...buffPickups, ...supportPickups];
   for (const field of fields) {
     for (const value of field.values) {
       const cleanedValue = cleanItemName(value);
       if (!cleanedValue || /^(?:none|n a|na|not specified|not specified by source|source stats|any|any weapon)$/.test(cleanedValue)) continue;
+      if (field.slot === "skill" && /default skill|no ash of war pickup required|^no skill$/i.test(value)) continue;
       const layerMatches = findMapItems(value, layer, field.categories);
       const allMatches = findMapItems(value, undefined, field.categories);
+      const exactLayerMatches = layerMatches.filter((match) => literalItemName(match.name) === literalItemName(value));
       const exactMatches = allMatches.filter((match) => literalItemName(match.name) === literalItemName(value));
       const embeddedMatches = allMatches
         .filter((match) => {
@@ -213,7 +257,7 @@ function loadoutPickups(loadout: ReturnType<typeof stageLoadout>, chapter: Chapt
           return name.split(" ").length > 1 && literalItemName(value).includes(name);
         })
         .filter((match, _, candidates) => !candidates.some((other) => other !== match && literalItemName(other.name).includes(literalItemName(match.name))));
-      const candidateMatches = exactMatches.length ? exactMatches : embeddedMatches.length ? embeddedMatches : layerMatches.length === 1 ? layerMatches : [];
+      const candidateMatches = exactLayerMatches.length ? exactLayerMatches : exactMatches.length ? exactMatches : embeddedMatches.length ? embeddedMatches : layerMatches.length === 1 ? layerMatches : [];
       const isChoice = /\bor\b|according to|best available|build-specific|named weapon/i.test(value) && ["off-hand", "skill", "talisman", "armour", "spell"].includes(field.slot);
       const selectedMatches = isChoice && candidateMatches.length > 1
         ? [...candidateMatches].sort((a, b) => cleanItemName(value).indexOf(cleanItemName(a.name)) - cleanItemName(value).indexOf(cleanItemName(b.name))).slice(0, 1)
@@ -224,25 +268,35 @@ function loadoutPickups(loadout: ReturnType<typeof stageLoadout>, chapter: Chapt
           if (cleanItemName(value).includes(cleanItemName(known))) pickups.push({ item: known, slot: field.slot });
         }
       }
+      if (!candidateMatches.length && deferredPickupGate(value, { preferredLayer: layer, categoryPattern: field.categories })) {
+        pickups.push({ item: value, slot: field.slot });
+      }
     }
   }
-  return pickups.filter((pickup, index) => pickups.findIndex((candidate) => cleanItemName(candidate.item) === cleanItemName(pickup.item)) === index);
+  return pickups.filter((pickup, index) => pickups.findIndex((candidate) => literalItemName(candidate.item) === literalItemName(pickup.item)) === index);
 }
 
-function routeTiming(value: string, phase: PhaseKey): PickupGate | undefined {
+function routeTiming(value: string, phase: PhaseKey, slot?: string): PickupGate | undefined {
   const phaseStart = chapters.findIndex((chapter) => chapter.id === PHASE_START[phase]);
-  const mapMatches = findMapItems(value);
-  const exactMatches = mapMatches.filter((item) => literalItemName(item.name) === literalItemName(value));
+  const namedBuff = slot === "spell"
+    ? buffsForLoadout({ spells: [value], skill: "" })[0]
+    : slot === "skill"
+      ? buffsForLoadout({ spells: [], skill: value })[0]
+      : undefined;
+  const timedValue = namedBuff?.acquisitionItem || value;
+  const context = { preferredLayer: phase === "dlc" ? "shadow" as const : undefined, categoryPattern: mapCategoriesForSlot(slot) };
+  const mapMatches = findMapItems(timedValue, context.preferredLayer, context.categoryPattern);
+  const exactMatches = mapMatches.filter((item) => literalItemName(item.name) === literalItemName(timedValue));
   const embeddedMatches = mapMatches
     .filter((item) => literalItemName(item.name).split(" ").length > 1 && literalItemName(value).includes(literalItemName(item.name)))
     .filter((item, _, matches) => !matches.some((other) => other !== item && literalItemName(other.name).includes(literalItemName(item.name))));
-  const candidates = new Set([value, ...(exactMatches.length ? exactMatches : embeddedMatches).map((item) => item.name)]);
+  const candidates = new Set([timedValue, ...(exactMatches.length ? exactMatches : embeddedMatches).map((item) => item.name)]);
   Object.keys(itemGuides).forEach((item) => {
-    if (literalItemName(value).includes(literalItemName(item))) candidates.add(item);
+    if (literalItemName(timedValue).includes(literalItemName(item))) candidates.add(item);
   });
   return [...candidates]
-    .map((item) => deferredPickupGate(item))
-    .filter((timing): timing is PickupGate => Boolean(timing) && chapters.findIndex((chapter) => chapter.id === timing.chapterId) >= phaseStart)
+    .map((item) => deferredPickupGate(item, context))
+    .filter((timing): timing is PickupGate => Boolean(timing) && chapters.findIndex((chapter) => chapter.id === timing!.chapterId) >= phaseStart)
     .sort((a, b) => chapters.findIndex((chapter) => chapter.id === b!.chapterId) - chapters.findIndex((chapter) => chapter.id === a!.chapterId))[0];
 }
 
@@ -256,6 +310,7 @@ type EquipmentSnapshot = {
   talismans: string[];
   armour: string[];
   spells: string[];
+  buffRoutine: string;
   physick: string[];
   stats: string;
   weight: string;
@@ -303,57 +358,58 @@ function equipmentTimeline(build: Build, plannedClass: Build["startingClass"], l
   chapters.forEach((chapter, chapterIndex) => {
     const phase = phaseForChapter(chapter);
     const loadout = stageLoadout(build, phase);
-    const timingFor = (value: string) => isEmptyEquipmentValue(value) ? undefined : routeTiming(value, phase);
-    const isAvailable = (value: string, allowUngatedAtStart = true) => {
-      const timing = timingFor(value);
+    const timingFor = (value: string, slot?: string) => isEmptyEquipmentValue(value) ? undefined : routeTiming(value, phase, slot);
+    const isAvailable = (value: string, allowUngatedAtStart = true, slot?: string) => {
+      const timing = timingFor(value, slot);
       if (!timing && chapterIndex === 0 && !allowUngatedAtStart) return false;
       return !timing || chapters.findIndex((candidate) => candidate.id === timing.chapterId) <= chapterIndex;
     };
-    const activeValue = (value: string, fallback: string) => !isEmptyEquipmentValue(value) && isAvailable(value) ? value : fallback;
+    const activeValue = (value: string, fallback: string, slot?: string) => !isEmptyEquipmentValue(value) && isAvailable(value, true, slot) ? value : fallback;
 
     const weaponOptions = mainWeaponOptions(loadout.weapon);
-    const availableWeaponIndex = weaponOptions.findIndex((value) => !isEmptyEquipmentValue(value) && isAvailable(value));
+    const availableWeaponIndex = weaponOptions.findIndex((value) => !isEmptyEquipmentValue(value) && isAvailable(value, true, "weapon"));
     const weapon = availableWeaponIndex >= 0 ? weaponOptions[availableWeaponIndex] : previous?.weapon || weaponOptions[0];
-    const offhand = activeValue(loadout.offhand, previous?.offhand || "None");
+    const offhand = activeValue(loadout.offhand, previous?.offhand || "None", "off-hand");
     const skillOptions = /\bor\b|&/i.test(loadout.skill) ? loadout.skill.split(/\s+(?:or|&)\s+/i).map((option) => option.trim()).filter(Boolean) : [loadout.skill];
-    const matchingSkill = availableWeaponIndex >= 0 && skillOptions[availableWeaponIndex] ? skillOptions[availableWeaponIndex] : skillOptions.find((value) => isAvailable(value)) || loadout.skill;
+    const matchingSkill = availableWeaponIndex >= 0 && skillOptions[availableWeaponIndex] ? skillOptions[availableWeaponIndex] : skillOptions.find((value) => isAvailable(value, true, "skill")) || loadout.skill;
     const skill = !previous && chapterIndex === 0
       ? loadout.skill
       : availableWeaponIndex < 0 && previous
         ? previous.skill
-        : activeValue(matchingSkill, previous?.skill || "Use the weapon's default skill");
-    const availableTalismans = loadout.talismans.filter((value) => !isEmptyEquipmentValue(value) && isAvailable(value, false));
+        : activeValue(matchingSkill, previous?.skill || "Use the weapon's default skill", "skill");
+    const availableTalismans = loadout.talismans.filter((value) => !isEmptyEquipmentValue(value) && isAvailable(value, false, "talisman"));
     const retainedTalismans = (previous?.talismans || []).filter((value) => !availableTalismans.includes(value));
     const talismans = [...availableTalismans, ...retainedTalismans].slice(0, talismanSlotsForChapter(chapterIndex));
-    const availableArmour = armourNames(loadout.armour).filter((value) => isAvailable(value, false));
+    const availableArmour = armourNames(loadout.armour).filter((value) => isAvailable(value, false, "armour"));
     const armour = availableArmour.length ? availableArmour : previous?.armour || [`${plannedClass} starting armour`];
-    const availableSpells = normalizedSpells(loadout.spells).filter((value) => !isEmptyEquipmentValue(value) && isAvailable(value, false));
+    const availableSpells = normalizedSpells(loadout.spells).filter((value) => !isEmptyEquipmentValue(value) && isAvailable(value, false, "spell"));
     const spells = availableSpells.length ? availableSpells : previous?.spells || [];
     const physickItems = findMapItems(loadout.flask, undefined, /flask/i).map((item) => item.name).filter((value, index, values) => values.indexOf(value) === index);
-    const availablePhysick = physickItems.filter((value) => !isEmptyEquipmentValue(value) && isAvailable(value, false));
+    const availablePhysick = physickItems.filter((value) => !isEmptyEquipmentValue(value) && isAvailable(value, false, "Physick tear"));
     const physick = availablePhysick.length ? availablePhysick : previous?.physick || [];
 
     const economy = CHAPTER_ECONOMY_BY_ID[chapter.id];
     const targetLevel = economy ? guideTargets(economy, levelOffset).runeLevel : Number(chapter.level.match(/\d+/)?.[0] || 150);
-    const statPlan = planBuildStatTarget({ ...build, startingClass: plannedClass }, targetLevel, weaponRequirements(weapon));
+    const statPlan = planBuildStatTarget({ ...build, startingClass: plannedClass }, targetLevel, weaponRequirements(weapon, offhand));
     const armourWeight = splitArmourSpecification(armour.join(", ")).reduce((sum, piece) => sum + piece.weight, 0);
-    const weaponWeight = findWeaponUpgradeRecord(weapon)?.weight || 0;
-    const offhandWeight = findWeaponUpgradeRecord(offhand)?.weight || 0;
+    const weaponWeight = findWeaponUpgradeRecords(weapon).reduce((total, record) => total + (record.weight || 0), 0);
+    const offhandWeight = findWeaponUpgradeRecords(offhand).reduce((total, record) => total + (record.weight || 0), 0);
     const loadTier = /light load|below 30%|blue dancer/i.test(loadout.armour) ? "light" : "medium";
     const loadLimit = maxWeightForTier(maxEquipLoad(statPlan.attributes.endurance), loadTier);
     const weight = `${(armourWeight + weaponWeight + offhandWeight).toFixed(1)} equipped / ${loadLimit.toFixed(1)} ${loadTier}-load limit at END ${statPlan.attributes.endurance}`;
     const stats = (Object.keys(STAT_LABELS) as StatKey[]).map((stat) => `${STAT_LABELS[stat]} ${statPlan.attributes[stat]}`).join(" · ");
 
-    const signature = JSON.stringify({ weapon, offhand, skill, talismans, armour, spells, physick });
+    const activeBuffRoutine = buffRoutine({ spells, skill });
+    const signature = JSON.stringify({ weapon, offhand, skill, talismans, armour, spells, physick, activeBuffRoutine });
     if (signature === previousSignature) return;
-    const activeValues = [weapon, offhand, skill, ...talismans, ...armour, ...spells, ...physick];
-    const after = Array.from(new Set(activeValues.map(timingFor).filter((timing): timing is PickupGate => timing?.chapterId === chapter.id && Boolean(timing.after)).map((timing) => timing.requires || timing.after!)));
+    const activeValues: Array<[string, string]> = [[weapon, "weapon"], [offhand, "off-hand"], [skill, "skill"], ...talismans.map((value) => [value, "talisman"] as [string, string]), ...armour.map((value) => [value, "armour"] as [string, string]), ...spells.map((value) => [value, "spell"] as [string, string]), ...physick.map((value) => [value, "Physick tear"] as [string, string])];
+    const after = Array.from(new Set(activeValues.map(([value, slot]) => timingFor(value, slot)).filter((timing): timing is PickupGate => timing?.chapterId === chapter.id && Boolean(timing.after)).map((timing) => timing.requires || timing.after!)));
     if (talismans.length > (previous?.talismans.length || 0)) {
       if (chapter.id === "stormveil") after.unshift("Defeat Margit");
       if (chapter.id === "academy") after.unshift("Defeat Rennala");
       if (chapter.id === "leyndell") after.unshift("Defeat Godfrey's golden shade");
     }
-    const snapshot: EquipmentSnapshot = { chapter, phase, after, weapon, offhand, skill, talismans, armour, spells, physick, stats, weight, source: loadout.borrowedFrom };
+    const snapshot: EquipmentSnapshot = { chapter, phase, after, weapon, offhand, skill, talismans, armour, spells, buffRoutine: activeBuffRoutine, physick, stats, weight, source: loadout.borrowedFrom };
     snapshots.push(snapshot);
     previous = snapshot;
     previousSignature = signature;
@@ -377,6 +433,7 @@ function EquipmentTimeline({ build, plannedClass, levelOffset = 0 }: { build: Bu
         <div><dt>Armour equipped</dt><dd>{snapshot.armour.map((value) => <span key={value}>{value}</span>)}</dd></div>
         <div><dt>Equip load</dt><dd>{snapshot.weight}</dd></div>
         <div><dt>Spells equipped</dt><dd>{snapshot.spells.length ? snapshot.spells.map((value) => <span key={value}>{value}</span>) : "None"}</dd></div>
+        <div><dt>Buff routine</dt><dd>{snapshot.buffRoutine}</dd></div>
         <div><dt>Physick equipped</dt><dd>{snapshot.physick.length ? snapshot.physick.map((value) => <span key={value}>{value}</span>) : "No required mix yet"}</dd></div>
         <div><dt>Stats at this point</dt><dd>{snapshot.stats}</dd></div>
       </dl>
@@ -515,6 +572,17 @@ const ESSENTIAL_MAP_QUERIES: Record<string, string> = {
   "Revisit Kenneth on Fort Haight's battlements": "Kenneth Haight (Second Location)",
   "Speak to Ensha at Roundtable Hold before taking a secret medallion": "Haligtree Secret Medallion (Right)",
   "Return to Blaidd in Siofra and exhaust his dialogue": "Blaidd (Ranni's Quest - First Location)",
+  "Confirm the Radahn Festival through Blaidd or Iji": "Blaidd (Ranni's Quest - First Location)",
+  "Ask Iji about Jerren to confirm the Radahn Festival": "Road to the Manor",
+  "Collect the second Deathroot in Deathtouched Catacombs": "Deathroot - Deathtouched Catacombs",
+  "Collect the third Deathroot from the eastern Liurnia Tibia Mariner": "Deathroot - East Liurnia of the Lakes",
+  "Collect the fourth Deathroot behind the Black Knife Catacombs Cemetery Shade": "Deathroot - Black Knife Catacombs",
+  "Give Gurranq Deathroots three and four, then calm him": "Bestial Sanctum",
+  "Collect the fifth Deathroot from the Wyndham Ruins Tibia Mariner": "Deathroot - Wyndham Ruins",
+  "Collect the sixth Deathroot in Gelmir Hero's Grave": "Deathroot - Gelmir's Hero Grave",
+  "Collect the seventh Deathroot in Giants' Mountaintop Catacombs": "Deathroot - Giants' Mountaintop Catacombs",
+  "Collect the eighth Deathroot from the Mountaintops Tibia Mariner": "Deathroot - Mountaintops of the Giants",
+  "Collect the ninth Deathroot in Hidden Path to the Haligtree": "Deathroot - Hidden Path to the Haligtree",
   "Speak to Jerren in Redmane Plaza to begin the festival": "Redmane Castle Plaza",
   "Use both Dectus Medallion halves at the Grand Lift": "Grand Lift of Dectus",
   "Rest at Altus Plateau grace and revisit Roundtable quest NPCs": "Altus Plateau (Site of Grace)",
@@ -560,6 +628,9 @@ const ESSENTIAL_MAP_QUERIES: Record<string, string> = {
   "Defeat Loretta and descend into Elphael": "Loretta, Knight of the Haligtree",
   "Return the needle to Malenia's bloom for Miquella's Needle": "Malenia, Goddess of Rot",
   "Finish Varre's invasion and maiden-blood steps": "White-Mask Varre (Second Location)",
+  "Use three Festering Bloody Fingers for Varre; offline players may defer Magnus to Altus": "White-Mask Varre (Second Location)",
+  "If Varre's invasion trial is complete, soak the Lord of Blood's Favor in maiden blood and return to Varre": "Lord of Blood's Favor - Church of Inhibition",
+  "Keep the Pureblood Knight's Medal if received, but do not use it for early farming": "Pureblood Knight's Medal",
   "Speak to Melina at the Forge and commit to the cardinal sin": "Forge of the Giants",
   "Confirm Radahn and Mohg are defeated": "Mohg, Lord of Blood",
   "Touch Miquella's withered arm in Mohg's arena": "Cocoon of the Empyrean",
@@ -571,7 +642,7 @@ const ESSENTIAL_MAP_QUERIES: Record<string, string> = {
   "Do not defeat Messmer until the faction checks are complete": "Messmer's Dark Chamber",
   "Return to Ymir and exhaust both characters' dialogue": "Count Ymir",
   "Inspect Ymir's empty throne and defeat Swordhand of Night Anna": "Finger Ruins of Miyr",
-  "Ring the Miyr bell and defeat Metyr": "Metyr, Mother of Fingers",
+  "Defeat Metyr after ringing the Miyr bell": "Metyr, Mother of Fingers",
   "Collect Map: Rauh Ruins from the lower ravine route": "Map: Rauh Ruins",
   "Finish Moore, Thiollier, Hornsent, Ansbach, Freyja, Leda, Dane, Igon and Ymir reward checks": "Church of the Bud",
   "Do not touch the sealing tree until every follower check is complete": "Church of the Bud",
@@ -694,16 +765,20 @@ function carriedWeaponCheckpoint(expedition: Expedition, chapterIndex: number, p
   return undefined;
 }
 
-function weaponRequirements(value: string): Partial<AttributeBlock> {
-  const record = findWeaponUpgradeRecord(value);
-  if (!record) return {};
-  return {
-    ...(record.reqStr ? { strength: record.reqStr } : {}),
-    ...(record.reqDex ? { dexterity: record.reqDex } : {}),
-    ...(record.reqInt ? { intelligence: record.reqInt } : {}),
-    ...(record.reqFai ? { faith: record.reqFai } : {}),
-    ...(record.reqArc ? { arcane: record.reqArc } : {}),
+function weaponRequirements(...values: string[]): Partial<AttributeBlock> {
+  const records = values.flatMap(findWeaponUpgradeRecords);
+  if (!records.length) return {};
+  const requirements: AttributeBlock = {
+    vigor: 0,
+    mind: 0,
+    endurance: 0,
+    strength: Math.max(...records.map((record) => record.reqStr)),
+    dexterity: Math.max(...records.map((record) => record.reqDex)),
+    intelligence: Math.max(...records.map((record) => record.reqInt)),
+    faith: Math.max(...records.map((record) => record.reqFai)),
+    arcane: Math.max(...records.map((record) => record.reqArc)),
   };
+  return Object.fromEntries(Object.entries(requirements).filter(([, value]) => value > 0));
 }
 
 function completeCheckpointStats(value?: Partial<AttributeBlock>): AttributeBlock | undefined {
@@ -820,7 +895,7 @@ function runeSupportPlan(expedition: Expedition): Record<string, RuneSupportChap
       const selected = builds.find((candidate) => candidate.id === player.buildId)!;
       const loadout = stageLoadout(selected, phaseForChapter(chapter));
       const plannedClass = selected.startingClass === "Not specified" ? planBuildStatTarget(selected, 170).origin.name : selected.startingClass;
-      const plan = planBuildStatTarget({ ...selected, startingClass: plannedClass }, targets.runeLevel, weaponRequirements(loadout.weapon));
+      const plan = planBuildStatTarget({ ...selected, startingClass: plannedClass }, targets.runeLevel, weaponRequirements(loadout.weapon, loadout.offhand));
       const pathResult = weaponUpgradePath(loadout.weapon);
       const path: UpgradePath | undefined = pathResult === "none" ? undefined : pathResult;
       const desiredUpgrade = path === "somber" ? targets.somberUpgrade : targets.standardUpgrade;
@@ -855,7 +930,7 @@ function runeSupportPlan(expedition: Expedition): Record<string, RuneSupportChap
       const selected = builds.find((candidate) => candidate.id === player.buildId)!;
       const loadout = stageLoadout(selected, phaseForChapter(chapter));
       const plannedClass = selected.startingClass === "Not specified" ? planBuildStatTarget(selected, 170).origin.name : selected.startingClass;
-      const plan = planBuildStatTarget({ ...selected, startingClass: plannedClass }, targets.runeLevel, weaponRequirements(loadout.weapon));
+      const plan = planBuildStatTarget({ ...selected, startingClass: plannedClass }, targets.runeLevel, weaponRequirements(loadout.weapon, loadout.offhand));
       const pathResult = weaponUpgradePath(loadout.weapon);
       const path: UpgradePath | undefined = pathResult === "none" ? undefined : pathResult;
       const desiredUpgrade = path === "somber" ? targets.somberUpgrade : targets.standardUpgrade;
@@ -913,13 +988,12 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition, su
   for (const player of expedition.players) {
     const selected = builds.find((candidate) => candidate.id === player.buildId)!;
     const currentLoadout = stageLoadout(selected, phase);
-    const currentWeapon = findWeaponUpgradeRecord(currentLoadout.weapon);
     const plannedClass = selected.startingClass === "Not specified"
       ? planBuildStatTarget(selected, 170).origin.name
       : selected.startingClass;
     const planningBuild = { ...selected, startingClass: plannedClass };
     const fundedTargetLevel = chapterSupport?.levels[player.id] ?? targets.runeLevel;
-    const currentPlan = planBuildStatTarget(planningBuild, fundedTargetLevel, weaponRequirements(currentLoadout.weapon));
+    const currentPlan = planBuildStatTarget(planningBuild, fundedTargetLevel, weaponRequirements(currentLoadout.weapon, currentLoadout.offhand));
     const previousTargetLevel = previousEconomy
       ? (support[chapters[chapterIndex - 1]?.id]?.levels[player.id] ?? guideTargets(previousEconomy, levelOffset).runeLevel)
       : currentPlan.origin.level;
@@ -928,9 +1002,9 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition, su
     const levelingFrom = Math.min(fundedTargetLevel, Math.max(currentPlan.origin.level, enteredLevel ?? previousTargetLevel));
     const enteredStats = completeCheckpointStats(carriedCheckpointStats(expedition.checkpointStats, chapterIndex, player.id));
     const previousPlan = enteredLevel !== undefined
-      ? planBuildStatTarget(planningBuild, levelingFrom, weaponRequirements(currentLoadout.weapon))
+      ? planBuildStatTarget(planningBuild, levelingFrom, weaponRequirements(currentLoadout.weapon, currentLoadout.offhand))
       : previousEconomy
-      ? planBuildStatTarget(planningBuild, previousTargetLevel, weaponRequirements(previousLoadout.weapon))
+      ? planBuildStatTarget(planningBuild, previousTargetLevel, weaponRequirements(previousLoadout.weapon, previousLoadout.offhand))
       : { ...currentPlan, targetRuneLevel: currentPlan.origin.level, attributes: currentPlan.origin.attributes };
     const levelRunes = runesBetweenLevels(levelingFrom, fundedTargetLevel);
     const cumulativeLevelRunes = runesBetweenLevels(currentPlan.origin.level, fundedTargetLevel);
@@ -950,13 +1024,14 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition, su
     const supplementalRunes = chapterSupport?.cumulativeBossRunes ?? 0;
     const projectedLow = expected.low + supplementalRunes - cumulativeLevelRunes - cumulativeMaterials - economy.purchaseReserve;
     const projectedHigh = expected.high + supplementalRunes - cumulativeLevelRunes - cumulativeMaterials - economy.purchaseReserve;
-    const changes = statScheduleText(enteredStats ?? previousPlan.attributes, currentPlan.attributes, levelingFrom, currentPlan.priorities, weaponRequirements(currentLoadout.weapon), fundedTargetLevel - levelingFrom);
-    const requirementText = currentWeapon
-      ? ` Weapon requirements: ${[["STR", currentWeapon.reqStr], ["DEX", currentWeapon.reqDex], ["INT", currentWeapon.reqInt], ["FAI", currentWeapon.reqFai], ["ARC", currentWeapon.reqArc]].filter(([, value]) => Number(value) > 0).map(([stat, value]) => `${stat} ${value}`).join(", ") || "none"}.`
+    const changes = statScheduleText(enteredStats ?? previousPlan.attributes, currentPlan.attributes, levelingFrom, currentPlan.priorities, weaponRequirements(currentLoadout.weapon, currentLoadout.offhand), fundedTargetLevel - levelingFrom);
+    const equippedRequirements = weaponRequirements(currentLoadout.weapon, currentLoadout.offhand);
+    const requirementText = Object.keys(equippedRequirements).length
+      ? ` Equipment requirements: ${(Object.entries(equippedRequirements) as [StatKey, number][]).map(([stat, value]) => `${STAT_LABELS[stat]} ${value}`).join(", ")}.`
       : "";
     const soreseal = radagonSoresealBridgeAdvice({
       baseStats: previousPlan.attributes,
-      requiredStats: weaponRequirements(currentLoadout.weapon),
+      requiredStats: weaponRequirements(currentLoadout.weapon, currentLoadout.offhand),
       targetLevel: fundedTargetLevel,
       phase,
     });
@@ -1001,8 +1076,9 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition, su
       const armourPieces = parsedArmour.length ? parsedArmour : splitArmourSpecification(`${currentPlan.origin.name} starting armour`);
       const armourWeight = armourPieces.reduce((sum, piece) => sum + piece.weight, 0);
       const armourPoise = armourPieces.reduce((sum, piece) => sum + piece.poise, 0);
-      const offhand = findWeaponUpgradeRecord(currentLoadout.offhand);
-      const knownWeight = armourWeight + (currentWeapon?.weight ?? 0) + (offhand?.weight ?? 0);
+      const equippedWeaponWeight = findWeaponUpgradeRecords(currentLoadout.weapon).reduce((sum, record) => sum + (record.weight || 0), 0);
+      const equippedOffhandWeight = findWeaponUpgradeRecords(currentLoadout.offhand).reduce((sum, record) => sum + (record.weight || 0), 0);
+      const knownWeight = armourWeight + equippedWeaponWeight + equippedOffhandWeight;
       const light = /light load|below 30%|blue dancer/i.test(currentLoadout.armour);
       const maximumLoad = maxEquipLoad(currentPlan.attributes.endurance);
       const loadLimit = maxWeightForTier(maximumLoad, light ? "light" : "medium");
@@ -1014,7 +1090,7 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition, su
       result.push({
         id: `${chapter.id}-armour-${player.id}`,
         label: `${player.name}: armour and equip-load check`,
-        detail: `${pieces}. ${acquisition} Named armour totals ${armourWeight.toFixed(1)} weight and ${armourPoise} poise. With ${currentLoadout.weapon}${currentWeapon?.weight != null ? ` (${currentWeapon.weight} weight)` : ""}${offhand?.weight != null ? ` and the named off-hand (${offhand.weight})` : ""}, the verified subtotal is ${knownWeight.toFixed(1)}. END ${currentPlan.attributes.endurance} gives ${maximumLoad.toFixed(1)} maximum load; stay below ${loadLimit.toFixed(1)} for ${light ? "Light" : "Medium"} Load. That leaves ${remaining.toFixed(1)} for the other hand slots and talismans. Confirm the words “${light ? "Light" : "Medium"} Load” on the Status screen; if it says Heavy Load, remove the heaviest armour piece before leaving the grace.`,
+        detail: `${pieces}. ${acquisition} Named armour totals ${armourWeight.toFixed(1)} weight and ${armourPoise} poise. With ${currentLoadout.weapon}${equippedWeaponWeight > 0 ? ` (${equippedWeaponWeight} weight)` : ""}${equippedOffhandWeight > 0 ? ` and the named off-hand (${equippedOffhandWeight})` : ""}, the verified subtotal is ${knownWeight.toFixed(1)}. END ${currentPlan.attributes.endurance} gives ${maximumLoad.toFixed(1)} maximum load; stay below ${loadLimit.toFixed(1)} for ${light ? "Light" : "Medium"} Load. That leaves ${remaining.toFixed(1)} for the other hand slots and talismans. Confirm the words “${light ? "Light" : "Medium"} Load” on the Status screen; if it says Heavy Load, remove the heaviest armour piece before leaving the grace.`,
         kind: "armour",
         playerId: player.id,
         perPlayer: false,
@@ -1027,7 +1103,14 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition, su
 
 function tasksForChapter(chapter: Chapter, expedition: Expedition, support?: Record<string, RuneSupportChapter>): Task[] {
   const tasks: Task[] = [];
+  const selectedBuilds = expedition.players.map((player) => builds.find((candidate) => candidate.id === player.buildId)).filter((candidate): candidate is Build => Boolean(candidate));
+  const requiredQuestTracks = new Set(requiredQuestTracksForParty(selectedBuilds));
+  const enabledQuestTracks = new Set<QuestTrackId>(expandQuestTrackIds(expedition.optionalQuestTracks === undefined ? ALL_OPTIONAL_QUEST_TRACK_IDS : expedition.optionalQuestTracks));
+  requiredQuestTracks.forEach((track) => enabledQuestTracks.add(track));
   chapter.essentials.forEach((label, index) => {
+    const questTracks = optionalQuestTracksForLabel(label);
+    const questTrack = questTracks[0];
+    if (questTracks.length && !questTracks.some((track) => enabledQuestTracks.has(track))) return;
     const isBoss = label.startsWith("Defeat");
     const isQuest = /speak|meet|quest|dialogue|decision|finish|resolve|ranni|fia|millicent|leda|ansbach|thiollier|moore|igon|varre/i.test(label);
     const optional = /^(?:Optional|Optionally|If the optional)/i.test(label);
@@ -1036,7 +1119,7 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition, support?: Rec
     const essentialItem = findMapItem(label, mapLayerForObjective(chapter, label));
     const guide = essentialGuide(chapter, label, index);
     tasks.push({
-      id: STABLE_ESSENTIAL_TASK_IDS[label] || `${chapter.id}-essential-${index}`,
+      id: STABLE_ESSENTIAL_TASK_IDS[label] || (QUEST_STEP_GUIDES[label] ? stableLabelId(chapter.id, label) : `${chapter.id}-essential-${index}`),
       label,
       detail: isBoss
         ? `${guide} Target ${chapter.level} and ${chapter.upgrade}; stop upgrading once the party reaches the listed cap.`
@@ -1046,6 +1129,7 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition, support?: Rec
       perPlayer,
       scope: perPlayer ? "Each player" : expedition.mode === "seamless" ? "Shared session" : expedition.mode === "solo" ? "Solo" : "Party",
       item: essentialItem?.name,
+      questTrack,
     });
   });
 
@@ -1072,14 +1156,15 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition, support?: Rec
       const loadout = stageLoadout(selected, chapter.phase!);
       const playerPickupTasks: Task[] = [];
       const phaseIndex = PHASE_ORDER.indexOf(chapter.phase!);
-      const earlierItems = new Set(PHASE_ORDER.slice(0, phaseIndex).flatMap((phase) => loadoutPickups(stageLoadout(selected, phase), chapter)).map((pickup) => cleanItemName(pickup.item)));
-      const newPickups = loadoutPickups(loadout, chapter).filter((pickup) => !earlierItems.has(cleanItemName(pickup.item)) && !deferredPickupGate(pickup.item));
+      const earlierItems = new Set(PHASE_ORDER.slice(0, phaseIndex).flatMap((phase) => loadoutPickups(stageLoadout(selected, phase), chapter)).map((pickup) => pickupItemIdentity(pickup.item)));
+      const newPickups = loadoutPickups(loadout, chapter).filter((pickup) => !earlierItems.has(pickupItemIdentity(pickup.item)) && !deferredPickupGate(pickup.item, { preferredLayer: mapLayerForChapter(chapter), categoryPattern: mapCategoriesForSlot(pickup.slot) }));
       newPickups.forEach((pickup, pickupIndex) => {
-        const itemKey = cleanItemName(pickup.item).replace(/ /g, "-");
+        const buff = buffForPickup(pickup.item, pickup.slot);
+        const itemKey = pickupTaskKey(pickup.item);
         const pickupTask: Task = {
           id: pickup.slot === "weapon" && pickupIndex === 0 ? `${chapter.id}-gear-${player.id}` : `${chapter.id}-loadout-item-${player.id}-${selected.id}-${itemKey}`,
           label: pickup.item,
-          detail: `For ${player.name}'s ${selected.name} ${chapter.phase === "dlc" ? "DLC" : chapter.phase} setup. ${inferGuide(pickup.item, chapter)} Once collected, equip it in the ${pickup.slot} slot if this stage uses it.${loadout.borrowedFrom ? ` This temporary stage comes from the sourced ${loadout.borrowedFrom.buildName} guide.` : ""}`,
+          detail: `For ${player.name}'s ${selected.name} ${chapter.phase === "dlc" ? "DLC" : chapter.phase} setup. ${inferGuide(pickup.item, chapter)} ${buff ? `${buff.effect} Requires ${buff.requirements || "no attribute beyond the equipped armament"}${buff.memorySlots ? ` and ${buff.memorySlots} memory slot${buff.memorySlots === 1 ? "" : "s"}` : ""}. ${buff.activation}` : `Once collected, equip it in the ${pickup.slot} slot if this stage uses it.`}${loadout.borrowedFrom ? ` This temporary stage comes from the sourced ${loadout.borrowedFrom.buildName} guide.` : ""}`,
           kind: "gear",
           playerId: player.id,
           perPlayer: false,
@@ -1092,11 +1177,12 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition, support?: Rec
         playerPickupTasks.push(pickupTask);
       });
       const unlockedItems = playerPickupTasks.filter((task) => !expedition.completed[`${task.id}:skipped`] && Boolean(expedition.completed[task.id])).map((task) => task.label);
+      const unlockedBuffs = playerPickupTasks.filter((task) => !expedition.completed[`${task.id}:skipped`] && Boolean(expedition.completed[task.id]) && Boolean(buffForPickup(task.item || "", task.slot))).map((task) => buffForPickup(task.item || "", task.slot)!).filter((buff, index, values) => values.findIndex((candidate) => candidate.id === buff.id) === index);
       tasks.push({
         id: `${chapter.id}-loadout-${player.id}`,
         label: `${selected.name}: equip unlocked items`,
         detail: unlockedItems.length
-          ? `For ${player.name}. Equip only what has been collected: ${unlockedItems.join(", ")}. Keep the current weapon, armour, talismans, skills and Physick in every other slot until their own route cards are completed.`
+          ? `For ${player.name}. Equip only what has been collected: ${unlockedItems.join(", ")}. Keep the current weapon, armour, talismans, skills and Physick in every other slot until their own route cards are completed.${unlockedBuffs.length ? ` Buff setup: ${unlockedBuffs.map((buff) => buff.activation).join(" ")}` : ""}`
           : `For ${player.name}. No new build item has been collected yet. Keep the current equipment unchanged; this card will update as the individual item steps above are completed.`,
         kind: "gear",
         playerId: player.id,
@@ -1115,15 +1201,23 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition, support?: Rec
     PHASE_ORDER.forEach((phase) => {
       const loadout = stageLoadout(selected, phase);
       loadoutPickups(loadout, chapter).forEach((pickup) => {
-        const itemKey = cleanItemName(pickup.item);
+        const itemKey = pickupItemIdentity(pickup.item);
         if (seen.has(itemKey)) return;
         seen.add(itemKey);
-        const pickupGate = deferredPickupGate(pickup.item);
+        const pickupGate = deferredPickupGate(pickup.item, { preferredLayer: mapLayerForChapter(chapter), categoryPattern: mapCategoriesForSlot(pickup.slot) });
         if (pickupGate?.chapterId !== chapter.id) return;
+        const acquisitionNote = pickupGate.difficulty === "pickup"
+          ? "This is a route pickup or purchase; normal enemies may be bypassed when the guide says so."
+          : pickupGate.difficulty === "quest"
+            ? "This is a quest reward; complete the named quest state rather than treating it as a loose pickup."
+            : pickupGate.difficulty === "enemy"
+              ? "This requires the named enemy encounter, so it is scheduled by fight difficulty rather than map access alone."
+              : "This reward is boss-gated and cannot be rushed as a harmless pickup.";
+        const buff = buffForPickup(pickup.item, pickup.slot);
         deferredTasks.push({
-          id: `${chapter.id}-loadout-item-${player.id}-${selected.id}-${itemKey.replace(/ /g, "-")}`,
+          id: `${chapter.id}-loadout-item-${player.id}-${selected.id}-${pickupTaskKey(pickup.item)}`,
           label: pickup.item,
-          detail: `For ${player.name}'s ${selected.name} setup. ${pickupGate.requires ? `Prerequisite: ${pickupGate.requires}. ` : ""}${inferGuide(pickup.item, chapter)} Once collected, equip it in the ${pickup.slot} slot when the build stage calls for it. If this optional fight is not comfortable yet, skip the card and return before leaving this chapter.`,
+          detail: `For ${player.name}'s ${selected.name} setup. ${pickupGate.requires ? `Prerequisite: ${pickupGate.requires}. ` : ""}${acquisitionNote} ${inferGuide(pickup.item, chapter)} ${buff ? `${buff.effect} Requires ${buff.requirements || "no attribute beyond the equipped armament"}${buff.memorySlots ? ` and ${buff.memorySlots} memory slot${buff.memorySlots === 1 ? "" : "s"}` : ""}. ${buff.activation}` : `Once collected, equip it in the ${pickup.slot} slot when the build stage calls for it.`} If this optional fight is not comfortable yet, skip the card and return before leaving this chapter.`,
           kind: "gear",
           playerId: player.id,
           perPlayer: false,
@@ -1208,8 +1302,14 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
   const [fextraCategory, setFextraCategory] = useState("All Fextralife groups");
   const [sort, setSort] = useState("Catalogue order");
   const [detail, setDetail] = useState<Build | null>(null);
+  const [optionalQuestTracks, setOptionalQuestTracks] = useState<QuestTrackId[]>([]);
 
-  const visibleBuilds = sortBuilds(builds.filter((candidate) => {
+  const requiredQuestTracks = useMemo(() => requiredQuestTracksForParty(
+    players.map((player) => builds.find((candidate) => candidate.id === player.buildId)).filter((candidate): candidate is Build => Boolean(candidate)),
+  ), [players]);
+  const activeQuestTracks = new Set(expandQuestTrackIds([...optionalQuestTracks, ...requiredQuestTracks]));
+
+  const visibleBuilds = sortBuilds(selectableBuilds.filter((candidate) => {
     return buildSearchText(candidate).includes(query.toLowerCase()) && matchesBuildFilter(candidate, filter) && matchesCollection(candidate, collection) && (mechanic === "All focuses" || candidate.mechanic === mechanic) && (fextraCategory === "All Fextralife groups" || candidate.guideCategories?.includes(fextraCategory));
   }), sort);
 
@@ -1257,7 +1357,7 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
 
       <section className="build-picker">
         <div className="picker-heading"><div className="settings-title"><span>2</span><div><h2>Choose a build for {players[activePlayer].name}</h2><p>Open any build to see the complete equipment plan before assigning it.</p></div></div><div className="selected-build-summary"><small>Currently selected</small><strong>{builds.find((candidate) => candidate.id === players[activePlayer].buildId)?.name}</strong></div></div>
-        <div className="picker-tools extended"><label><span>Search builds</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Weapon, damage type or playstyle" /></label><label><span>Source category</span><select value={collection} onChange={(event) => setCollection(event.target.value)}>{COLLECTION_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Fextralife group</span><select value={fextraCategory} onChange={(event) => setFextraCategory(event.target.value)}>{FEXTRA_CATEGORY_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Build type</span><select value={filter} onChange={(event) => setFilter(event.target.value)}>{ATTRIBUTE_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Combat focus</span><select value={mechanic} onChange={(event) => setMechanic(event.target.value)}>{MECHANIC_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Sort by</span><select value={sort} onChange={(event) => setSort(event.target.value)}>{SORT_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select></label><p>{visibleBuilds.length} of {builds.length} builds</p></div>
+        <div className="picker-tools extended"><label><span>Search builds</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Weapon, damage type or playstyle" /></label><label><span>Source category</span><select value={collection} onChange={(event) => setCollection(event.target.value)}>{COLLECTION_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Fextralife group</span><select value={fextraCategory} onChange={(event) => setFextraCategory(event.target.value)}>{FEXTRA_CATEGORY_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Build type</span><select value={filter} onChange={(event) => setFilter(event.target.value)}>{ATTRIBUTE_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Combat focus</span><select value={mechanic} onChange={(event) => setMechanic(event.target.value)}>{MECHANIC_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Sort by</span><select value={sort} onChange={(event) => setSort(event.target.value)}>{SORT_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select></label><p>{visibleBuilds.length} of {selectableBuilds.length} source-audited builds</p></div>
         <div className="setup-build-grid">
           {visibleBuilds.map((candidate) => {
             const selected = candidate.id === players[activePlayer].buildId;
@@ -1273,8 +1373,29 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
         </div>
       </section>
 
-      <div className="setup-actions"><div><strong>{players.length} {players.length === 1 ? "player" : "players"} ready</strong><span>{mode === "solo" ? "Solo route with no co-op rune reduction." : mode === "standard" ? "Standard co-op; world steps will be repeated per player." : "Seamless Co-op; host and individual pickups are tracked separately."} Rune plans keep a {lossRate}% loss allowance and run {levelOffset ? `${levelOffset} levels below guide pace` : "at guide pace"}.</span></div><button type="button" onClick={() => onCreate({ schema: 1, saveId: newSaveId(), activeChapterId: chapters[0].id, name: name.trim() || "Untitled expedition", mode, players, hostId: players[0].id, completed: {}, createdAt: new Date().toISOString(), lossRate, levelOffset, checkpointRunes: {}, checkpointLevels: {}, checkpointStats: {}, checkpointWeaponLevels: {}, runeBossSelections: {} })}>Create route</button></div>
-      <footer className="setup-footer">Unofficial fan project. Full spoilers. Data baseline: regulation 1.16.1.</footer>
+      <section className="quest-picker" aria-label="Optional questlines">
+        <div className="settings-title"><span>3</span><div><h2>Choose optional questlines</h2><p>The all-Remembrance route, Ranni, Fia, Melina, Roundtable access and required area unlocks are always included. Build-required tracks are selected automatically.</p></div></div>
+        <div className="quest-preset-actions">
+          <button type="button" onClick={() => setOptionalQuestTracks([])}>Build-required only</button>
+          <button type="button" onClick={() => setOptionalQuestTracks(ALL_OPTIONAL_QUEST_TRACK_IDS)}>Select all</button>
+        </div>
+        {(["Base game", "Shadow of the Erdtree"] as const).map((act) => <div className="quest-track-group" key={act}>
+          <h3>{act}</h3>
+          <div className="quest-track-grid">
+            {OPTIONAL_QUEST_TRACKS.filter((track) => track.act === act).map((track) => {
+              const required = requiredQuestTracks.includes(track.id);
+              const checked = activeQuestTracks.has(track.id);
+              return <label className={required ? "required" : ""} key={track.id}>
+                <input type="checkbox" checked={checked} disabled={required} onChange={(event) => setOptionalQuestTracks((current) => event.target.checked ? [...new Set([...current, track.id])] : current.filter((id) => id !== track.id))} />
+                <span><strong>{track.name}{required ? " · required by a selected build" : ""}</strong><small>{track.summary}</small><em>{track.reward}</em></span>
+              </label>;
+            })}
+          </div>
+        </div>)}
+      </section>
+
+      <div className="setup-actions"><div><strong>{players.length} {players.length === 1 ? "player" : "players"} ready</strong><span>{mode === "solo" ? "Solo route with no co-op rune reduction." : mode === "standard" ? "Standard co-op; world steps will be repeated per player." : "Seamless Co-op; host and individual pickups are tracked separately."} {activeQuestTracks.size} optional quest track{activeQuestTracks.size === 1 ? "" : "s"}. Rune plans keep a {lossRate}% loss allowance and run {levelOffset ? `${levelOffset} levels below guide pace` : "at guide pace"}.</span></div><button type="button" onClick={() => onCreate({ schema: 1, saveId: newSaveId(), activeChapterId: chapters[0].id, name: name.trim() || "Untitled expedition", mode, players, hostId: players[0].id, completed: {}, createdAt: new Date().toISOString(), lossRate, levelOffset, checkpointRunes: {}, checkpointLevels: {}, checkpointStats: {}, checkpointWeaponLevels: {}, runeBossSelections: {}, optionalQuestTracks: Array.from(activeQuestTracks) })}>Create route</button></div>
+      <footer className="setup-footer">Unofficial fan project. Full spoilers. Verified data: App/Regulation 1.17, checked 1 September 2026.</footer>
       {detail && <FullBuildDetails build={detail} onClose={() => setDetail(null)} assignLabel={`Assign to ${players[activePlayer].name}`} onAssign={() => chooseBuild(detail)} />}
     </main>
   );
@@ -1385,6 +1506,7 @@ function RuneCheckpointPanel({
   expedition,
   support,
   setExpedition,
+  locked = false,
   viewerPlayerId,
   onViewerUpdate,
 }: {
@@ -1392,6 +1514,7 @@ function RuneCheckpointPanel({
   expedition: Expedition;
   support: Record<string, RuneSupportChapter>;
   setExpedition: React.Dispatch<React.SetStateAction<Expedition | null>>;
+  locked?: boolean;
   viewerPlayerId?: string;
   onViewerUpdate?: (kind: "completed" | "runes" | "levels" | "stats" | "weapons", key: string, value: boolean | number | Partial<AttributeBlock>) => void;
 }) {
@@ -1409,6 +1532,7 @@ function RuneCheckpointPanel({
   });
 
   const setRunes = (playerId: string, value: number) => {
+    if (locked) return;
     const key = `${chapter.id}:${playerId}`;
     if (viewerPlayerId) {
       if (viewerPlayerId !== playerId) return;
@@ -1419,6 +1543,7 @@ function RuneCheckpointPanel({
     setExpedition((current) => current ? { ...current, checkpointRunes: { ...(current.checkpointRunes || {}), [key]: value } } : current);
   };
   const setLevel = (playerId: string, value: number) => {
+    if (locked) return;
     const key = `${chapter.id}:${playerId}`;
     const level = Math.max(1, Math.min(713, Math.floor(value || 1)));
     if (viewerPlayerId) {
@@ -1430,6 +1555,7 @@ function RuneCheckpointPanel({
     setExpedition((current) => current ? { ...current, checkpointLevels: { ...(current.checkpointLevels || {}), [key]: level } } : current);
   };
   const setStat = (playerId: string, stat: StatKey, value: number) => {
+    if (locked) return;
     const key = `${chapter.id}:${playerId}`;
     const statValue = Math.max(1, Math.min(99, Math.floor(value || 1)));
     const update = (current: Expedition) => ({ ...current, checkpointStats: { ...(current.checkpointStats || {}), [key]: { ...(current.checkpointStats?.[key] || {}), [stat]: statValue } } });
@@ -1443,6 +1569,7 @@ function RuneCheckpointPanel({
     setExpedition((current) => current ? update(current) : current);
   };
   const setWeaponLevel = (playerId: string, value: number, maximum: number) => {
+    if (locked) return;
     const key = `${chapter.id}:${playerId}`;
     const weaponLevel = Math.max(0, Math.min(maximum, Math.floor(value || 0)));
     const update = (current: Expedition) => ({ ...current, checkpointWeaponLevels: { ...(current.checkpointWeaponLevels || {}), [key]: weaponLevel } });
@@ -1455,24 +1582,27 @@ function RuneCheckpointPanel({
     setExpedition((current) => current ? update(current) : current);
   };
 
-  const setBosses = (ids: string[]) => setExpedition((current) => current ? {
-    ...current,
-    runeBossSelections: { ...(current.runeBossSelections || {}), [chapter.id]: ids },
-  } : current);
+  const setBosses = (ids: string[]) => {
+    if (locked) return;
+    setExpedition((current) => current ? {
+      ...current,
+      runeBossSelections: { ...(current.runeBossSelections || {}), [chapter.id]: ids },
+    } : current);
+  };
   const replaceBoss = (index: number, id: string) => {
     const ids = selectedBosses.map((boss) => boss.id);
     ids[index] = id;
     setBosses(Array.from(new Set(ids)));
   };
   const resetBosses = () => setExpedition((current) => {
-    if (!current) return current;
+    if (!current || locked) return current;
     const selections = { ...(current.runeBossSelections || {}) };
     delete selections[chapter.id];
     return { ...current, runeBossSelections: selections };
   });
 
   return <section className="rune-checkpoint">
-    <header><div><p className="eyebrow">Start-of-chapter checkpoint</p><h3>Fill this in before spending anything</h3><p><strong>Complete this once when you arrive in the chapter, before levelling or reinforcing a weapon.</strong> Rune level, attributes and the same active weapon&apos;s reinforcement level carry forward from the latest earlier checkpoint, so only change values that have increased. Enter held runes again because that balance does not carry forward. These values drive the chapter&apos;s level, weapon and optional-boss recommendations; do not wait until the end of the chapter. <a href="https://eldenring.wiki.gg/wiki/Recommended_Level_by_Location" target="_blank" rel="noreferrer">Level basis ↗</a></p></div>{!viewerPlayerId && !everyPlayerIsOverTarget && expedition.runeBossSelections?.[chapter.id] && <button type="button" onClick={resetBosses}>Restore recommended bosses</button>}</header>
+    <header><div><p className="eyebrow">Start-of-chapter checkpoint</p><h3>Fill this in before spending anything</h3><p><strong>Complete this once when you arrive in the chapter, before levelling or reinforcing a weapon.</strong> Rune level, attributes and the same active weapon&apos;s reinforcement level carry forward from the latest earlier checkpoint, so only change values that have increased. Enter held runes again because that balance does not carry forward. These values drive the chapter&apos;s level, weapon and optional-boss recommendations; do not wait until the end of the chapter. <a href="https://eldenring.wiki.gg/wiki/Recommended_Level_by_Location" target="_blank" rel="noreferrer">Level basis ↗</a></p></div>{!viewerPlayerId && !everyPlayerIsOverTarget && expedition.runeBossSelections?.[chapter.id] && <button type="button" disabled={locked} onClick={resetBosses}>Restore recommended bosses</button>}</header>
     <div className="rune-balance-grid">
       {expedition.players.map((player) => {
         const build = builds.find((candidate) => candidate.id === player.buildId)!;
@@ -1501,9 +1631,9 @@ function RuneCheckpointPanel({
         const playerIsOverTarget = currentLevel !== undefined && currentLevel >= level;
         const levelCost = playerIsOverTarget ? 0 : runesBetweenLevels(levelingFrom, level);
         const required = playerIsOverTarget ? 0 : levelCost + materialCost + economy.purchaseReserve;
-        const exactLevelPlan = planBuildStatTarget(build, level, weaponRequirements(loadout.weapon));
-        const exactStartPlan = planBuildStatTarget(build, levelingFrom, weaponRequirements(loadout.weapon));
-        const recommendedNow = planBuildStatTarget(build, currentLevel ?? previousLevel, weaponRequirements(loadout.weapon));
+        const exactLevelPlan = planBuildStatTarget(build, level, weaponRequirements(loadout.weapon, loadout.offhand));
+        const exactStartPlan = planBuildStatTarget(build, levelingFrom, weaponRequirements(loadout.weapon, loadout.offhand));
+        const recommendedNow = planBuildStatTarget(build, currentLevel ?? previousLevel, weaponRequirements(loadout.weapon, loadout.offhand));
         const originLevel = recommendedNow.origin.level;
         const currentLevelForWeapon = currentLevel ?? previousLevel;
         const previousSpan = Math.max(1, previousLevel - originLevel);
@@ -1511,12 +1641,12 @@ function RuneCheckpointPanel({
         const recommendedWeaponNow = !path ? 0 : currentLevelForWeapon <= previousLevel
           ? Math.max(0, Math.min(previousUpgrade, Math.floor(previousUpgrade * Math.max(0, currentLevelForWeapon - originLevel) / previousSpan)))
           : Math.max(previousUpgrade, Math.min(upgrade, Math.floor(previousUpgrade + (upgrade - previousUpgrade) * Math.min(1, (currentLevelForWeapon - previousLevel) / chapterSpan))));
-        const exactChanges = statScheduleText(actualStats ?? exactStartPlan.attributes, exactLevelPlan.attributes, levelingFrom, exactLevelPlan.priorities, weaponRequirements(loadout.weapon), level - levelingFrom);
+        const exactChanges = statScheduleText(actualStats ?? exactStartPlan.attributes, exactLevelPlan.attributes, levelingFrom, exactLevelPlan.priorities, weaponRequirements(loadout.weapon, loadout.offhand), level - levelingFrom);
         const enteredPointTotal = actualStats ? (Object.keys(STAT_LABELS) as StatKey[]).reduce((sum, stat) => sum + actualStats[stat] - recommendedNow.origin.attributes[stat], 0) : undefined;
         const expectedPointTotal = currentLevel !== undefined ? currentLevel - recommendedNow.origin.level : undefined;
         const withBosses = (held ?? 0) + (currentSupport?.chapterBossRunes ?? 0);
         const gap = playerIsOverTarget ? 0 : Math.max(0, required - withBosses);
-        const editable = !viewerPlayerId || viewerPlayerId === player.id;
+        const editable = !locked && (!viewerPlayerId || viewerPlayerId === player.id);
         return <article key={player.id} style={{ "--player": player.color } as React.CSSProperties}>
           <div><strong>{player.name}</strong><span>RL{previousLevel} → RL{level}</span></div>
           <div className="checkpoint-inputs"><label>Current RL<input type="number" min="1" max="713" step="1" disabled={!editable} value={currentLevel ?? ""} placeholder={`Expected ${previousLevel}`} onChange={(event) => setLevel(player.id, Number(event.target.value))} /></label><label>Runes held<input type="number" min="0" step="100" disabled={!editable} value={held ?? ""} placeholder="Enter current runes" onChange={(event) => setRunes(player.id, Math.max(0, Number(event.target.value) || 0))} /></label></div>
@@ -1530,10 +1660,10 @@ function RuneCheckpointPanel({
         </article>;
       })}
     </div>
-    {selectedBosses.length > 0 && <div className="rune-boss-manager"><div className="objectives-heading"><div><p className="eyebrow">Optional rune fights</p><h3>Recommended top-up bosses</h3></div><span>{selectedBosses.length} selected</span></div><div className="rune-boss-grid">{selectedBosses.map((boss, index) => <article key={`${boss.id}-${index}`}><BossMapThumbnail boss={boss} /><div className="rune-boss-copy"><strong>{boss.name}</strong><span>{boss.location}</span><dl><div><dt>Recommended</dt><dd>RL {recommendedOptionalBossLevel(boss)}+</dd></div><div><dt>Solo reward</dt><dd>{formatRunes(boss.runes)}</dd></div></dl>{!viewerPlayerId && <div className="rune-boss-actions"><label>Replace with<select value={boss.id} onChange={(event) => replaceBoss(index, event.target.value)}>{alternatives.filter((candidate) => candidate.id === boss.id || !selectedBosses.some((selected) => selected.id === candidate.id)).map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name} · RL {recommendedOptionalBossLevel(candidate)} · {formatRunes(candidate.runes)}</option>)}</select></label><button type="button" onClick={() => setBosses(selectedBosses.filter((_, bossIndex) => bossIndex !== index).map((candidate) => candidate.id))}>Skip this boss</button></div>}</div></article>)}</div></div>}
+      {selectedBosses.length > 0 && <div className="rune-boss-manager"><div className="objectives-heading"><div><p className="eyebrow">Optional rune fights</p><h3>Recommended top-up bosses</h3></div><span>{selectedBosses.length} selected</span></div><div className="rune-boss-grid">{selectedBosses.map((boss, index) => <article key={`${boss.id}-${index}`}><BossMapThumbnail boss={boss} /><div className="rune-boss-copy"><strong>{boss.name}</strong><span>{boss.location}</span><dl><div><dt>Recommended</dt><dd>RL {recommendedOptionalBossLevel(boss)}+</dd></div><div><dt>Solo reward</dt><dd>{formatRunes(boss.runes)}</dd></div></dl>{!viewerPlayerId && <div className="rune-boss-actions"><label>Replace with<select disabled={locked} value={boss.id} onChange={(event) => replaceBoss(index, event.target.value)}>{alternatives.filter((candidate) => candidate.id === boss.id || !selectedBosses.some((selected) => selected.id === candidate.id)).map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name} · RL {recommendedOptionalBossLevel(candidate)} · {formatRunes(candidate.runes)}</option>)}</select></label><button type="button" disabled={locked} onClick={() => setBosses(selectedBosses.filter((_, bossIndex) => bossIndex !== index).map((candidate) => candidate.id))}>Skip this boss</button></div>}</div></article>)}</div></div>}
     {!selectedBosses.length && alternatives.length > 0 && !viewerPlayerId && (everyPlayerIsOverTarget
-      ? <div className="empty-rune-bosses"><p>Optional rune bosses are disabled because every recorded player already meets or exceeds this chapter's level target.</p></div>
-      : <div className="empty-rune-bosses"><p>No optional rune boss is selected. The planner has lowered the funded level to match that choice.</p><button type="button" onClick={resetBosses}>Use recommended bosses</button></div>)}
+      ? <div className="empty-rune-bosses"><p>Optional rune bosses are disabled because every recorded player already meets or exceeds this chapter&apos;s level target.</p></div>
+      : <div className="empty-rune-bosses"><p>No optional rune boss is selected. The planner has lowered the funded level to match that choice.</p><button type="button" disabled={locked} onClick={resetBosses}>Use recommended bosses</button></div>)}
   </section>;
 }
 
@@ -1543,10 +1673,24 @@ function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, act
   const completedTasks = tasks.filter((task) => taskDone(task, expedition)).length;
   const chapterIndex = chapters.indexOf(chapter);
   const nextStep = nextIncompleteTask(expedition, tasksByChapter);
+  const taskForLabel = (label: string) => Object.values(tasksByChapter).flat().find((task) => task.label === label);
+  const accessGates = new Map(chapters.map((candidate) => [candidate.id, missingAccessRequirements(candidate.id, (label) => {
+    const task = taskForLabel(label);
+    return Boolean(task && taskKeys(task, expedition).every((key) => expedition.completed[key]));
+  })]));
+  const accessGate = accessGates.get(chapter.id);
+  const taskAccessBlocked = (task: Task, chapterId = chapter.id) => Boolean(accessGates.get(chapterId) && !isAccessRequirementTask(chapterId, task.label));
+  const taskSkipBlocked = (task: Task, chapterId = chapter.id) => taskAccessBlocked(task, chapterId) || isAccessRequirementTask(chapterId, task.label);
+  const accessBlocked = Boolean(nextStep && taskAccessBlocked(nextStep.task, nextStep.chapter.id));
+  const activeQuestTracks = Array.from(new Set(tasks.map((task) => task.questTrack).filter((track): track is QuestTrackId => Boolean(track))))
+    .map((trackId) => OPTIONAL_QUEST_TRACKS.find((track) => track.id === trackId)?.name)
+    .filter((name): name is string => Boolean(name));
 
-  const toggle = (key: string) => {
+  const toggle = (key: string, task?: Task, taskChapterId = chapter.id) => {
+    if (task && taskAccessBlocked(task, taskChapterId)) return;
     if (readOnly) {
-      if (!viewerPlayerId || (!key.endsWith(`:${viewerPlayerId}`) && !key.includes(viewerPlayerId))) return;
+      const ownedKey = key.endsWith(`:${viewerPlayerId}`) || key.endsWith(`-${viewerPlayerId}`) || key.includes(`-${viewerPlayerId}-`);
+      if (!viewerPlayerId || !ownedKey) return;
       const value = !expedition.completed[key];
       setExpedition((current) => current ? { ...current, completed: { ...current.completed, [key]: value } } : current);
       onViewerUpdate?.("completed", key, value);
@@ -1556,11 +1700,11 @@ function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, act
   };
 
   const completeAndContinue = () => {
-    if (!nextStep) return;
+    if (!nextStep || accessBlocked) return;
     if (readOnly) {
       if (!viewerPlayerId) return;
       const key = nextStep.task.perPlayer ? `${nextStep.task.id}:${viewerPlayerId}` : nextStep.task.playerId === viewerPlayerId ? nextStep.task.id : "";
-      if (key) toggle(key);
+      if (key) toggle(key, nextStep.task, nextStep.chapter.id);
       return;
     }
     const completed = { ...expedition.completed };
@@ -1572,7 +1716,7 @@ function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, act
   };
 
   const skipAndContinue = () => {
-    if (!nextStep?.task.optional || readOnly) return;
+    if (!nextStep?.task.optional || readOnly || taskSkipBlocked(nextStep.task, nextStep.chapter.id)) return;
     const completed = { ...expedition.completed, [`${nextStep.task.id}:skipped`]: true };
     const updated = { ...expedition, completed };
     setExpedition(updated);
@@ -1581,7 +1725,7 @@ function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, act
   };
 
   const toggleSkipped = (task: Task) => {
-    if (readOnly || !task.optional) return;
+    if (readOnly || !task.optional || taskSkipBlocked(task)) return;
     setExpedition((current) => {
       if (!current) return current;
       const completed = { ...current.completed };
@@ -1635,8 +1779,8 @@ function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, act
             </div>
             <div className="next-step-actions">
               {activeId !== nextStep.chapter.id && <button type="button" onClick={() => setActiveId(nextStep.chapter.id)}>Show area</button>}
-              {(!readOnly || (viewerPlayerId && (nextStep.task.perPlayer || nextStep.task.playerId === viewerPlayerId))) && <button type="button" className="primary" onClick={completeAndContinue}>{readOnly ? "Mark my step complete" : "Complete and continue"}</button>}
-              {!readOnly && nextStep.task.optional && <button type="button" onClick={skipAndContinue}>Skip this item</button>}
+              {(!readOnly || (viewerPlayerId && (nextStep.task.perPlayer || nextStep.task.playerId === viewerPlayerId))) && <button type="button" className="primary" disabled={accessBlocked} onClick={completeAndContinue}>{readOnly ? "Mark my step complete" : "Complete and continue"}</button>}
+              {!readOnly && nextStep.task.optional && <button type="button" disabled={taskSkipBlocked(nextStep.task, nextStep.chapter.id)} onClick={skipAndContinue}>Skip this item</button>}
               {readOnly && <span>{viewerPlayerId ? `Following as ${expedition.players.find((player) => player.id === viewerPlayerId)?.name}` : "Updates from the host"}</span>}
             </div>
           </section>
@@ -1649,11 +1793,13 @@ function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, act
           <div><span>Begin from</span><strong>{chapter.grace}</strong></div>
         </div>
 
-        {chapter.quest && <div className="quest-callout"><strong>Quest safety</strong><span>{chapter.quest}. Some rewards are mutually exclusive; follow the named choice needed by the selected build. In standard co-op, the alternate reward can be taken in another player&apos;s world.</span></div>}
+        {(chapter.quest || activeQuestTracks.length > 0) && <div className="quest-callout"><strong>Quest safety</strong><span>{activeQuestTracks.length > 0 ? `Optional tracks active here: ${activeQuestTracks.join(", ")}. ` : ""}{chapter.quest || "Follow the cards in order; excluded optional questlines do not appear in this chapter."} Mutually exclusive rewards are called out on the affected card.</span></div>}
+
+        {accessGate && <div className="access-lock"><strong>Area access not yet unlocked</strong><span>Finish {accessGate.requirements.join("; ")} before following this chapter. You can inspect the route, but its objectives are deliberately held behind these game-state requirements.</span><a href={accessGate.evidence} target="_blank" rel="noreferrer">Access reference ↗</a></div>}
 
         <MapPanel chapter={chapter} expedition={expedition} chapterTasks={tasks} tasksByChapter={tasksByChapter} onSelect={setActiveId} />
 
-        <RuneCheckpointPanel chapter={chapter} expedition={expedition} support={runeSupport} setExpedition={setExpedition} viewerPlayerId={viewerPlayerId} onViewerUpdate={onViewerUpdate} />
+        <RuneCheckpointPanel chapter={chapter} expedition={expedition} support={runeSupport} setExpedition={setExpedition} locked={Boolean(accessGate)} viewerPlayerId={viewerPlayerId} onViewerUpdate={onViewerUpdate} />
 
         <div className="objectives-heading"><div><p className="eyebrow">Ordered stops</p><h3>Do these before moving on</h3></div><span>{Math.round((completedTasks / Math.max(tasks.length, 1)) * 100)}% complete</span></div>
         <div className="task-list">
@@ -1661,6 +1807,7 @@ function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, act
             const owner = task.playerId ? expedition.players.find((player) => player.id === task.playerId) : undefined;
             const done = taskDone(task, expedition);
             const skipped = Boolean(expedition.completed[`${task.id}:skipped`]);
+            const taskBlocked = taskAccessBlocked(task);
             const mapItem = task.item ? findMapItem(task.item, mapLayerForObjective(chapter, task.label)) : undefined;
             return (
               <article className={`task-card ${done ? "complete" : ""} ${skipped ? "skipped" : ""}`} key={task.id} style={owner ? { "--player": owner.color } as React.CSSProperties : undefined}>
@@ -1674,13 +1821,13 @@ function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, act
                     <div className="player-checks">
                       {expedition.players.map((player) => {
                         const key = `${task.id}:${player.id}`;
-                        return <button type="button" disabled={readOnly && viewerPlayerId !== player.id} key={key} className={expedition.completed[key] ? "checked" : ""} onClick={() => toggle(key)} style={{ "--player": player.color } as React.CSSProperties}><i>{expedition.completed[key] ? "✓" : ""}</i>{player.name}</button>;
+                        return <button type="button" disabled={taskBlocked || (readOnly && viewerPlayerId !== player.id)} key={key} className={expedition.completed[key] ? "checked" : ""} onClick={() => toggle(key, task)} style={{ "--player": player.color } as React.CSSProperties}><i>{expedition.completed[key] ? "✓" : ""}</i>{player.name}</button>;
                       })}
                     </div>
                   ) : (!readOnly || task.playerId === viewerPlayerId) ? (
                     <div className="task-actions">
-                      {!skipped && <button type="button" className="complete-button" onClick={() => toggle(task.id)}><i>{done ? "✓" : ""}</i>{done ? "Completed" : "Mark complete"}</button>}
-                      {task.optional && !readOnly && <button type="button" className="complete-button skip-button" onClick={() => toggleSkipped(task)}><i>{skipped ? "↶" : "—"}</i>{skipped ? "Restore item" : "Skip item"}</button>}
+                      {!skipped && <button type="button" className="complete-button" disabled={taskBlocked} onClick={() => toggle(task.id, task)}><i>{done ? "✓" : ""}</i>{done ? "Completed" : "Mark complete"}</button>}
+                      {task.optional && !readOnly && <button type="button" className="complete-button skip-button" disabled={taskSkipBlocked(task)} onClick={() => toggleSkipped(task)}><i>{skipped ? "↶" : "—"}</i>{skipped ? "Restore item" : "Skip item"}</button>}
                     </div>
                   ) : null}
                 </div>
@@ -1734,13 +1881,13 @@ function CodexView({ expedition, catalogueOnly = false }: { expedition?: Expedit
   const [fextraCategory, setFextraCategory] = useState("All Fextralife groups");
   const [sort, setSort] = useState("Catalogue order");
   const [selected, setSelected] = useState<Build | null>(null);
-  const filtered = sortBuilds(builds.filter((candidate) => {
+  const filtered = sortBuilds(selectableBuilds.filter((candidate) => {
     return buildSearchText(candidate).includes(query.toLowerCase()) && matchesBuildFilter(candidate, filter) && matchesCollection(candidate, collection) && (mechanic === "All focuses" || candidate.mechanic === mechanic) && (fextraCategory === "All Fextralife groups" || candidate.guideCategories?.includes(fextraCategory));
   }), sort);
 
   return (
     <section className="codex-page">
-      <div className="page-heading"><div><p className="eyebrow">{builds.length} sourced builds · source-linked stages</p><h2>{catalogueOnly ? "Build catalogue" : "Build codex"}</h2><p>{catalogueOnly ? "Compare every sourced build before the run controller assigns them. Search includes weapons, off-hands, skills, armour, talismans and spells." : "Each published build keeps its documented setup; earlier gaps use a clearly linked stage from the closest matching sourced build."}</p></div><div className="codex-count"><strong>{filtered.length}</strong><span>builds shown</span></div></div>
+      <div className="page-heading"><div><p className="eyebrow">{selectableBuilds.length} source-audited builds</p><h2>{catalogueOnly ? "Build catalogue" : "Build codex"}</h2><p>{catalogueOnly ? "Compare every selectable build before the run controller assigns them. Search includes weapons, off-hands, skills, armour, talismans and spells." : "Published guides retain their documented loadouts. The two existing local-run builds remain available; unaudited experiments are hidden from new selection."}</p></div><div className="codex-count"><strong>{filtered.length}</strong><span>builds shown</span></div></div>
       <div className="codex-tools extended"><label><span>Search</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Frost, bow, faith…" /></label><label><span>Source category</span><select value={collection} onChange={(event) => setCollection(event.target.value)}>{COLLECTION_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Fextralife group</span><select value={fextraCategory} onChange={(event) => setFextraCategory(event.target.value)}>{FEXTRA_CATEGORY_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Build type</span><select value={filter} onChange={(event) => setFilter(event.target.value)}>{ATTRIBUTE_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Combat focus</span><select value={mechanic} onChange={(event) => setMechanic(event.target.value)}>{MECHANIC_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Sort by</span><select value={sort} onChange={(event) => setSort(event.target.value)}>{SORT_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select></label></div>
       <div className="build-grid">
         {filtered.map((candidate) => {
@@ -1778,12 +1925,16 @@ function ReadOnlyBuildCatalogue({ lanAvailable }: { lanAvailable: boolean }) {
 function PartyView({ expedition, setExpedition, saveLibrary, activeSaveId, onSelectSave, onNewSave, onDuplicateSave, onDeleteSave, onExport, onImport }: { expedition: Expedition; setExpedition: React.Dispatch<React.SetStateAction<Expedition | null>>; saveLibrary: SaveLibrary; activeSaveId: string | null; onSelectSave: (id: string) => void; onNewSave: () => void; onDuplicateSave: () => void; onDeleteSave: () => void; onExport: () => void; onImport: (event: React.ChangeEvent<HTMLInputElement>) => void }) {
   const totalKeys = chapters.flatMap((chapter) => tasksForChapter(chapter, expedition)).flatMap((task) => taskKeys(task, expedition));
   const completed = totalKeys.filter((key) => expedition.completed[key]).length;
+  const requiredTracks = requiredQuestTracksForParty(expedition.players.map((player) => builds.find((candidate) => candidate.id === player.buildId)).filter((candidate): candidate is Build => Boolean(candidate)));
+  const selectedTracks = new Set(expandQuestTrackIds(expedition.optionalQuestTracks === undefined ? ALL_OPTIONAL_QUEST_TRACK_IDS : expedition.optionalQuestTracks));
+  requiredTracks.forEach((track) => selectedTracks.add(track));
   const updatePlayer = (id: string, patch: Partial<Player>) => setExpedition((current) => current ? { ...current, players: current.players.map((player) => player.id === id ? { ...player, ...patch } : player) } : current);
   return <section className="party-page"><div className="page-heading"><div><p className="eyebrow">Run settings</p><h2>{expedition.name}</h2><p>{expedition.mode === "solo" ? "Solo playthrough" : expedition.mode === "standard" ? "Standard co-op across independent worlds" : "Seamless Co-op with host-led progression"}</p></div><div className="progress-medallion"><strong>{Math.round((completed / Math.max(totalKeys.length, 1)) * 100)}%</strong><span>route complete</span></div></div>
-    <div className="party-cards">{expedition.players.map((player, index) => { const selected = builds.find((candidate) => candidate.id === player.buildId)!; const classification = buildClassification(selected); return <article key={player.id} style={{ "--player": player.color } as React.CSSProperties}><div className="portrait">{player.name.slice(0, 1).toUpperCase()}</div><div className="party-card-head"><input value={player.name} onChange={(event) => updatePlayer(player.id, { name: event.target.value })} /><span>Player {index + 1}</span></div><select value={player.buildId} onChange={(event) => updatePlayer(player.id, { buildId: event.target.value })}>{builds.map((candidate) => <option value={candidate.id} key={candidate.id}>{candidate.name}</option>)}</select><p>{selected.playstyle}</p><div className="party-stats"><span><small>Attributes</small>{classification.attributes}</span><span><small>Range</small>{classification.range}</span></div><label className="host-radio"><input type="radio" name="host" checked={expedition.hostId === player.id} onChange={() => setExpedition((current) => current ? { ...current, hostId: player.id } : current)} /> {expedition.hostId === player.id ? "Current host" : "Make host"}</label></article>; })}</div>
+    <div className="party-cards">{expedition.players.map((player, index) => { const selected = builds.find((candidate) => candidate.id === player.buildId)!; const choices = selectableBuilds.some((candidate) => candidate.id === selected.id) ? selectableBuilds : [selected, ...selectableBuilds]; const classification = buildClassification(selected); return <article key={player.id} style={{ "--player": player.color } as React.CSSProperties}><div className="portrait">{player.name.slice(0, 1).toUpperCase()}</div><div className="party-card-head"><input value={player.name} onChange={(event) => updatePlayer(player.id, { name: event.target.value })} /><span>Player {index + 1}</span></div><select value={player.buildId} onChange={(event) => updatePlayer(player.id, { buildId: event.target.value })}>{choices.map((candidate) => <option value={candidate.id} key={candidate.id}>{candidate.name}</option>)}</select><p>{selected.playstyle}</p><div className="party-stats"><span><small>Attributes</small>{classification.attributes}</span><span><small>Range</small>{classification.range}</span></div><label className="host-radio"><input type="radio" name="host" checked={expedition.hostId === player.id} onChange={() => setExpedition((current) => current ? { ...current, hostId: player.id } : current)} /> {expedition.hostId === player.id ? "Current host" : "Make host"}</label></article>; })}</div>
     <div className="save-panel"><div><p className="eyebrow">Rune plan</p><h3>Level and loss allowances</h3><p>Expected field income is reduced before levels are assigned. If the conservative balance cannot pay for the selected pace, the route inserts easier optional bosses and only recommends a fully funded level. Golden Rune items remain emergency reserves.</p></div><div className="loss-setting"><label>Allow for <select value={expedition.lossRate ?? 20} onChange={(event) => setExpedition((current) => current ? { ...current, lossRate: Number(event.target.value) } : current)}><option value={10}>10% lost</option><option value={20}>20% lost</option><option value={30}>30% lost</option></select></label><label>Run <select value={expedition.levelOffset ?? 0} onChange={(event) => setExpedition((current) => current ? { ...current, levelOffset: Number(event.target.value), completed: {} } : current)}><option value={0}>at guide level</option><option value={5}>5 levels below</option><option value={10}>10 levels below</option><option value={15}>15 levels below</option><option value={20}>20 levels below</option></select></label></div></div>
+    <div className="quest-settings-panel"><div><p className="eyebrow">Questlines</p><h3>Included in this run</h3><p>Core progression and all-Remembrance requirements cannot be removed. Changing this list removes or restores only optional cards; completed progress remains saved.</p></div><div className="quest-settings-actions"><button type="button" onClick={() => setExpedition((current) => current ? { ...current, optionalQuestTracks: [...requiredTracks] } : current)}>Build-required only</button><button type="button" onClick={() => setExpedition((current) => current ? { ...current, optionalQuestTracks: [...ALL_OPTIONAL_QUEST_TRACK_IDS] } : current)}>Select all</button></div><div className="quest-settings-grid">{OPTIONAL_QUEST_TRACKS.map((track) => { const required = requiredTracks.includes(track.id); return <label key={track.id}><input type="checkbox" checked={selectedTracks.has(track.id)} disabled={required} onChange={(event) => setExpedition((current) => { if (!current) return current; const values = new Set(current.optionalQuestTracks === undefined ? ALL_OPTIONAL_QUEST_TRACK_IDS : current.optionalQuestTracks); if (event.target.checked) values.add(track.id); else values.delete(track.id); return { ...current, optionalQuestTracks: [...values] }; })} /><span><strong>{track.name}</strong><small>{required ? "Required by selected build" : track.act}</small></span></label>; })}</div></div>
     <div className="save-panel save-library-panel"><div><p className="eyebrow">Saved runs</p><h3>Switch without moving files</h3><p>Every run is stored in this browser. Export is still available for backups and moving a run to another device.</p><div className="save-library-list">{Object.values(saveLibrary.saves).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map((save) => <button type="button" className={save.saveId === activeSaveId ? "active" : ""} key={save.saveId} onClick={() => onSelectSave(save.saveId!)}><strong>{save.name}</strong><span>{save.players.length === 1 ? "Solo" : `${save.players.length} players`} · {new Date(save.createdAt).toLocaleDateString()}</span></button>)}</div></div><div className="save-actions"><button type="button" className="primary" onClick={onNewSave}>New run</button><button type="button" onClick={onDuplicateSave}>Duplicate current</button><button type="button" onClick={onExport}>Export current</button><label>Import file<input type="file" accept="application/json" onChange={onImport} /></label><button type="button" className="danger" onClick={onDeleteSave}>Delete current</button></div></div>
-    <div className="source-panel"><p className="eyebrow">Reference shelf</p><h3>Sources and version</h3><p>Content baseline: App/Regulation 1.16.1, checked 1 August 2026. External references open in a new tab.</p><div>{sources.map(([label, url]) => <a key={url} href={url} target="_blank" rel="noreferrer">{label}<span>↗</span></a>)}</div></div>
+    <div className="source-panel"><p className="eyebrow">Reference shelf</p><h3>Sources and version</h3><p>Locally verified numeric data: App/Regulation 1.17, checked 1 September 2026. The Tarnished Pack origins, eight armaments, four armour sets, and two altered armour variants are included. External references open in a new tab.</p><div>{sources.map(([label, url]) => <a key={url} href={url} target="_blank" rel="noreferrer">{label}<span>↗</span></a>)}</div></div>
   </section>;
 }
 
@@ -1798,10 +1949,16 @@ function Home() {
   const [view, setView] = useState<View>("route");
   const [activeId, setActiveId] = useState(chapters[0].id);
   const [toast, setToast] = useState("");
+  const [joinRequired, setJoinRequired] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
+  const [joinError, setJoinError] = useState("");
+  const [claimCode, setClaimCode] = useState("");
+  const [claimError, setClaimError] = useState("");
+  const [lanInfo, setLanInfo] = useState<LanInfo | null>(null);
+  const [lanSaveRetry, setLanSaveRetry] = useState(0);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const controlToken = useRef("");
   const lanRevision = useRef(-1);
-  const lastSharedChapterId = useRef("");
 
   useEffect(() => {
     let cancelled = false;
@@ -1832,22 +1989,37 @@ function Home() {
       if (!cancelled) { setSaveLibrary(localLibrary); setActiveSaveId(localLibrary.activeId); }
 
       try {
-        const response = await fetch("/api/expedition", { cache: "no-store" });
+        const requestedControl = params.get("control") || "";
+        const response = await fetch(`/api/expedition${requestedControl ? `?control=${encodeURIComponent(requestedControl)}` : ""}`, { cache: "no-store" });
         const contentType = response.headers.get("content-type") || "";
         if (response.ok && contentType.includes("application/json")) {
-          const remote = await response.json();
+          const remote = await responseJson<RemoteExpeditionState>(response);
           if (remote.enabled === true) {
+            if (remote.requiresJoin) {
+              if (!cancelled) {
+                setLanMode("follower");
+                setJoinRequired(true);
+                setExpedition(null);
+                setHydrated(true);
+              }
+              return;
+            }
             const token = params.get("control") || "";
             const mode: LanMode = token ? "controller" : "follower";
-            const requestedViewer = params.get("follow") || localStorage.getItem("tarnished-together-viewer-player") || "";
             controlToken.current = token;
             lanRevision.current = Number(remote.revision || 0);
+            if (token) {
+              const cleanUrl = new URL(window.location.href);
+              cleanUrl.searchParams.delete("control");
+              window.history.replaceState({}, "", cleanUrl);
+            }
             if (!cancelled) {
               setLanMode(mode);
               const rawChoice = remote.expedition || (mode === "controller" ? localExpedition : null);
               const chosen = rawChoice && !rawChoice.saveId ? { ...rawChoice, saveId: newSaveId() } : rawChoice;
               setExpedition(chosen);
-              if (mode === "follower" && chosen?.players.some((player: Player) => player.id === requestedViewer)) setViewerPlayerId(requestedViewer);
+              setActiveId(chosen?.activeChapterId && chapters.some((chapter) => chapter.id === chosen.activeChapterId) ? chosen.activeChapterId : chapters[0].id);
+              if (mode === "follower" && remote.you && chosen?.players.some((player: Player) => player.id === remote.you)) setViewerPlayerId(remote.you);
               setHydrated(true);
             }
             return;
@@ -1858,6 +2030,7 @@ function Home() {
       if (!cancelled) {
         setLanMode("none");
         setExpedition(localExpedition);
+        setActiveId(localExpedition?.activeChapterId && chapters.some((chapter) => chapter.id === localExpedition.activeChapterId) ? localExpedition.activeChapterId : chapters[0].id);
         setHydrated(true);
       }
     };
@@ -1875,39 +2048,73 @@ function Home() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(expedition));
       }
       if (lanMode === "controller") {
+        const baseRevision = lanRevision.current;
         void fetch("/api/expedition", {
           method: "PUT",
           headers: { "content-type": "application/json", "x-control-token": controlToken.current },
-          body: JSON.stringify({ expedition }),
+          body: JSON.stringify({ expedition, baseRevision }),
+        }).then(async (response) => {
+          const body = await responseJson<RemoteExpeditionState>(response);
+          if (response.status === 409) {
+            const nextRevision = Number(body.revision || 0);
+            if (nextRevision >= lanRevision.current) {
+              lanRevision.current = nextRevision;
+              setExpedition(body.expedition || null);
+            }
+            setToast("The route changed on another device; your view was refreshed");
+            window.setTimeout(() => setToast(""), 2600);
+            return;
+          }
+          if (!response.ok) throw new Error(body.error || "Could not save the LAN route");
+          lanRevision.current = Math.max(lanRevision.current, Number(body.revision || 0));
+          try {
+            const infoResponse = await fetch("/api/lan-info", { cache: "no-store", headers: { "x-control-token": controlToken.current } });
+            if (infoResponse.ok) setLanInfo(await responseJson<LanInfo>(infoResponse));
+          } catch { /* The dedicated LAN-info effect will retry after another player-setting change. */ }
+        }).catch((error) => {
+          setToast(error instanceof Error ? error.message : "Could not save the LAN route");
+          window.setTimeout(() => setToast(""), 2600);
+          if (error instanceof TypeError) window.setTimeout(() => setLanSaveRetry((current) => current + 1), 1500);
         });
       }
     }, 180);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
-  }, [expedition, hydrated, lanMode]);
+  }, [expedition, hydrated, lanMode, lanSaveRetry]);
 
   useEffect(() => {
     if (!hydrated || lanMode === "follower") return;
     localStorage.setItem(SAVE_LIBRARY_KEY, JSON.stringify(saveLibrary));
   }, [saveLibrary, hydrated, lanMode]);
 
+  const lanPlayerSignature = expedition?.players.map((player) => `${player.id}:${player.name}`).join("|") || "";
+
   useEffect(() => {
-    if (!hydrated || lanMode === "none" || lanMode === null) return;
+    if (!hydrated || lanMode !== "controller" || !controlToken.current) return;
+    void fetch("/api/lan-info", { cache: "no-store", headers: { "x-control-token": controlToken.current } }).then((response) => response.ok ? responseJson<LanInfo>(response) : null).then((info) => { if (info) setLanInfo(info); }).catch(() => undefined);
+  }, [hydrated, lanMode, lanPlayerSignature]);
+
+  useEffect(() => {
+    if (!hydrated || joinRequired || lanMode === "none" || lanMode === null) return;
     let active = true;
     let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
     const applyRemote = (remote: { revision?: number; source?: string; expedition?: Expedition | null }) => {
       const nextRevision = Number(remote.revision || 0);
-      if (!active || nextRevision === lanRevision.current) return;
+      if (!active || nextRevision <= lanRevision.current) return;
       if (lanMode === "controller" && remote.source !== "player") {
         lanRevision.current = Math.max(lanRevision.current, nextRevision);
         return;
       }
       lanRevision.current = nextRevision;
+      if (lanMode === "follower" && remote.expedition?.activeChapterId && chapters.some((chapter) => chapter.id === remote.expedition!.activeChapterId)) {
+        setActiveId(remote.expedition.activeChapterId);
+        setView("route");
+      }
       setExpedition(remote.expedition || null);
     };
     const poll = async () => {
       try {
-        const response = await fetch(`/api/expedition?revision=${lanRevision.current}&time=${Date.now()}`, { cache: "no-store" });
-        if (response.ok) applyRemote(await response.json());
+        const response = await fetch(`/api/expedition?revision=${lanRevision.current}&time=${Date.now()}`, { cache: "no-store", headers: lanMode === "controller" ? { "x-control-token": controlToken.current } : undefined });
+        if (response.ok) applyRemote(await responseJson<RemoteExpeditionState>(response));
       } catch { /* The event stream reconnects and the next fallback poll retries. */ }
     };
     const scheduleFallback = () => {
@@ -1917,7 +2124,7 @@ function Home() {
         if (active) scheduleFallback();
       }, document.visibilityState === "visible" ? 3000 : 8000);
     };
-    const stream = new EventSource("/api/expedition/events");
+    const stream = new EventSource(`/api/expedition/events${lanMode === "controller" ? `?control=${encodeURIComponent(controlToken.current)}` : ""}`);
     stream.onmessage = (event) => {
       try { applyRemote(JSON.parse(event.data)); } catch { /* Ignore a malformed event and retain polling. */ }
     };
@@ -1937,7 +2144,7 @@ function Home() {
       window.removeEventListener("online", refreshNow);
       document.removeEventListener("visibilitychange", refreshVisible);
     };
-  }, [hydrated, lanMode]);
+  }, [hydrated, joinRequired, lanMode]);
 
   const routeModel = useMemo(() => {
     if (!expedition) return { runeSupport: {} as Record<string, RuneSupportChapter>, tasksByChapter: {} as Record<string, Task[]>, progress: 0 };
@@ -1948,20 +2155,6 @@ function Home() {
     return { runeSupport, tasksByChapter, progress };
   }, [expedition]);
   const progress = routeModel.progress;
-
-  useEffect(() => {
-    if (!hydrated || !expedition || lanMode !== "follower") return;
-    const sharedChapterId = expedition.activeChapterId;
-    if (!sharedChapterId || !chapters.some((chapter) => chapter.id === sharedChapterId) || lastSharedChapterId.current === sharedChapterId) return;
-    lastSharedChapterId.current = sharedChapterId;
-    setActiveId(sharedChapterId);
-    setView("route");
-  }, [expedition?.activeChapterId, hydrated, lanMode]);
-
-  useEffect(() => {
-    if (!hydrated || !expedition || lanMode === "follower" || expedition.activeChapterId) return;
-    setExpedition((current) => current ? { ...current, activeChapterId: activeId } : current);
-  }, [activeId, expedition, hydrated, lanMode]);
 
   const selectRouteChapter = (id: string) => {
     if (!chapters.some((chapter) => chapter.id === id)) return;
@@ -1975,7 +2168,7 @@ function Home() {
   const openSave = (id: string) => {
     const selected = saveLibrary.saves[id];
     if (!selected) return;
-    setActiveSaveId(id); setSaveLibrary((current) => ({ ...current, activeId: id })); setExpedition(selected); setView("route"); setActiveId(chapters[0].id);
+    setActiveSaveId(id); setSaveLibrary((current) => ({ ...current, activeId: id })); setExpedition(selected); setView("route"); setActiveId(selected.activeChapterId && chapters.some((chapter) => chapter.id === selected.activeChapterId) ? selected.activeChapterId : chapters[0].id);
   };
   const newRun = () => { setExpedition(null); setActiveSaveId(null); setSaveLibrary((current) => ({ ...current, activeId: null })); setView("route"); setActiveId(chapters[0].id); };
   const duplicateRun = () => {
@@ -2013,20 +2206,73 @@ function Home() {
   };
   const viewerUpdate = (kind: "completed" | "runes" | "levels" | "stats" | "weapons", key: string, value: boolean | number | Partial<AttributeBlock>) => {
     if (!viewerPlayerId) return;
-    void fetch("/api/player-progress", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ playerId: viewerPlayerId, kind, key, value }) }).then(async (response) => {
-      const body = await response.json();
+    void fetch("/api/player-progress", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ kind, key, value }) }).then(async (response) => {
+      const body = await responseJson<RemoteExpeditionState>(response);
       if (!response.ok) throw new Error(body.error || "Update failed");
-      lanRevision.current = Number(body.revision || lanRevision.current); setExpedition(body.expedition);
-    }).catch((error) => notify(error instanceof Error ? error.message : "Could not save progress"));
+      const nextRevision = Number(body.revision || 0);
+      if (nextRevision > lanRevision.current) {
+        lanRevision.current = nextRevision;
+        setExpedition(body.expedition || null);
+      }
+    }).catch(async (error) => {
+      notify(error instanceof Error ? error.message : "Could not save progress");
+      try {
+        const response = await fetch(`/api/expedition?time=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) return;
+        const body = await responseJson<RemoteExpeditionState>(response);
+        lanRevision.current = Number(body.revision || lanRevision.current);
+        setExpedition(body.expedition || null);
+      } catch { /* The event stream or next poll will retry the authoritative refresh. */ }
+    });
+  };
+
+  const joinLanRun = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setJoinError("");
+    try {
+      const response = await fetch("/api/join", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code: joinCode }) });
+      const body = await responseJson<RemoteExpeditionState>(response);
+      if (!response.ok) throw new Error(body.error || "Could not join this run");
+      const joinedExpedition = body.expedition || null;
+      setExpedition(joinedExpedition);
+      setViewerPlayerId("");
+      setClaimCode("");
+      setClaimError("");
+      if (joinedExpedition?.activeChapterId && chapters.some((chapter) => chapter.id === joinedExpedition.activeChapterId)) setActiveId(joinedExpedition.activeChapterId);
+      lanRevision.current = Number(body.revision || 0);
+      setJoinRequired(false);
+      setLanMode("follower");
+    } catch (error) {
+      setJoinError(error instanceof Error ? error.message : "Could not join this run");
+    }
+  };
+
+  const claimViewerPlayer = async (playerId: string) => {
+    setClaimError("");
+    try {
+      const response = await fetch("/api/claim-player", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ playerId, code: claimCode }) });
+      const body = await responseJson<RemoteExpeditionState>(response);
+      if (!response.ok) throw new Error(body.error || "Could not claim this character");
+      lanRevision.current = Math.max(lanRevision.current, Number(body.revision || 0));
+      setExpedition(body.expedition || expedition);
+      setViewerPlayerId(playerId);
+      localStorage.setItem("tarnished-together-viewer-player", playerId);
+      const url = new URL(window.location.href);
+      url.searchParams.set("follow", playerId);
+      window.history.replaceState({}, "", url);
+    } catch (error) {
+      setClaimError(error instanceof Error ? error.message : "Could not claim this character");
+    }
   };
 
   if (!hydrated) return <main className="loading-screen"><span>✦</span><p>Reading the guidance of grace…</p></main>;
   if (catalogueOnly) return <ReadOnlyBuildCatalogue lanAvailable={lanMode !== "none"} />;
+  if (joinRequired) return <main className="join-screen"><form onSubmit={joinLanRun}><strong>Tarnished Together</strong><h1>Join a run</h1><p>Enter the six-digit code shown on the host. You only need to do this once on this computer.</p><label>Join code<input inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={joinCode} onChange={(event) => setJoinCode(event.target.value.replace(/\D/g, "").slice(0, 6))} autoFocus /></label>{joinError && <span role="alert">{joinError}</span>}<button type="submit" disabled={joinCode.length !== 6}>Join route</button><button type="button" className="secondary" onClick={() => { window.location.href = "/?catalog=1"; }}>Browse builds without joining</button></form></main>;
   if (!expedition && lanMode === "follower") return <main className="follower-waiting"><strong>Tarnished Together</strong><h1>Waiting for the host</h1><p>The route will appear here after the host creates or restores an expedition.</p><button type="button" onClick={() => { window.location.href = "/?catalog=1"; }}>Browse all builds while you wait</button><span>Follower view · refreshes automatically</span></main>;
   if (!expedition) return <Setup onCreate={(created) => { setExpedition(created); notify("Route created"); }} imported={handleImport} />;
 
   const readOnly = lanMode === "follower";
-  if (readOnly && !expedition.players.some((player) => player.id === viewerPlayerId)) return <main className="viewer-chooser"><div><p className="eyebrow">Join this run</p><h1>Which character are you playing?</h1><p>This only gives you control of that character’s item checklist and rune entries. You can still browse every chapter and step.</p>{expedition.players.map((player) => <button type="button" key={player.id} onClick={() => { setViewerPlayerId(player.id); localStorage.setItem("tarnished-together-viewer-player", player.id); const url = new URL(window.location.href); url.searchParams.set("follow", player.id); window.history.replaceState({}, "", url); }}>{player.name}<span>{builds.find((build) => build.id === player.buildId)?.name}</span></button>)}</div></main>;
+  if (readOnly && !expedition.players.some((player) => player.id === viewerPlayerId)) return <main className="viewer-chooser"><div><p className="eyebrow">Join this run</p><h1>Which character are you playing?</h1><p>Enter the character code shown on the host, then choose your character. The server binds this browser to that character’s checklist and rune entries.</p><label>Character code<input inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={claimCode} onChange={(event) => setClaimCode(event.target.value.replace(/\D/g, "").slice(0, 6))} autoFocus /></label>{claimError && <span role="alert">{claimError}</span>}{expedition.players.map((player) => <button type="button" disabled={claimCode.length !== 6} key={player.id} onClick={() => { void claimViewerPlayer(player.id); }}>{player.name}<span>{builds.find((build) => build.id === player.buildId)?.name}</span></button>)}</div></main>;
 
   return (
     <main className={`app-shell ${readOnly ? "follower-mode" : ""}`}>
@@ -2035,6 +2281,7 @@ function Home() {
         <nav aria-label="Primary"><button type="button" className={view === "route" ? "active" : ""} onClick={() => setView("route")}>Route</button><button type="button" className={view === "selected" ? "active" : ""} onClick={() => setView("selected")}>Selected builds</button>{readOnly && <button type="button" onClick={() => { window.location.href = "/?catalog=1"; }}>Build catalogue</button>}{!readOnly && <><button type="button" className={view === "codex" ? "active" : ""} onClick={() => setView("codex")}>Build codex</button><button type="button" className={view === "party" ? "active" : ""} onClick={() => setView("party")}>Company</button></>}</nav>
         <div className="top-progress"><span><i style={{ width: `${progress}%` }} /></span><strong>{progress}%</strong>{readOnly ? <b className="lan-badge">{expedition.players.find((player) => player.id === viewerPlayerId)?.name}</b> : <select className="save-switcher" aria-label="Current saved run" value={activeSaveId || expedition.saveId || ""} onChange={(event) => openSave(event.target.value)}>{Object.values(saveLibrary.saves).map((save) => <option value={save.saveId} key={save.saveId}>{save.name}</option>)}</select>}</div>
       </header>
+      {!readOnly && lanInfo && <div className="lan-share-strip"><span>Other players open <strong>{lanInfo.address}</strong></span><span>Join code <b>{lanInfo.joinCode}</b></span>{lanInfo.players.map((player) => <span key={player.id}>{player.name} code <b>{player.code}</b></span>)}</div>}
       {view === "route" && <RouteView expedition={expedition} setExpedition={setExpedition} tasksByChapter={routeModel.tasksByChapter} runeSupport={routeModel.runeSupport} activeId={activeId} setActiveId={selectRouteChapter} readOnly={readOnly} viewerPlayerId={viewerPlayerId} onViewerUpdate={viewerUpdate} />}
       {view === "selected" && <SelectedBuildsView expedition={expedition} viewerPlayerId={readOnly ? viewerPlayerId : undefined} />}
       {!readOnly && view === "codex" && <CodexView expedition={expedition} />}

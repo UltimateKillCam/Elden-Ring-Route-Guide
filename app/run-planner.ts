@@ -19,7 +19,7 @@ const attributes = (
   dexterity: number, intelligence: number, faith: number, arcane: number,
 ): AttributeBlock => ({ vigor, mind, endurance, strength, dexterity, intelligence, faith, arcane });
 
-/** The ten character origins, using their exact unmodified starting levels and attributes. */
+/** Character origins, using their exact unmodified starting levels and attributes. */
 export const ORIGINS: readonly Origin[] = [
   { id: "vagabond", name: "Vagabond", level: 9, attributes: attributes(15, 10, 11, 14, 13, 9, 9, 7) },
   { id: "warrior", name: "Warrior", level: 8, attributes: attributes(11, 12, 11, 10, 16, 10, 8, 9) },
@@ -31,6 +31,8 @@ export const ORIGINS: readonly Origin[] = [
   { id: "prisoner", name: "Prisoner", level: 9, attributes: attributes(11, 12, 11, 11, 14, 14, 6, 9) },
   { id: "confessor", name: "Confessor", level: 10, attributes: attributes(10, 13, 10, 12, 12, 9, 14, 9) },
   { id: "wretch", name: "Wretch", level: 1, attributes: attributes(10, 10, 10, 10, 10, 10, 10, 10) },
+  { id: "idus-knight", name: "Idus Knight", level: 7, attributes: attributes(10, 12, 11, 13, 15, 8, 11, 6) },
+  { id: "heavy-knight", name: "Heavy Knight", level: 10, attributes: attributes(14, 8, 17, 15, 11, 7, 8, 9) },
 ] as const;
 
 export const ORIGIN_BY_ID: Readonly<Record<string, Origin>> = Object.freeze(

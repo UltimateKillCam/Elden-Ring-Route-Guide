@@ -8,9 +8,12 @@
   "scripts": {
     "dev": "vinext dev",
     "build": "vinext build",
+    "build:pages": "vinext build && node scripts/export-github-pages.mjs",
     "start": "vinext start",
     "lan": "node scripts/lan-server.mjs",
-    "test": "npm run build && node --test tests/rendered-html.test.mjs tests/build-paths.test.mjs",
+    "test": "npm run typecheck && npm run audit:builds && npm run build && node --test --test-concurrency=1 tests/run-planner.test.mjs tests/equipment-data.test.mjs tests/importers.test.mjs tests/build-paths.test.mjs tests/rendered-html.test.mjs tests/lan-server.test.mjs",
+    "audit:builds": "node scripts/audit-build-stages.mjs",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
   },
@@ -22,6 +25,7 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.37.1",
+    "@cloudflare/workers-types": "^4.20260515.1",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",

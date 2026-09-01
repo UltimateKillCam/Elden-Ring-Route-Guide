@@ -9051,6 +9051,7 @@ export const mapItems: MapItem[] = [
 
 export type MapRoutePoint = MapItem;
 
+// @ts-expect-error TypeScript cannot represent the union inferred for this generated 1,700+ entry literal.
 export const mapRoutePoints: MapRoutePoint[] = [
   {
     "name": "1st Turtle Testu's Rise",
@@ -24408,7 +24409,7 @@ export const mapRoutePoints: MapRoutePoint[] = [
   }
 ];
 
-const clean = (value: string) => value.toLowerCase().replace(/[+＋]\d+/g, "").replace(/[^a-z0-9' ]/g, " ").replace(/\s+/g, " ").trim();
+const clean = (value: string) => value.toLowerCase().replace(/＋/g, "+").replace(/[^a-z0-9+' ]/g, " ").replace(/\s+/g, " ").trim();
 
 const cleanImportedDescription = (value: string) => value
   .replace(/\uFFFD+/g, " ")

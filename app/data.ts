@@ -15,11 +15,11 @@ export type Build = {
   stats: string;
   role: string;
   playstyle: string;
-  complexity: "Easy" | "Moderate" | "Advanced" | "Published guide";
+  complexity: "Easy" | "Moderate" | "Advanced" | "Published guide" | "Published legacy guide";
   phases: Record<PhaseKey, string>;
   quest?: string;
   tags: string[];
-  startingClass: "Vagabond" | "Warrior" | "Hero" | "Bandit" | "Astrologer" | "Prophet" | "Samurai" | "Prisoner" | "Confessor" | "Wretch" | "Not specified";
+  startingClass: "Vagabond" | "Warrior" | "Hero" | "Bandit" | "Astrologer" | "Prophet" | "Samurai" | "Prisoner" | "Confessor" | "Wretch" | "Idus Knight" | "Heavy Knight" | "Not specified";
   mechanic: string;
   collection: "Curated" | "Fextralife" | "Other guides" | "Meme / cosplay";
   availableFrom?: PhaseKey;
@@ -28,6 +28,8 @@ export type Build = {
   phaseBridges?: Partial<Record<PhaseKey, string>>;
   guideCategories?: string[];
   source: BuildSource;
+  /** True only when the loadout itself is traceable to a published build guide. */
+  audited?: boolean;
 };
 
 const BUILD_SOURCES = {
@@ -95,6 +97,7 @@ const build = (
   startingClass: startingClass || recommendStartingClass(stats, tags),
   mechanic: mechanic || inferMechanic(role, playstyle, tags),
   collection: "Curated",
+  audited: Boolean(source && source.url !== BUILD_SOURCES.dlcWeapons) || id === "quality-knight" || id === "colossal-hammer",
   source: source || {
     label: `${phases[3].replace(/ \+.*/, "").replace(/ \/.*/, "")} weapon reference`,
     url: `https://eldenring.wiki.gg/index.php?search=${encodeURIComponent(phases[3].replace(/ \+.*/, "").replace(/ \/.*/, ""))}`,
@@ -114,13 +117,13 @@ const curatedBuilds: Build[] = [
   build("great-spear-paladin", "Great-Spear Paladin", "STR / DEX / FAI", "Tank", "Shield pokes and charged thrusts with ranged holy pressure later.", ["Lance", "Treespear", "Siluria's Tree", "Barbed Staff-Spear"], ["spear", "guard", "holy"], "Moderate", "Crucible and DLC progression"),
   build("strength-fist", "Strength Fist Fighter", "STR", "Breaker", "Endure-powered close combat and rapid stance breaks.", ["Caestus", "Spiked Caestus", "Star Fist", "Red Bear's Claw"], ["fist", "strength", "bleed"], "Advanced"),
   build("mobile-claw", "Mobile Claw Hunter", "DEX", "Skirmisher", "Quickstep, aerial slashes and controlled bleed pressure.", ["Hookclaws", "Raptor Talons", "Bloodhound Claws", "Beast Claw"], ["dexterity", "claw", "mobile"]),
-  build("holy-board", "Holy Sword-and-Board", "FAI", "Tank", "Guard counters and Sacred Blade grow into a holy support setup.", ["Broadsword + Sacred Blade", "Golden Epitaph", "Coded Sword", "Sword of Light"], ["faith", "holy", "guard"], "Easy"),
+  build("holy-board", "Holy Sword-and-Board", "FAI", "Tank", "Guard counters and Sacred Blade grow into a holy support setup.", ["Broadsword + Sacred Blade", "Broadsword + Sacred Blade", "Coded Sword", "Sword of Light"], ["faith", "holy", "guard"], "Easy"),
   build("guard-thrust", "Strength Guard-Thrust Specialist", "STR", "Tank", "A safe counter-hit specialist that graduates into an attacking shield weapon.", ["Great Épée", "Lance", "Serpent-Hunter", "Sword Lance"], ["strength", "thrust", "guard"], "Easy"),
   build("rapier-duelist", "Classical Rapier Duelist", "DEX", "Duelist", "Parries, counter-hits and precise thrusting attacks.", ["Rapier", "Rogier's Rapier +8", "Frozen Needle", "Main-gauche + Milady"], ["dexterity", "thrust", "parry"]),
-  build("heavy-duelist", "Heavy-Thrusting Duelist", "DEX", "Duelist", "Running attacks and charged counter-thrusts rather than status spam.", ["Keen Great Épée", "Godskin Stitcher", "Dragon King's Cragblade", "Sword Lance"], ["dexterity", "thrust", "lightning"]),
+  build("heavy-duelist", "Heavy-Thrusting Duelist", "DEX", "Duelist", "Running attacks and charged counter-thrusts rather than status spam.", ["Keen Great Épée", "Keen Great Épée", "Dragon King's Cragblade", "Sword Lance"], ["dexterity", "thrust", "lightning"]),
   build("samurai", "Traditional Samurai", "DEX", "Duelist", "Unsheathe evolves into long-reach katana pressure and a great-katana finale.", ["Uchigatana", "Nagakiba", "Hand of Malenia", "Keen Great Katana"], ["dexterity", "katana", "bleed"], "Moderate", "Yura quest"),
-  build("dragon-samurai", "Dragon Hunter Samurai", "DEX", "Boss hunter", "Ice lightning for general play and a dragon-specialist DLC weapon.", ["Uchigatana", "Dragonscale Blade", "Dragon-Hunter's Great Katana", "Dragon-Hunter's Great Katana + Dragonwound"], ["dexterity", "katana", "dragon"]),
-  build("sacred-twinblade", "Sacred Twinblade", "DEX / FAI", "Striker", "Fast twinblade pressure that shifts between black flame and holy damage.", ["Twinblade", "Godskin Peeler", "Black Flame Tornado Peeler", "Black Steel Twinblade"], ["dexterity", "faith", "twinblade"]),
+  build("dragon-samurai", "Dragon Hunter Samurai", "DEX", "Boss hunter", "Ice lightning for general play and a dragon-specialist DLC weapon.", ["Uchigatana", "Uchigatana", "Dragonscale Blade", "Dragon-Hunter's Great Katana + Dragonwound"], ["dexterity", "katana", "dragon"]),
+  build("sacred-twinblade", "Sacred Twinblade", "DEX / FAI", "Striker", "Fast twinblade pressure that shifts between black flame and holy damage.", ["Twinblade", "Godskin Peeler", "Godskin Peeler + Black Flame Tornado", "Black Steel Twinblade"], ["dexterity", "faith", "twinblade"]),
   build("curved-dancer", "Curved-Sword Dancer", "DEX", "Striker", "Flowing multihit strings with deliberately restrained buff stacking.", ["Shamshir", "Scavenger's Curved Sword", "Flowing Curved Sword", "Dancing Blade of Ranah"], ["dexterity", "curved", "multihit"]),
   build("backhand", "Backhand Skirmisher", "DEX", "Skirmisher", "Dodges through attacks and answers from blind angles.", ["Shamshir", "Mantis Blade", "Flowing Curved Sword", "Backhand Blade + Blind Spot"], ["dexterity", "mobile", "curved"]),
   build("whip", "Whip Controller", "DEX", "Controller", "Long-range sweeps, charged Urumi heavies and measured status buildup.", ["Whip", "Urumi", "Hoslow's Petal Whip", "Tooth Whip"], ["dexterity", "whip", "control"], "Moderate", "Volcano Manor contracts"),
@@ -132,22 +135,22 @@ const curatedBuilds: Build[] = [
   build("throwing-assassin", "Throwing-Blade Assassin", "DEX", "Ranged", "Starts with consumable throws and becomes a true ranged-dagger build.", ["Dagger + Kukri", "Black Knife", "Black Knife + utility dagger", "Smithscript Dagger"], ["dexterity", "dagger", "ranged"]),
   build("pure-sorcerer", "Pure Sorcerer", "INT", "Caster", "Efficient ranged sorcery with an optional finger-magic pivot in the DLC.", ["Demi-Human Queen's Staff", "Academy Glintstone Staff", "Carian Regal Scepter", "Maternal Staff"], ["intelligence", "sorcery", "ranged"], "Easy", "Thops and Ranni progression"),
   build("carian-greatsword", "Carian Greatsword Mage", "INT / FAI", "Spellblade", "Magic swordplay develops into a dual-school spellblade; Intelligence leads early while Faith is raised steadily for the same final setup.", ["Magic Longsword", "Sword of Night and Flame", "Sword of Night and Flame + Carian sword sorceries", "Rellana's Twin Blades"], ["intelligence", "faith", "spellblade", "quest"], "Advanced", "Caria Manor and Rellana progression"),
-  build("dex-spellblade", "Dexterity Spellblade", "DEX / INT", "Spellblade", "Fast melee weapons with large-area magical weapon skills.", ["Magic Estoc", "Wing of Astel", "Death Ritual Spear", "Star-Lined Sword"], ["dexterity", "intelligence", "magic"]),
+  build("dex-spellblade", "Dexterity Spellblade", "DEX / INT", "Spellblade", "Fast melee weapons with large-area magical weapon skills.", ["Magic Estoc", "Magic Estoc", "Death Ritual Spear", "Star-Lined Sword"], ["dexterity", "intelligence", "magic"]),
   build("gravity-knight", "Gravity Knight", "STR / INT", "Breaker", "Gravity pulls and heavy weapons stay on Strength and Intelligence from Limgrave onward; the late weapon remains effective throughout the DLC.", ["Lordsworn's Greatsword + Gravitas", "Meteoric Ore Blade", "Fallingstar Beast Jaw", "Fallingstar Beast Jaw + gravity sorceries"], ["strength", "intelligence", "gravity"], "Advanced"),
   build("frost-knight", "Frost Knight", "DEX / INT", "Controller", "Reliable physical damage with frostbite as a secondary payoff.", ["Cold Uchigatana", "Frozen Needle", "Zamor Curved Sword", "Cold Milady"], ["dexterity", "intelligence", "frost"]),
   build("death-knight", "Death Knight Sorcerer", "STR / INT", "Spellblade", "Summoned skeletons, ghostflame and mobile rancor pressure.", ["Sacrificial Axe", "Rosus' Axe", "Helphen's Steeple", "Spirit Sword"], ["intelligence", "death", "spellblade"]),
-  build("magic-polearm", "Magic Polearm Scholar", "DEX / INT", "Spellblade", "Long-reaching weapon skills and a weapon that doubles as a catalyst.", ["Magic Great Épée", "Death Ritual Spear", "Loretta's War Sickle", "Carian Sorcery Sword"], ["dexterity", "intelligence", "polearm"]),
-  build("golden-scholar", "Golden Order Scholar", "INT / FAI", "Caster support", "A true dual-school caster that consolidates catalysts in the DLC.", ["Meteorite Staff + Finger Seal", "Carian Staff + Golden Order Seal", "Prince of Death's Staff", "Staff of the Great Beyond"], ["intelligence", "faith", "caster"], "Advanced", "Ranni and Fia quests"),
+  build("magic-polearm", "Magic Polearm Scholar", "DEX / INT", "Spellblade", "Long-reaching weapon skills and a weapon that doubles as a catalyst.", ["Magic Great Épée", "Magic Great Épée", "Loretta's War Sickle", "Carian Sorcery Sword"], ["dexterity", "intelligence", "polearm"]),
+  build("golden-scholar", "Golden Order Scholar", "INT / FAI", "Caster support", "A true dual-school caster that consolidates catalysts in the DLC.", ["Meteorite Staff + Finger Seal", "Carian Glintstone Staff + Finger Seal", "Prince of Death's Staff", "Staff of the Great Beyond"], ["intelligence", "faith", "caster"], "Advanced", "Ranni and Fia quests"),
   build("crucible-paladin", "Crucible Paladin", "STR / FAI", "Tank", "Durable melee backed by Crucible magic and measured healing.", ["Morning Star + Sacred Blade", "Golden Halberd", "Ordovis's Greatsword", "Black Steel Greathammer"], ["strength", "faith", "crucible"]),
   build("flame-knight", "Flame-Art Knight", "STR / DEX / FAI", "Bruiser", "Rotates between flaming sword pressure, magma and giant fire.", ["Flame Art Claymore", "Magma Wyrm's Scalesword", "Giant's Red Braid", "Queelign's Greatsword"], ["faith", "fire", "greatsword"]),
-  build("blackflame", "Blackflame Apostle", "DEX / FAI", "Striker", "Percentage-based black flame pressure and a quick holy twinblade finish.", ["Flame Art Uchigatana + Godslayer Seal", "Godslayer's Greatsword", "Godslayer incantations", "Euporia"], ["faith", "blackflame", "twinblade"]),
+  build("blackflame", "Blackflame Apostle", "DEX / FAI", "Striker", "Percentage-based black flame pressure and a quick holy twinblade finish.", ["Flame Art Uchigatana + Godslayer's Seal", "Godslayer's Greatsword", "Godslayer's Greatsword + Godslayer's Seal", "Euporia"], ["faith", "blackflame", "twinblade"]),
   build("lightning-lancer", "Lightning Lancer", "DEX / FAI", "Striker", "Mounted thrusts and counter-hits become an aggressive blink-lightning style.", ["Lance", "Treespear", "Bolt of Gransax", "Death Knight's Twin Axes"], ["faith", "lightning", "spear"]),
   build("bestial-cleric", "Bestial Cleric", "STR / FAI", "Bruiser", "Throws stones at range and crushes openings in melee.", ["Large Club", "Cinquedea + Clawmark Seal", "Beastclaw Greathammer", "Devonia's Hammer"], ["strength", "faith", "bestial"], "Moderate", "Gurranq Deathroot rewards"),
-  build("stormcaller", "Dragon-Cult Stormcaller", "FAI / DEX", "Caster", "Lightning incantations with a polearm fallback and optional arcane pivot.", ["Pike + Finger Seal", "Gravel Stone Seal", "Bolt of Gransax", "Flowerstone Gavel"], ["faith", "lightning", "dragon"], "Advanced"),
+  build("stormcaller", "Dragon-Cult Stormcaller", "FAI / DEX", "Caster", "Lightning incantations with a polearm fallback and optional arcane pivot.", ["Pike + Finger Seal", "Pike + Finger Seal", "Bolt of Gransax", "Flowerstone Gavel"], ["faith", "lightning", "dragon"], "Advanced"),
   build("frenzy", "Frenzied Pilgrim", "DEX / FAI", "Specialist", "Madness-flavoured fire that stays useful against immune PvE targets.", ["Short Spear + Frenzied Burst", "Vyke's War Spear", "Frenzied Flame Seal", "Frenzyflame Perfume Bottle"], ["faith", "frenzy", "fire"], "Moderate", "Hyetta quest"),
-  build("pyromancer", "Fire Giant Pyromancer", "FAI / DEX", "Caster", "Close-range flame, giant fire and wide perfume clouds.", ["Finger Seal + Catch Flame", "Giant's Seal", "Giant's Red Braid", "Firespark Perfume Bottle"], ["faith", "fire", "caster"]),
+  build("pyromancer", "Fire Giant Pyromancer", "FAI / DEX", "Caster", "Close-range flame, giant fire and wide perfume clouds.", ["Finger Seal + Catch Flame", "Godslayer's Seal + Catch Flame", "Giant's Red Braid", "Firespark Perfume Bottle"], ["faith", "fire", "caster"]),
   build("bleed-duelist", "Bleed Duelist", "DEX / ARC", "Duelist", "Four distinct weapon skills keep bleed from becoming repetitive.", ["Reduvia", "Bloody Helice", "Morgott's Cursed Sword", "Obsidian Lamina"], ["dexterity", "arcane", "bleed"], "Moderate", "Ansbach quest"),
-  build("poison-brawler", "Poison Brawler", "ARC / DEX", "Striker", "Poison enables burst windows while physical damage handles immunity.", ["Venomous Fang", "Serpentbone Blade", "Poison Antspur Rapier", "Poisoned Hand"], ["arcane", "poison", "fist"]),
+  build("poison-brawler", "Poison Brawler", "ARC / DEX", "Striker", "Poison enables burst windows while physical damage handles immunity.", ["Venomous Fang", "Venomous Fang", "Poison Antspur Rapier", "Poisoned Hand"], ["arcane", "poison", "fist"]),
   build("rot-duelist", "Scarlet-Rot Duelist", "DEX / ARC", "Duelist", "A thrusting poison start that matures into true scarlet rot weapons.", ["Estoc + Poisonous Mist", "Antspur Rapier", "Scorpion's Stinger", "Poleblade of the Bud"], ["dexterity", "arcane", "rot"]),
   build("dragon-communion", "Dragon-Communion Knight", "ARC / FAI", "Caster bruiser", "Dragon maw attacks break stance while arcane weapons cover fast openings.", ["Dragon Communion Seal + Reduvia", "Regalia of Eochaid", "Marais Executioner's Sword", "Flowerstone Gavel"], ["arcane", "faith", "dragon"]),
   build("sleep", "Sleep Swordsman", "DEX / INT", "Controller", "Uses sleep where it works and keeps a cold sidearm for immune enemies.", ["Sword of St. Trina", "Cold sidearm", "St. Trina's Torch", "Velvet Sword of St. Trina"], ["dexterity", "intelligence", "sleep"]),
@@ -156,8 +159,8 @@ const curatedBuilds: Build[] = [
   build("storm-vanguard", "Stormbound Vanguard", "STR / DEX", "Frontline", "Storm skills maintain pressure before a defensive DLC greatsword finish.", ["Longsword + Storm Blade", "Banished Knight's Halberd +8", "Stormhawk Axe", "Greatsword of Solitude"], ["storm", "quality", "stance"]),
   build("frostflail", "Frostflail Astronomer", "DEX / INT", "Controller", "Frost control evolves from flail counters into explosive perfume clouds.", ["Cold Flail", "Frozen Needle", "Bastard's Stars", "Chilling Perfume Bottle"], ["frost", "intelligence", "flail"]),
   build("dryleaf", "Dryleaf Disciple", "STR / DEX", "Breaker", "A light-load martial artist focused on Endure, counters and stance breaks.", ["Caestus", "Katar", "Star Fist", "Dryleaf Arts / Dane's Footwork"], ["martial", "quality", "fist"], "Advanced"),
-  build("smithscript", "Smithscript Arsenalist", "STR / DEX", "Ranged utility", "A changing kit of thrown steel and ammunition for any engagement range.", ["Spear + Spectral Lance", "Jar Cannon", "Pulley Crossbow", "Smithscript Dagger, Cirque & Spear"], ["quality", "ranged", "smithscript"], "Advanced"),
-  build("retaliation", "Golden Retaliation Captain", "STR / FAI", "Tank support", "Reflects self-cast holy discs and enemy magic into shield projectiles.", ["Sacred Longsword + Heater Shield", "Discus of Light", "Erdtree Greatshield", "Smithscript Shield"], ["faith", "shield", "support"], "Advanced"),
+  build("smithscript", "Smithscript Arsenalist", "STR / DEX", "Ranged utility", "A changing kit of thrown steel and ammunition for any engagement range.", ["Spear + Spectral Lance", "Spear + Spectral Lance", "Pulley Crossbow", "Smithscript Dagger, Curseblade's Cirque & Smithscript Spear"], ["quality", "ranged", "smithscript"], "Advanced"),
+  build("retaliation", "Golden Retaliation Captain", "STR / FAI", "Tank support", "Reflects self-cast holy discs and enemy magic into shield projectiles.", ["Sacred Longsword + Heater Shield", "Sacred Longsword + Finger Seal", "Erdtree Greatshield", "Smithscript Shield"], ["faith", "shield", "support", "discus of light"], "Advanced"),
   build("nightblade", "Nightblade Fencer", "DEX", "Duelist", "Fast duelling with feints, flowing attacks and guard-piercing darkness.", ["Estoc", "Ornamental Straight Sword", "Nox Flowing Sword", "Sword of Night"], ["dexterity", "duelist", "night"]),
   build("blood-dancer", "Twinblade Blood Dancer", "DEX / ARC", "Striker", "Mobile multihit pressure without dual jump-attack spam.", ["Twinblade", "Eleonora's Poleblade", "Blood Godskin Peeler", "Falx"], ["dexterity", "arcane", "twinblade"]),
   build("bonebow", "Bonebow Beastmaster", "DEX / ARC", "Ranged", "Status arrows and spirit-assisted volleys with a light melee sidearm.", ["Shortbow", "Serpent Bow", "Pulley Bow", "Bone Bow"], ["dexterity", "arcane", "bow"], "Advanced"),
@@ -165,11 +168,11 @@ const curatedBuilds: Build[] = [
   build("ice-dragoon", "Ice-Lightning Dragoon", "STR / DEX", "Skirmisher", "Frost-lightning buffs, long reach and an aggressive blink finish.", ["Short Spear", "Dragon Halberd", "Dragonscale Blade", "Death Knight's Twin Axes"], ["quality", "lightning", "frost"]),
   build("eochaid", "Eochaid Drill Knight", "STR / ARC", "Bruiser", "Charged corkscrew attacks give way to a mobile frost/arcane cleaver.", ["Broadsword", "Regalia of Eochaid", "Marais Executioner's Sword", "Putrescence Cleaver"], ["strength", "arcane", "charged"]),
   build("finger-oracle", "Finger Oracle", "STR / INT / FAI", "Novelty caster", "A strange but viable mixed caster that raises Intelligence and Faith throughout, using Strength only to meet its finger-weapon requirements.", ["Club + mixed catalysts", "Ringed Finger", "Prince of Death's Staff", "Staff of the Great Beyond + Gazing Finger"], ["novelty", "caster"], "Advanced", "Ymir quest"),
-  build("liturgist", "Golden Order Liturgist", "INT / FAI", "Caster support", "Ranged holy discs, buffs and a dependable sword fallback.", ["Sacred Blade weapon", "Golden Order Seal + Discus", "Golden Order Greatsword", "Leda's Sword"], ["intelligence", "faith", "holy"], "Advanced"),
+  build("liturgist", "Golden Order Liturgist", "INT / FAI", "Caster support", "Ranged holy discs, buffs and a dependable sword fallback.", ["Sacred Blade weapon", "Sacred Longsword + Finger Seal + Discus", "Golden Order Greatsword", "Leda's Sword"], ["intelligence", "faith", "holy"], "Advanced"),
   build("first-lord", "Roar of the First Lord", "STR", "Breaker", "Roars, charged heavies and hyper-armour recreate the First Lord's rhythm.", ["Highland Axe", "Grafted Blade Greatsword", "Axe of Godfrey", "Greatsword of Radahn (Lord)"], ["strength", "roar", "stance"]),
   build("bloodfiend", "Bloodfiend Juggernaut", "STR / ARC", "Breaker", "Slow, punishing blood attacks deliberately held behind progression caps.", ["Club", "Rusted Anchor", "Occult Great Stars", "Bloodfiend's Arm"], ["strength", "arcane", "bleed"], "Easy"),
   build("ghostflame", "Ghostflame Hexer", "INT / FAI", "Caster", "Frost, lingering ghostflame and putrescence control whole arenas.", ["Glintstone Staff + Magic Sword", "Death's Poker", "Helphen's Steeple + death sorceries", "Spirit Glaive + putrescence sorceries"], ["intelligence", "faith", "frost"], "Advanced", "Fia quest"),
-  build("storm-perfumer", "Storm-Painter Perfumer", "DEX / FAI", "Elementalist", "Precise lightning thrusts alternate with wide elemental clouds.", ["Erdsteel Dagger + pots", "Lightning incantations + Aromatics", "Bolt of Gransax", "Lightning Perfume Bottle"], ["dexterity", "faith", "perfume"]),
+  build("storm-perfumer", "Storm-Painter Perfumer", "DEX / FAI", "Elementalist", "Precise lightning thrusts alternate with wide elemental clouds.", ["Erdsteel Dagger + pots", "Erdsteel Dagger + Finger Seal", "Bolt of Gransax", "Lightning Perfume Bottle"], ["dexterity", "faith", "perfume", "lightning"]),
   build("venom-alchemist", "Venom Alchemist", "DEX / ARC", "Controller", "Layered poison pressure with a physical backup for immune enemies.", ["Dagger + Poisonous Mist", "Coil Shield + Serpent Bow", "Venomous Fang", "Deadly Poison Perfume Bottle"], ["dexterity", "arcane", "poison"]),
   build("destined-templar", "Destined Death Templar", "STR / FAI", "Bruiser", "Sacred great-weapon fundamentals lead directly into Destined Death and the same Strength/Faith pressure in the DLC.", ["Sacred Claymore", "Golden Halberd", "Maliketh's Black Blade", "Greatsword of Damnation"], ["strength", "faith", "greatsword", "destined death"], "Advanced"),
   build("grafted-scion", "Grafted Scion", "STR / DEX", "Trophy fighter", "A viable novelty route that invests in Strength and Dexterity throughout while changing boss-trophy weapons after major victories.", ["Battle Axe", "Grafted Dragon", "Axe of Godrick", "Greatsword of Radahn (Light)"], ["quality", "remembrance", "novelty"], "Advanced"),
@@ -183,23 +186,23 @@ const curatedBuilds: Build[] = [
   build("guardian-swordspear", "Guardian Swordspear Twinblade", "DEX", "Melee", "Fast halberd light strings and paired pressure built around the Guardian's Swordspear's strong Keen scaling.", ["Halberd", "Guardian's Swordspear", "Keen Guardian's Swordspear pair", "Guardian's Swordspear pair + Divine Beast Frost Stomp"], ["dexterity", "halberd", "multihit"], "Moderate", undefined, { label: "EIP PvE: Dual Guardian Swordspear", url: BUILD_SOURCES.eip }, "Light attacks", "Samurai"),
   build("blasphemous-vicar", "Blasphemous Blade Vicar", "STR / FAI", "Melee", "A Faith greatsword route centred on Taker's Flames, with healing kept as sustain rather than a reason to ignore mechanics.", ["Lordsworn's Greatsword + Sacred Blade", "Magma Wyrm's Scalesword", "Blasphemous Blade", "Blasphemous Blade + Talisman of the Dread"], ["strength", "faith", "fire"], "Easy", "Rya and Rykard progression", { label: "PCGamesN: Blasphemous Blade build", url: BUILD_SOURCES.pcGamesN }, "Skill damage", "Hero"),
   build("halo-reaper", "Halo Scythe Disciple", "DEX / FAI", "Ranged", "Uses ordinary scythe sweeps up close and Miquella's Ring of Light when spacing or co-op aggro makes range safer.", ["Winged Scythe", "Halo Scythe", "Halo Scythe + Grave Scythe", "Halo Scythe + Barbed Staff-Spear"], ["dexterity", "faith", "reaper", "ranged"], "Moderate", undefined, { label: "EIP PvE: Halo Scythe build", url: BUILD_SOURCES.eip }, "Ranged attacks", "Confessor"),
-  build("nebula-astel", "Wing of Astel Nebula", "DEX / INT", "Melee", "Curved-sword spacing sets up Nebula bursts for large targets without requiring a long buff routine.", ["Magic Shamshir", "Wing of Astel", "Wing of Astel + Carian Regal Scepter", "Wing of Astel + Staff of the Great Beyond"], ["dexterity", "intelligence", "curved", "stance"], "Moderate", "Ranni progression", { label: "PCGamesN: Wing of Astel build", url: BUILD_SOURCES.pcGamesN }, "Stance damage", "Prisoner"),
+  build("nebula-astel", "Wing of Astel Nebula", "DEX / INT", "Melee", "Curved-sword spacing sets up Nebula bursts for large targets without requiring a long buff routine.", ["Magic Shamshir", "Magic Shamshir", "Wing of Astel + Carian Regal Scepter", "Wing of Astel + Carian Regal Scepter"], ["dexterity", "intelligence", "curved", "stance"], "Moderate", "Ranni progression", { label: "PCGamesN: Wing of Astel build", url: BUILD_SOURCES.pcGamesN }, "Stance damage", "Prisoner"),
   build("poison-lizard", "Poison Lizard Greatsword", "STR / ARC", "Melee", "A conventional greatsword build that adds poison and the Lizard Greatsword's projectile heavy attack in the DLC.", ["Claymore + Poisonous Mist", "Iron Greatsword", "Occult Flamberge", "Poison Lizard Greatsword"], ["strength", "arcane", "poison", "charged"], "Moderate", undefined, { label: "PCGamesN: Poison Lizard build", url: BUILD_SOURCES.pcGamesN }, "Charged attacks", "Bandit"),
-  build("thorn-sorcerer", "Briar and Thorn Sorcerer", "INT / ARC", "Ranged", "A blood-sorcery route using ordinary glintstone spells until the specialised thorn equipment becomes available.", ["Meteorite Staff", "Albinauric Staff", "Staff of the Guilty + Briars of Punishment", "Maternal Staff + Impenetrable Thorns"], ["intelligence", "arcane", "sorcery", "bleed"], "Advanced", "Ymir quest", { label: "PCGamesN: Bleeding Thorns Mage", url: BUILD_SOURCES.pcGamesN }, "Spell damage", "Astrologer"),
-  build("lightning-perfumer", "Lightning Perfume Prophet", "DEX / FAI", "Ranged", "Lightning incantations carry the base game before the perfume bottle supplies broad, close-to-mid-range lightning clouds.", ["Finger Seal + Lightning Spear", "Gravel Stone Seal", "Bolt of Gransax", "Lightning Perfume Bottle"], ["dexterity", "faith", "lightning", "perfume", "ranged"], "Moderate", undefined, { label: "PCGamesN: Lightning Perfume Bottle Prophet", url: BUILD_SOURCES.pcGamesN }, "Ranged attacks", "Prophet"),
+  build("thorn-sorcerer", "Briar and Thorn Sorcerer", "INT / ARC", "Ranged", "A blood-sorcery route using ordinary glintstone spells until the specialised thorn equipment becomes available.", ["Meteorite Staff", "Academy Glintstone Staff", "Staff of the Guilty + Briars of Punishment", "Maternal Staff + Impenetrable Thorns"], ["intelligence", "arcane", "sorcery", "bleed"], "Advanced", "Ymir quest", { label: "PCGamesN: Bleeding Thorns Mage", url: BUILD_SOURCES.pcGamesN }, "Spell damage", "Astrologer"),
+  build("lightning-perfumer", "Lightning Perfume Prophet", "DEX / FAI", "Ranged", "Lightning incantations carry the base game before the perfume bottle supplies broad, close-to-mid-range lightning clouds.", ["Finger Seal + Lightning Spear", "Finger Seal + Lightning Spear", "Bolt of Gransax", "Lightning Perfume Bottle"], ["dexterity", "faith", "lightning", "perfume", "ranged"], "Moderate", undefined, { label: "PCGamesN: Lightning Perfume Bottle Prophet", url: BUILD_SOURCES.pcGamesN }, "Ranged attacks", "Prophet"),
   build("fire-knight-greatsword", "Fire Knight Greatsword", "STR / FAI", "Melee", "Heavy flaming sweeps and Messmer incantations with a DLC weapon whose thrusting heavy attacks reward deliberate spacing.", ["Flame Art Claymore", "Magma Wyrm's Scalesword", "Blasphemous Blade", "Fire Knight's Greatsword + Flame Spear"], ["strength", "faith", "fire", "charged"], "Moderate", undefined, { label: "Shadow of the Erdtree weapon catalogue", url: BUILD_SOURCES.dlcWeapons }, "Charged attacks", "Hero"),
   build("sunflower-crusader", "Shadow Sunflower Crusader", "STR / FAI", "Melee", "A holy great-weapon progression that finishes with repeated sunflower slams and substantial stance pressure.", ["Sacred Large Club", "Great Stars + Prayerful Strike", "Envoy's Long Horn", "Shadow Sunflower Blossom"], ["strength", "faith", "great hammer", "stance"], "Easy", undefined, { label: "Shadow of the Erdtree weapon catalogue", url: BUILD_SOURCES.dlcWeapons }, "Stance damage", "Hero"),
   build("black-steel-bulwark", "Black Steel Bulwark", "STR / FAI", "Melee", "Guard counters and holy retaliation culminate in the Black Steel Greatshield and a controllable thrusting sidearm.", ["Broadsword + Brass Shield", "Golden Greatshield + Great Épée", "Haligtree Crest Greatshield + Treespear", "Black Steel Greatshield + Queelign's Greatsword"], ["strength", "faith", "guard", "shield"], "Easy", undefined, { label: "Shadow of the Erdtree weapon catalogue", url: BUILD_SOURCES.dlcWeapons }, "Guard counters", "Hero"),
   build("night-claws", "Claws of Night Hunter", "DEX", "Ranged", "Fast claw strings share a build with thrown fan blades, giving the same weapon a real answer at two ranges.", ["Hookclaws", "Raptor Talons", "Bloodhound Claws", "Claws of Night"], ["dexterity", "claw", "ranged", "multihit"], "Advanced", "Jolán and Ymir quest", { label: "Shadow of the Erdtree weapon catalogue", url: BUILD_SOURCES.dlcWeapons }, "Light attacks", "Samurai"),
-  build("rakshasa-counter", "Rakshasa Counter-Slasher", "DEX", "Melee", "Great-katana reach and counter-hit timing lead into Rakshasa's aggressive Weed Cutter chains.", ["Uchigatana", "Nagakiba", "Keen Great Katana", "Rakshasa's Great Katana"], ["dexterity", "katana", "counter"], "Advanced", undefined, { label: "Shadow of the Erdtree weapon catalogue", url: BUILD_SOURCES.dlcWeapons }, "Skill damage", "Samurai"),
+  build("rakshasa-counter", "Rakshasa Counter-Slasher", "DEX", "Melee", "Great-katana reach and counter-hit timing lead into Rakshasa's aggressive Weed Cutter chains.", ["Uchigatana", "Nagakiba", "Keen Nagakiba", "Rakshasa's Great Katana"], ["dexterity", "katana", "counter"], "Advanced", undefined, { label: "Shadow of the Erdtree weapon catalogue", url: BUILD_SOURCES.dlcWeapons }, "Skill damage", "Samurai"),
   build("horned-storm", "Horned Warrior Stormblade", "STR / DEX", "Melee", "Curved-greatsword fundamentals gain a high-commitment horned storm skill for large punish windows.", ["Dismounter", "Omen Cleaver", "Beastman's Cleaver", "Horned Warrior's Greatsword"], ["quality", "curved greatsword", "storm", "stance"], "Moderate", undefined, { label: "Shadow of the Erdtree weapon catalogue", url: BUILD_SOURCES.dlcWeapons }, "Stance damage", "Vagabond"),
-  build("spread-crossbow", "Spread Crossbow Trapper", "DEX / ARC", "Ranged", "Uses crafted bolts and status ammunition; the DLC spread pattern rewards close-range openings without replacing the sidearm.", ["Light Crossbow", "Pulley Crossbow", "Pulley Crossbow + status bolts", "Spread Crossbow"], ["dexterity", "arcane", "crossbow", "status"], "Advanced", undefined, { label: "Shadow of the Erdtree weapon catalogue", url: BUILD_SOURCES.dlcWeapons }, "Status buildup", "Bandit"),
+  build("spread-crossbow", "Spread Crossbow Trapper", "DEX / ARC", "Ranged", "Uses crafted bolts and status ammunition; the DLC spread pattern rewards close-range openings without replacing the sidearm.", ["Light Crossbow", "Light Crossbow", "Pulley Crossbow + status bolts", "Spread Crossbow"], ["dexterity", "arcane", "crossbow", "status"], "Advanced", undefined, { label: "Shadow of the Erdtree weapon catalogue", url: BUILD_SOURCES.dlcWeapons }, "Status buildup", "Bandit"),
   build("golem-fist", "Golem Fist Boxer", "STR", "Melee", "A fist build whose charged heavy eventually launches a short-range projectile while retaining strong close pressure.", ["Caestus", "Spiked Caestus", "Star Fist", "Golem Fist"], ["strength", "fist", "charged"], "Moderate", undefined, { label: "Shadow of the Erdtree weapon catalogue", url: BUILD_SOURCES.dlcWeapons }, "Charged attacks", "Hero"),
   build("serpent-flail", "Serpent Flail Demolitionist", "DEX / FAI", "Melee", "Flail guard counters and charged attacks finish with the Serpent Flail's delayed explosive coating.", ["Flail", "Nightrider Flail", "Family Heads", "Serpent Flail"], ["dexterity", "faith", "flail", "charged"], "Advanced", undefined, { label: "Shadow of the Erdtree weapon catalogue", url: BUILD_SOURCES.dlcWeapons }, "Charged attacks", "Confessor"),
-  build("sword-of-darkness", "Sword of Darkness Knight", "STR / FAI", "Melee", "A sword-and-seal knight that uses holy damage early before shifting to the Sword of Darkness's resistance debuff.", ["Sacred Lordsworn's Straight Sword", "Golden Epitaph", "Coded Sword", "Sword of Darkness + Dryleaf Seal"], ["strength", "faith", "holy", "skill"], "Moderate", "Stone-Sheathed Sword altar route", { label: "PC Gamer: Unholy Knight", url: BUILD_SOURCES.pcGamerDlc }, "Skill damage", "Hero"),
+  build("sword-of-darkness", "Sword of Darkness Knight", "STR / FAI", "Melee", "A sword-and-seal knight that uses holy damage early before shifting to the Sword of Darkness's resistance debuff.", ["Sacred Lordsworn's Straight Sword", "Sacred Lordsworn's Straight Sword", "Coded Sword", "Sword of Darkness + Dryleaf Seal"], ["strength", "faith", "holy", "skill"], "Moderate", "Stone-Sheathed Sword altar route", { label: "PC Gamer: Unholy Knight", url: BUILD_SOURCES.pcGamerDlc }, "Skill damage", "Hero"),
   build("carian-shield-sorcerer", "Carian Shield Sorcerer", "DEX / INT", "Hybrid", "Casts through the Carian Sorcery Sword while the thrusting shield handles guarded pressure and counters.", ["Estoc + Demi-Human Queen's Staff", "Carian Knight's Sword + staff", "Loretta's War Sickle + Carian Regal Scepter", "Carian Sorcery Sword + Carian Thrusting Shield"], ["dexterity", "intelligence", "sorcery", "guard"], "Advanced", undefined, { label: "PC Gamer: Carian Spellblade", url: BUILD_SOURCES.pcGamerDlc }, "Guard counters", "Prisoner"),
   build("wing-stance-duelist", "Wing Stance Court Duelist", "STR / DEX", "Melee", "A clean duelling route centred on stance choice: light slash strings for pressure or the heavy leap for a punish.", ["Rapier", "Rogier's Rapier", "Cleanrot Knight's Sword", "Milady + Wing Stance / Main-gauche"], ["quality", "light greatsword", "critical", "stance"], "Advanced", undefined, { label: "PC Gamer: Courtly Duelist", url: BUILD_SOURCES.pcGamerDlc }, "Critical attacks", "Vagabond"),
-  build("red-bear", "Red Bear Berserker", "STR / DEX", "Melee", "Relentless claw strings and Red Bear Hunt reward staying close without relying on dual-wield jump spam.", ["Hookclaws", "Bloodhound Claws", "Star Fist", "Red Bear's Claw"], ["quality", "claw", "multihit", "bleed"], "Advanced", undefined, { label: "PC Gamer: Bearserker", url: BUILD_SOURCES.pcGamerDlc }, "Light attacks", "Vagabond"),
+  build("red-bear", "Red Bear Berserker", "STR / DEX", "Melee", "Relentless claw strings and Red Bear Hunt reward staying close without relying on dual-wield jump spam.", ["Hookclaws", "Hookclaws", "Star Fist", "Red Bear's Claw"], ["quality", "claw", "multihit", "bleed"], "Advanced", undefined, { label: "PC Gamer: Bearserker", url: BUILD_SOURCES.pcGamerDlc }, "Light attacks", "Vagabond"),
   build("pure-priestess", "Co-op Erdtree Priestess", "FAI", "Ranged", "A genuine co-op Faith caster balancing ranged incantations, buffs and area healing rather than MMO-style threat roles.", ["Finger Seal + Catch Flame", "Godslayer's Seal", "Erdtree Seal", "Dryleaf Seal + Knight's Lightning Spear"], ["faith", "caster", "coop", "ranged"], "Moderate", undefined, { label: "EIP PvE: Pure Faith Priestess", url: BUILD_SOURCES.eip }, "Spell damage", "Prophet"),
   build("magma-sorcerer", "Gelmir Magma Sorcerer", "INT / FAI", "Ranged", "Magma sorceries deny space and punish large enemies while a light greatsword covers fast melee openings.", ["Meteorite Staff + Magic Longsword", "Gelmir Glintstone Staff", "Magma Blade + Gelmir Staff", "Staff of the Great Beyond + Rykard's Rancor"], ["intelligence", "faith", "magma", "caster"], "Advanced", "Volcano Manor progression", { label: "EIP PvE: Magmage", url: BUILD_SOURCES.eip }, "Spell damage", "Astrologer"),
   build("black-blade-colossus", "Maliketh Black Blade", "STR / FAI", "Melee", "Colossal holy and fire damage with Destined Death used for boss openings rather than repeated skill trading.", ["Sacred Claymore", "Golden Halberd", "Maliketh's Black Blade", "Maliketh's Black Blade + Black Blade incantation"], ["strength", "faith", "colossal", "destined death"], "Advanced", undefined, { label: "EIP PvE: Black Blade STR/Faith", url: BUILD_SOURCES.eip }, "Skill damage", "Hero"),
@@ -207,6 +210,12 @@ const curatedBuilds: Build[] = [
 ];
 
 export const builds: Build[] = [...curatedBuilds, ...wikiBuilds, ...additionalSourcedBuilds, ...sourcedMemeBuilds];
+
+// Legacy curated experiments stay loadable so an existing save is never broken,
+// but new runs may only choose a published build or one of the two locally-used
+// routes retained at the user's request. A weapon catalogue is an acquisition
+// source, not evidence that a multi-stage build is sound.
+export const selectableBuilds: Build[] = builds.filter((candidate) => candidate.collection !== "Curated" || candidate.audited);
 
 export type StageLoadout = {
   level: string;
@@ -238,7 +247,7 @@ const PHASES: PhaseKey[] = ["early", "mid", "late", "dlc"];
 
 const statCodes = (build: Build) => ["STR", "DEX", "INT", "FAI", "ARC"].filter((stat) => build.stats.toUpperCase().includes(stat));
 
-const normalWords = (value: string) => value.normalize("NFKD").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const normalWords = (value: string) => value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 const weaponClassCache = new Map<string, string>();
 
 function weaponClass(weapon: string) {
@@ -307,21 +316,26 @@ const compatibleMechanic = (left: string, right: string) => {
   return groups.some((group) => group.includes(left) && group.includes(right));
 };
 
+const publishedWeaponAt = (build: Build, phase: PhaseKey) => build.publishedStages?.[phase]?.weapon || build.publishedLoadout?.weapon || "";
+
 function desiredWeapon(build: Build, phase: PhaseKey) {
-  return build.publishedLoadout?.weapon || build.phases[phase];
+  const resolution = weaponResolutions[build.id];
+  return resolution?.weapons?.[phase] || resolution?.weapon || build.publishedLoadout?.weapon || build.phases[phase];
 }
 
 function earlyStarterWeapon(build: Build, eventualWeapon: string) {
   const family = weaponFamily(eventualWeapon);
   const stats = statCodes(build);
-  if (family === "catalyst") {
+  const catalystLane = family === "catalyst" || (build.mechanic === "Spell damage" && /\b(?:staff|seal)\b/i.test(eventualWeapon));
+  if (catalystLane) {
     if (stats.includes("FAI") && !stats.includes("INT")) return build.mechanic === "Guard counters" ? "Broadsword + Finger Seal" : "Finger Seal";
-    return build.startingClass === "Prisoner" ? "Glintstone Staff" : "Astrologer's Staff";
+    if (build.startingClass === "Prisoner") return "Glintstone Staff + Estoc";
+    return build.startingClass === "Astrologer" ? "Astrologer's Staff + Short Sword" : "Astrologer's Staff";
   }
   if (family === "ranged") return build.startingClass === "Bandit" ? "Shortbow" : "Light Crossbow";
   if (family === "polearm") return stats.includes("STR") ? "Halberd" : "Short Spear";
   if (family === "heavy") return stats.includes("STR") ? "Large Club" : "Lordsworn's Greatsword";
-  if (family === "rapid") return stats.includes("STR") ? "Club" : "Dagger";
+  if (family === "rapid") return stats.includes("STR") ? "Caestus" : "Hookclaws";
   if (family === "shield") return "Longsword + Heater Shield";
   if (family === "blade") {
     if (build.startingClass === "Samurai") return "Uchigatana";
@@ -334,33 +348,44 @@ function earlyStarterWeapon(build: Build, eventualWeapon: string) {
 
 function earlyStarterSkill(starter: string) {
   const weapon = normalWords(starter);
-  if (weapon.includes("halberd")) return "Charge Forth";
-  if (weapon.includes("short spear") || weapon.includes("estoc")) return "Impaling Thrust";
-  if (weapon.includes("large club") || weapon === "club") return "Barbaric Roar";
-  if (weapon.includes("lordsworn's greatsword")) return "Stamp (Upward Cut)";
-  if (weapon.includes("dagger")) return "Quickstep";
-  if (weapon.includes("uchigatana")) return "Unsheathe";
-  if (weapon.includes("longsword") || weapon.includes("broadsword")) return "Square Off";
-  if (weapon.includes("battle axe")) return "Wild Strikes";
-  if (weapon.includes("shortbow")) return "Barrage";
-  if (weapon.includes("light crossbow")) return "Kick";
+  if (weapon.includes("halberd")) return "Charge Forth (default skill)";
+  if (weapon.includes("short spear") || weapon.includes("estoc")) return "Impaling Thrust (default skill)";
+  if (weapon.includes("large club") || weapon === "club") return "Barbaric Roar (default skill)";
+  if (weapon.includes("lordsworn's greatsword")) return "Stamp (Upward Cut) (default skill)";
+  if (weapon.includes("dagger")) return "Quickstep (default skill)";
+  if (weapon.includes("uchigatana")) return "Unsheathe (default skill)";
+  if (weapon.includes("longsword") || weapon.includes("broadsword")) return "Square Off (default skill)";
+  if (weapon.includes("battle axe")) return "Wild Strikes (default skill)";
+  if (weapon.includes("shortbow")) return "Barrage (default skill)";
+  if (weapon.includes("light crossbow")) return "Kick (default skill)";
   if (weapon.includes("staff") || weapon.includes("finger seal")) return "No Skill";
-  return "Use the weapon's default skill";
+  return "Use the weapon's default skill (no Ash of War pickup required)";
+}
+
+function markIntrinsicStarterSkill(phase: PhaseKey, loadout: StageLoadout): StageLoadout {
+  if (phase !== "early") return loadout;
+  const starterSkill = earlyStarterSkill(loadout.weapon);
+  const unmarkedStarterSkill = starterSkill.replace(/\s*\((?:default skill|no Ash of War pickup required)\)$/i, "");
+  return normalWords(loadout.skill) === normalWords(unmarkedStarterSkill) ? { ...loadout, skill: starterSkill } : loadout;
 }
 
 function applyEarlyStarter(build: Build, phase: PhaseKey, loadout: StageLoadout): StageLoadout {
   if (phase !== "early") return loadout;
-  const starter = earlyStarterWeapon(build, loadout.weapon);
-  if (normalWords(loadout.weapon) === normalWords(starter)) return loadout;
-  return {
+  let starter = earlyStarterWeapon(build, loadout.weapon);
+  if (loadout.spells.length && /\bseal\b/i.test(loadout.weapon) && !/\bseal\b/i.test(`${starter} ${loadout.offhand}`)) starter += " + Finger Seal";
+  if (loadout.spells.length && /\bstaff\b/i.test(loadout.weapon) && !/\bstaff\b/i.test(`${starter} ${loadout.offhand}`)) starter += build.startingClass === "Prisoner" ? " + Glintstone Staff" : " + Demi-Human Queen's Staff";
+  if (normalWords(loadout.weapon) === normalWords(starter)) return markIntrinsicStarterSkill(phase, loadout);
+  const starterNote = /\bLarge Club\b/i.test(starter) ? " Two-hand the Large Club until reaching 22 STR; 15 STR meets its effective two-handed requirement." : "";
+  return markIntrinsicStarterSkill(phase, {
     ...loadout,
     weapon: starter,
     skill: earlyStarterSkill(starter),
+    stats: `${loadout.stats}${starterNote}`,
     weaponChoice: {
       rationale: `Start with ${starter} so the build uses its intended damage stats and combat rhythm immediately. Keep it until the route creates the card for ${loadout.weapon}; no respec is needed for that replacement.`,
       sources: [loadout.borrowedFrom || build.source, build.source].map(({ label, url }) => ({ label, url })),
     },
-  };
+  });
 }
 
 function offPathRequirement(build: Build, weapon: string) {
@@ -375,7 +400,7 @@ function offPathRequirement(build: Build, weapon: string) {
 
 function scorePublishedStage(build: Build, phase: PhaseKey, candidate: Build, previous?: Build) {
   const targetWeapon = desiredWeapon(build, phase);
-  const candidateWeapon = candidate.publishedLoadout?.weapon || "";
+  const candidateWeapon = publishedWeaponAt(candidate, phase);
   const targetClass = weaponClass(targetWeapon);
   const candidateClass = weaponClass(candidateWeapon);
   const targetFamily = weaponFamily(targetWeapon);
@@ -396,9 +421,10 @@ function scorePublishedStage(build: Build, phase: PhaseKey, candidate: Build, pr
   const casterOrRangedMismatch = [candidateStyle, targetStyle].some((style) => style === "caster" || style === "ranged");
   score += candidateStyle === targetStyle ? 24 : casterOrRangedMismatch ? -42 : candidateFamily === targetFamily ? 7 : -10;
   score -= requirementTax * 7;
+  if (!build.tags.includes("meme") && candidate.tags.some((tag) => tag === "meme" || tag === "cosplay")) score -= 100;
   score += sourcePhase === phase ? 5 : 0;
   if (previous) {
-    const previousWeapon = previous.publishedLoadout?.weapon || "";
+    const previousWeapon = publishedWeaponAt(previous, phase);
     score += previous.id === candidate.id ? 34 : weaponClass(previousWeapon) === candidateClass ? 18 : weaponFamily(previousWeapon) === candidateFamily ? 9 : -8;
     const previousStats = statCodes(previous);
     score += previousStats.some((stat) => candidateStats.includes(stat)) ? 6 : -12;
@@ -406,27 +432,45 @@ function scorePublishedStage(build: Build, phase: PhaseKey, candidate: Build, pr
   return score;
 }
 
+const DEFAULT_PHASE_BRIDGES: Record<string, Partial<Record<PhaseKey, string>>> = {
+  "fextra-stormblessed": { early: "fextra-vanquisher", mid: "fextra-vanquisher", late: "fextra-lightningdragoon" },
+  "fextra-dragonpriestess": { early: "fextra-paladin", mid: "fextra-paladin", late: "fextra-templar" },
+  "fextra-dragongod": { early: "fextra-dragonpriest", mid: "fextra-dragonpriest", late: "fextra-blooddragon" },
+  "fextra-redlightning": { early: "fextra-paladin", mid: "fextra-templar" },
+  "fextra-blackflamespellblade": { early: "fextra-paladin", mid: "fextra-blackflameapostle" },
+  "fextra-goldeneyebow": { early: "fextra-archer", mid: "fextra-archer" },
+  "fextra-blackflamebushido": { early: "fextra-paladin", mid: "fextra-blackflameapostle" },
+  "fextra-blackknifeassassin": { early: "fextra-paladin", mid: "fextra-blackflameapostle" },
+  "fextra-pyromancer": { early: "fextra-paladin", mid: "fextra-templar" },
+  "fextra-dragondancer": { early: "fextra-dragonpriest", mid: "fextra-blooddragon" },
+  "fextra-dragonknight": { early: "fextra-dragonpriest", mid: "fextra-blooddragon" },
+  "fextra-sanguinespellblade": { early: "fextra-dragonpriest", mid: "fextra-blooddragon" },
+};
+
 function closestPublishedStage(build: Build, phase: PhaseKey, previous?: Build) {
-  const explicitBridge = build.phaseBridges?.[phase];
-  if (explicitBridge) return builds.find((candidate) => candidate.id === explicitBridge && candidate.publishedLoadout);
+  const explicitBridge = build.phaseBridges?.[phase] || DEFAULT_PHASE_BRIDGES[build.id]?.[phase];
+  if (explicitBridge) return builds.find((candidate) => candidate.id === explicitBridge && (candidate.publishedStages?.[phase] || candidate.publishedLoadout));
   const targetStats = statCodes(build);
   const phaseIndex = PHASES.indexOf(phase);
   let candidates = builds.filter((candidate) =>
     candidate.id !== build.id &&
-    candidate.collection === "Fextralife" &&
-    candidate.publishedLoadout &&
-    PHASES.indexOf(candidate.availableFrom || "early") <= phaseIndex,
+    candidate.collection !== "Curated" &&
+    Boolean(candidate.publishedStages?.[phase] || (candidate.publishedLoadout && PHASES.indexOf(candidate.availableFrom || "early") <= phaseIndex)),
   );
+  if (!build.tags.includes("meme")) {
+    const nonMemeCandidates = candidates.filter((candidate) => !candidate.tags.some((tag) => tag === "meme" || tag === "cosplay"));
+    if (nonMemeCandidates.length) candidates = nonMemeCandidates;
+  }
   const withSharedStats = candidates.filter((candidate) => !targetStats.length || statCodes(candidate).some((stat) => targetStats.includes(stat)));
   if (withSharedStats.length) candidates = withSharedStats;
   const targetFamily = weaponFamily(desiredWeapon(build, phase));
-  const inFamily = candidates.filter((candidate) => weaponFamily(candidate.publishedLoadout?.weapon || "") === targetFamily);
+  const inFamily = candidates.filter((candidate) => weaponFamily(publishedWeaponAt(candidate, phase)) === targetFamily);
   const globallyCleanStats = candidates.filter((candidate) => statCodes(candidate).every((stat) => targetStats.includes(stat)));
   const cleanFamily = inFamily.filter((candidate) => statCodes(candidate).every((stat) => targetStats.includes(stat)));
   if (cleanFamily.length) candidates = cleanFamily;
-  else if (globallyCleanStats.length) candidates = globallyCleanStats;
   else if (inFamily.length) candidates = inFamily;
-  const cleanRequirements = candidates.filter((candidate) => offPathRequirement(build, candidate.publishedLoadout?.weapon || "") <= 4);
+  else if (globallyCleanStats.length) candidates = globallyCleanStats;
+  const cleanRequirements = candidates.filter((candidate) => offPathRequirement(build, publishedWeaponAt(candidate, phase)) <= 4);
   if (cleanRequirements.length) candidates = cleanRequirements;
   return candidates.sort((a, b) => scorePublishedStage(build, phase, b, previous) - scorePublishedStage(build, phase, a, previous) || a.name.localeCompare(b.name))[0];
 }
@@ -453,37 +497,57 @@ function bridgePlan(build: Build) {
 
 export function stageLoadout(build: Build, phase: PhaseKey): StageLoadout {
   const exactStage = build.publishedStages?.[phase];
-  if (exactStage) return { ...exactStage, talismanSlots: `${exactStage.talismans.length} listed by source` };
+  if (exactStage) return markIntrinsicStarterSkill(phase, { ...exactStage, talismanSlots: `${exactStage.talismans.length} listed by source` });
   if (build.publishedLoadout) {
     const available = build.availableFrom || "early";
     if (PHASES.indexOf(phase) < PHASES.indexOf(available)) {
       const borrowed = bridgePlan(build)[phase];
-      if (borrowed?.publishedLoadout) {
+      const borrowedLoadout = borrowed?.publishedStages?.[phase] || borrowed?.publishedLoadout;
+      if (borrowed && borrowedLoadout) {
         const resolution = weaponResolutions[borrowed.id];
+        const bridgeWeapon = borrowed.publishedStages?.[phase]?.weapon || resolution?.weapons?.[phase] || resolution?.weapon || borrowedLoadout.weapon;
+        const targetStage = stageLoadout({
+          ...build,
+          publishedLoadout: undefined,
+          publishedStages: undefined,
+          phaseBridges: undefined,
+        }, phase);
+        const phaseIndex = PHASES.indexOf(phase);
+        const skillAvailable = !(/royal knight's resolve|seppuku/i.test(borrowedLoadout.skill) && phaseIndex < PHASES.indexOf("late"))
+          && !(/cragblade|lion's claw|giant hunt|flaming strike/i.test(borrowedLoadout.skill) && phaseIndex < PHASES.indexOf("mid"));
+        const bridgeSkill = /^(?:n\/?a|none|not specified)/i.test(borrowedLoadout.skill) || !skillAvailable
+          ? targetStage.skill
+          : borrowedLoadout.skill;
         return applyEarlyStarter(build, phase, {
-          ...borrowed.publishedLoadout,
-          weapon: resolution?.weapon || borrowed.publishedLoadout.weapon,
-          talismanSlots: `${borrowed.publishedLoadout.talismans.length} listed by source`,
+          ...targetStage,
+          weapon: bridgeWeapon,
+          skill: bridgeSkill,
           borrowedFrom: { ...borrowed.source, buildName: borrowed.name },
           sourceUse: "temporary-stage",
-          weaponChoice: resolution && { rationale: resolution.rationale, sources: resolution.sources },
+          weaponChoice: resolution
+            ? { rationale: resolution.rationale, sources: resolution.sources }
+            : {
+                rationale: `${bridgeWeapon} supplies a sourced ${phase} weapon lane with compatible damage stats and combat rhythm. The remaining equipment and stat plan are generated for ${build.name}, not copied from ${borrowed.name}.`,
+                sources: [borrowed.source, build.source],
+              },
         });
       }
     }
     const resolution = weaponResolutions[build.id];
     return applyEarlyStarter(build, phase, {
       ...build.publishedLoadout,
-      weapon: resolution?.weapon || build.publishedLoadout.weapon,
+      weapon: resolution?.weapons?.[phase] || resolution?.weapon || build.publishedLoadout.weapon,
       talismanSlots: `${build.publishedLoadout.talismans.length} listed by source`,
       weaponChoice: resolution && { rationale: resolution.rationale, sources: resolution.sources },
     });
   }
 
-  const casterInt = includesAny(build, ["intelligence", "sorcer", "magic", "spellblade", "gravity", "frost", "death"]);
-  const casterFaith = includesAny(build, ["faith", "holy", "fire", "lightning", "dragon", "bestial", "frenzy", "blackflame", "crucible"]);
+  const damageStats = statCodes(build);
+  const casterInt = damageStats.includes("INT") && includesAny(build, ["intelligence", "sorcer", "magic", "spellblade", "gravity", "frost", "death"]);
+  const casterFaith = damageStats.includes("FAI") && includesAny(build, ["faith", "holy", "fire", "lightning", "dragon", "bestial", "frenzy", "blackflame", "crucible"]);
   const arcane = includesAny(build, ["arcane", "bleed", "poison", "rot", "dragon-communion"]);
   const guard = includesAny(build, ["tank", "guard", "shield"]);
-  const ranged = includesAny(build, ["ranged", "bow", "crossbow", "artillerist", "throw"]);
+  const ranged = weaponFamily(desiredWeapon(build, phase)) === "ranged";
   const multihit = includesAny(build, ["multihit", "twinblade", "claw", "fist", "dancer", "backhand"]);
   const charged = includesAny(build, ["strength", "hammer", "colossal", "charged", "roar", "breaker"]);
   const critical = includesAny(build, ["critical", "parry", "assassin", "countermage"]);
@@ -497,9 +561,9 @@ export function stageLoadout(build: Build, phase: PhaseKey): StageLoadout {
     : ranged
       ? ["Arrow's Reach Talisman", "Green Turtle Talisman"]
       : casterInt
-        ? ["Graven-School Talisman", "Radagon Icon"]
+        ? ["Crimson Amber Medallion", "Green Turtle Talisman"]
         : casterFaith
-          ? ["Faithful's Canvas Talisman", "Two Fingers Heirloom"]
+          ? ["Crimson Amber Medallion", "Green Turtle Talisman"]
           : charged
             ? ["Axe Talisman", "Green Turtle Talisman"]
             : ["Green Turtle Talisman", "Crimson Amber Medallion"];
@@ -509,11 +573,11 @@ export function stageLoadout(build: Build, phase: PhaseKey): StageLoadout {
     : ranged
       ? ["Arrow's Reach Talisman", "Arrow's Sting Talisman", "Green Turtle Talisman"]
       : critical
-        ? ["Dagger Talisman", "Assassin's Cerulean Dagger", "Green Turtle Talisman"]
+        ? ["Assassin's Crimson Dagger", "Assassin's Cerulean Dagger", "Green Turtle Talisman"]
         : casterInt
-          ? ["Graven-School Talisman", "Radagon Icon", "Cerulean Amber Medallion +1"]
+          ? ["Graven-School Talisman", "Radagon Icon", "Cerulean Amber Medallion"]
           : casterFaith
-            ? ["Faithful's Canvas Talisman", "Radagon Icon", "Fire or Lightning Scorpion Charm"]
+            ? ["Faithful's Canvas Talisman", "Two Fingers Heirloom", "Radagon Icon"]
             : multihit
               ? ["Winged Sword Insignia", "Green Turtle Talisman", "Claw Talisman"]
               : charged
@@ -521,43 +585,43 @@ export function stageLoadout(build: Build, phase: PhaseKey): StageLoadout {
                 : ["Green Turtle Talisman", "Erdtree's Favor", "Dragoncrest Shield Talisman +1"];
 
   const lateTalismans = guard
-    ? ["Greatshield Talisman", "Curved Sword Talisman", "Dragoncrest Greatshield Talisman", "Great-Jar's Arsenal"]
+    ? ["Greatshield Talisman", "Curved Sword Talisman", "Dragoncrest Shield Talisman +2", "Great-Jar's Arsenal"]
     : ranged
-      ? ["Arrow's Sting Talisman", "Shard of Alexander", "Dragoncrest Greatshield Talisman", "Green Turtle Talisman"]
+      ? ["Arrow's Reach Talisman", "Arrow's Sting Talisman", "Ritual Sword Talisman", "Dragoncrest Shield Talisman +2"]
       : critical
-        ? ["Dagger Talisman", "Shard of Alexander", "Assassin's Cerulean Dagger", "Dragoncrest Greatshield Talisman"]
+        ? ["Dagger Talisman", "Assassin's Cerulean Dagger", "Ritual Sword Talisman", "Dragoncrest Shield Talisman +2"]
         : casterInt
-          ? ["Graven-Mass Talisman", "Radagon Icon", "Godfrey Icon", "Magic Scorpion Charm"]
+          ? ["Graven-Mass Talisman", "Radagon Icon", "Godfrey Icon", "Ritual Sword Talisman"]
           : casterFaith
-            ? ["Flock's Canvas Talisman", "Radagon Icon", "Godfrey Icon", "Fire, Lightning or Sacred Scorpion Charm"]
+            ? ["Faithful's Canvas Talisman", "Two Fingers Heirloom", "Radagon Icon", "Godfrey Icon"]
             : multihit
-              ? ["Rotten Winged Sword Insignia", "Millicent's Prosthesis", "Shard of Alexander", "Dragoncrest Greatshield Talisman"]
+              ? ["Winged Sword Insignia", "Claw Talisman", "Green Turtle Talisman", "Dragoncrest Shield Talisman +2"]
               : charged
-                ? ["Axe Talisman", "Shard of Alexander", "Dragoncrest Greatshield Talisman", "Great-Jar's Arsenal"]
-                : ["Shard of Alexander", "Erdtree's Favor +2", "Dragoncrest Greatshield Talisman", "Green Turtle Talisman"];
+                ? ["Axe Talisman", "Green Turtle Talisman", "Dragoncrest Shield Talisman +2", "Great-Jar's Arsenal"]
+                : ["Erdtree's Favor", "Ritual Shield Talisman", "Dragoncrest Shield Talisman +2", "Green Turtle Talisman"];
 
   let dlcTalismans = guard
     ? ["Greatshield Talisman", "Pearl Shield Talisman", "Two-Headed Turtle Talisman", "Dragoncrest Greatshield Talisman"]
     : ranged
-      ? ["Arrow's Soaring Sting Talisman", "Sharpshot Talisman", "Shard of Alexander", "Two-Headed Turtle Talisman"]
+      ? ["Arrow's Soaring Sting Talisman", "Sharpshot Talisman", "Arrow's Sting Talisman", "Two-Headed Turtle Talisman"]
       : critical
-        ? ["Blade of Mercy", "Dagger Talisman", "Shard of Alexander", "Two-Headed Turtle Talisman"]
+        ? ["Blade of Mercy", "Dagger Talisman", "Ritual Sword Talisman", "Two-Headed Turtle Talisman"]
         : casterInt
-          ? ["Graven-Mass Talisman", "Beloved Stardust or Radagon Icon", "Godfrey Icon", "Dragoncrest Greatshield Talisman"]
+          ? ["Graven-Mass Talisman", "Radagon Icon", "Godfrey Icon", "Dragoncrest Greatshield Talisman"]
           : casterFaith
-            ? ["Flock's Canvas Talisman", "Talisman of the Dread or elemental charm", "Godfrey Icon", "Two-Headed Turtle Talisman"]
+            ? ["Faithful's Canvas Talisman", "Flock's Canvas Talisman", "Godfrey Icon", "Two-Headed Turtle Talisman"]
             : multihit
-              ? ["Rotten Winged Sword Insignia", "Millicent's Prosthesis", "Retaliatory Crossed-Tree", "Two-Headed Turtle Talisman"]
+              ? ["Winged Sword Insignia", "Claw Talisman", "Blade of Mercy", "Two-Headed Turtle Talisman"]
               : charged
-                ? ["Two-Handed Sword Talisman", "Axe Talisman", "Shard of Alexander", "Two-Headed Turtle Talisman"]
-                : ["Shard of Alexander", "Two-Headed Sword Talisman", "Two-Headed Turtle Talisman", "Dragoncrest Greatshield Talisman"];
+                ? ["Two-Handed Sword Talisman", "Axe Talisman", "Great-Jar's Arsenal", "Two-Headed Turtle Talisman"]
+                : ["Ritual Sword Talisman", "Two-Handed Sword Talisman", "Two-Headed Turtle Talisman", "Dragoncrest Greatshield Talisman"];
 
   if (arcane && includesAny(build, ["bleed", "blood"])) {
     const sets: Record<PhaseKey, string[]> = {
       early: ["Green Turtle Talisman", "Claw Talisman"],
-      mid: ["Lord of Blood's Exultation", "Winged Sword Insignia", "Green Turtle Talisman"],
-      late: ["Lord of Blood's Exultation", "Rotten Winged Sword Insignia", "Shard of Alexander", "Dragoncrest Greatshield Talisman"],
-      dlc: ["Lord of Blood's Exultation", "Retaliatory Crossed-Tree", "Two-Headed Turtle Talisman", "Dragoncrest Greatshield Talisman"],
+      mid: ["Winged Sword Insignia", "Claw Talisman", "Green Turtle Talisman"],
+      late: ["Lord of Blood's Exultation", "Winged Sword Insignia", "Green Turtle Talisman", "Dragoncrest Shield Talisman +2"],
+      dlc: ["Lord of Blood's Exultation", "Winged Sword Insignia", "Two-Headed Turtle Talisman", "Dragoncrest Greatshield Talisman"],
     };
     dlcTalismans = sets.dlc;
     if (phase === "early") earlyTalismans.splice(0, earlyTalismans.length, ...sets.early);
@@ -568,14 +632,21 @@ export function stageLoadout(build: Build, phase: PhaseKey): StageLoadout {
   }
 
   const talismanSets: Record<PhaseKey, string[]> = { early: earlyTalismans, mid: midTalismans, late: lateTalismans, dlc: dlcTalismans };
+  const chargedSkill = phase === "early"
+    ? "War Cry or Endure"
+    : phase === "mid"
+      ? "Cragblade, Lion's Claw, Giant Hunt or War Cry according to weapon class"
+      : "Cragblade, Lion's Claw, Giant Hunt or Royal Knight's Resolve according to weapon class";
   const skill = guard
-    ? "No Skill shield; Impaling Thrust, Square Off or Prayerful Strike on the weapon"
+    ? phase === "early" || phase === "mid"
+      ? "No Skill shield; Impaling Thrust or Square Off on the weapon"
+      : "No Skill shield; Impaling Thrust, Square Off or Prayerful Strike on the weapon"
     : ranged
       ? "Barrage or Mighty Shot early; use the named weapon skill when the route changes"
       : critical
         ? "Parry or Carian Retaliation, with Determination on the critical weapon"
         : charged
-          ? "Cragblade, Lion's Claw, Giant Hunt or War Cry according to weapon class"
+          ? chargedSkill
           : multihit
             ? "Sword Dance, Repeating Thrust or the named weapon's multihit skill"
             : casterInt
@@ -585,54 +656,71 @@ export function stageLoadout(build: Build, phase: PhaseKey): StageLoadout {
                 : "Keep the named skill; use Impaling Thrust or Sword Dance on infusible weapons";
 
   const spells = unique([
-    ...(casterInt ? [phase === "early" ? "Glintstone Pebble" : "Great Glintstone Shard", "Carian Slicer", phase === "dlc" ? "Glintblade Trio or build-specific DLC sorcery" : "Scholar's Armament or build-specific sorcery"] : []),
-    ...(casterFaith ? [phase === "early" ? "Catch Flame" : "Golden Vow", "Flame, Grant Me Strength or build-specific body buff", phase === "dlc" ? "Knight's Lightning Spear or build-specific DLC incantation" : "Heal or ranged elemental incantation"] : []),
-    ...(arcane && includesAny(build, ["dragon"]) ? ["Dragonclaw", "Rotten Breath or the current dragon breath"] : []),
+    ...(casterInt ? [phase === "early" ? "Glintstone Pebble" : "Great Glintstone Shard", "Carian Slicer", phase === "early" ? "Glintstone Arc" : phase === "dlc" ? "Glintblade Trio" : "Rock Sling"] : []),
+    ...(casterFaith
+      ? phase === "early"
+        ? ["Catch Flame", "Flame Sling", "Heal"]
+        : phase === "mid"
+          ? ["Lightning Spear", "Flame, Grant Me Strength", "Heal"]
+          : ["Golden Vow", "Flame, Grant Me Strength", phase === "dlc" ? "Knight's Lightning Spear" : "Lightning Spear"]
+      : []),
+    ...(arcane && includesAny(build, ["dragon"]) ? ["Dragonclaw", phase === "early" ? "Dragonfire" : "Rotten Breath"] : []),
   ]);
 
+  const guardCatalyst = casterInt && casterFaith
+    ? phase === "dlc" ? "Staff of the Great Beyond" : "Demi-Human Queen's Staff + Finger Seal"
+    : casterInt ? phase === "early" ? "Demi-Human Queen's Staff" : "Academy Glintstone Staff"
+      : casterFaith ? "Finger Seal" : "";
   const offhand = guard
-    ? phase === "early" ? "100% physical medium shield" : "Medium or greatshield kept within medium load"
+    ? `Heater Shield${guardCatalyst ? ` + ${guardCatalyst}` : ""}`
     : casterInt && casterFaith
-      ? phase === "dlc" ? "Staff of the Great Beyond" : "Best available staff plus seal"
+      ? phase === "early" ? "Demi-Human Queen's Staff + Finger Seal" : phase === "dlc" ? "Staff of the Great Beyond" : "Academy Glintstone Staff + Finger Seal"
       : casterInt
-        ? "Best available staff for the chosen sorcery school"
+        ? phase === "early" ? "Demi-Human Queen's Staff" : "Academy Glintstone Staff"
         : casterFaith
-          ? "Seal that boosts the build's incantation school"
+          ? "Finger Seal"
+          : arcane && includesAny(build, ["dragon"])
+            ? "Dragon Communion Seal"
           : ranged
-            ? "Light melee sidearm; carry the ammunition types the next area supports"
-            : "Second weapon only when the moveset benefits from paired attacks";
+            ? "Short Sword"
+            : "No off-hand item required";
 
   const namedMidSet = casterInt || casterFaith || ranged || lightLoad ? "Carian Knight Set" : "Knight Set";
-  const namedLateSet = guard || charged ? "Scaled Set" : namedMidSet;
-  const startingArmour = build.startingClass === "Not specified"
-    ? "Recommended starting-class armour"
-    : `${build.startingClass} starting armour`;
+  const namedLateSet = namedMidSet;
+  const plannedStartingClass = build.startingClass === "Not specified" ? recommendStartingClass(build.stats, build.tags) : build.startingClass;
+  const startingArmour = plannedStartingClass === "Wretch"
+    ? "No starting armour (Wretch); buy the Knight Set at Roundtable Hold"
+    : `${plannedStartingClass} starting armour`;
   const armour = phase === "early"
     ? `${startingArmour}; remove the heaviest piece only if the equipment screen shows Heavy Load`
     : phase === "mid"
       ? `${namedMidSet}; wear only the pieces that keep the equipment screen at ${lightLoad ? "Light Load" : "Medium Load"}`
       : `${namedLateSet}; wear only the pieces that keep the equipment screen at ${lightLoad ? "Light Load" : "Medium Load"}`;
 
-  const flask = guard
-    ? "Opaline Hardtear + Greenburst Crystal Tear"
-    : casterInt
-      ? "Magic-Shrouding Cracked Tear + Cerulean Hidden Tear"
-      : casterFaith && includesAny(build, ["fire", "blackflame", "frenzy"])
-        ? "Flame-Shrouding Cracked Tear + Opaline Hardtear"
-        : casterFaith && includesAny(build, ["lightning"])
-          ? "Lightning-Shrouding Cracked Tear + Greenburst Crystal Tear"
-          : multihit
-            ? "Thorny Cracked Tear + Greenburst Crystal Tear"
-            : charged
-              ? "Spiked Cracked Tear + Stonebarb Cracked Tear"
-              : "Opaline Hardtear + the elemental or stamina tear that fits the current weapon";
+  const earlyFlask = "Opaline Bubbletear + Crimsonburst Crystal Tear";
+  const flask = phase === "early"
+    ? earlyFlask
+    : guard
+      ? "Opaline Hardtear + Greenburst Crystal Tear"
+      : casterInt
+        ? phase === "mid" ? "Magic-Shrouding Cracked Tear + Opaline Bubbletear" : "Magic-Shrouding Cracked Tear + Cerulean Hidden Tear"
+        : casterFaith && includesAny(build, ["fire", "blackflame", "frenzy"])
+          ? "Flame-Shrouding Cracked Tear + Opaline Hardtear"
+          : casterFaith && includesAny(build, ["lightning"])
+            ? "Lightning-Shrouding Cracked Tear + Greenburst Crystal Tear"
+            : multihit
+              ? phase === "mid" ? "Greenburst Crystal Tear + Dexterity-knot Crystal Tear" : "Thorny Cracked Tear + Greenburst Crystal Tear"
+              : charged
+                ? "Spiked Cracked Tear + Stonebarb Cracked Tear"
+                : "Opaline Hardtear + Greenburst Crystal Tear";
 
   const mainStats = build.stats.replace("→", "then");
+  const spellRequirement = casterInt || casterFaith ? "; meet every equipped spell's listed requirement before memorizing it" : "";
   const stats: Record<PhaseKey, string> = {
-    early: `VIG 25 first; meet ${mainStats} weapon requirements; END or MND only as needed`,
-    mid: `VIG 40; raise the first listed damage stat toward 35–40; keep enough END for medium roll`,
-    late: `VIG 55–60; main damage stat 55–60; secondary stat 25–40; MND 20–30 for regular skill or spell use`,
-    dlc: `Keep VIG 60; finish the main scaling stat at 60–80; use remaining levels for END, MND and the listed secondary stat`,
+    early: `VIG 25 first; meet ${mainStats} weapon requirements${spellRequirement}; END or MND only as needed`,
+    mid: `VIG 40; raise the first listed damage stat toward 35–40${spellRequirement}; keep enough END for medium roll`,
+    late: `VIG 55–60; main damage stat 55–60; secondary stat 25–40${spellRequirement}; MND 20–30 for regular skill or spell use`,
+    dlc: `Keep VIG 60; finish the main scaling stat at 60–80${spellRequirement}; use remaining levels for END, MND and the listed secondary stat`,
   };
 
   const curatedBaseline = build.collection === "Curated" ? bridgePlan(build)[phase] : undefined;
@@ -679,11 +767,11 @@ export type Chapter = {
 
 const chapterData: Chapter[] = [
   { id: "first-steps", act: "Base game", title: "First Steps", region: "West Limgrave", level: "1–15", upgrade: "+0–2 / Somber +1", grace: "The First Step", x: 34, y: 76, phase: "early", summary: "Unlock Torrent, Roundtable Hold and the opening smithing services before assembling every player's first functional kit.", essentials: ["Church of Elleh: Crafting Kit, Kale and smithing table", "Gatefront: Whetstone Knife and first map", "Accept Melina's accord and receive Torrent", "Meet Renna at Church of Elleh at night", "Meet Boc south-east of Agheel Lake North", "Meet Roderika at Stormhill Shack", "Enter Margit's arena once to trigger the Roundtable Hold invitation", "Accept Melina's invitation and meet Smithing Master Hewg", "Clear Fort Haight and speak to Kenneth Haight", "Collect Dectus Medallion (Left) at Fort Haight", "Third Church: Flask of Wondrous Physick", "Optional no-boss Fort Faroth detour: take the waygate behind Third Church to Bestial Sanctum, ride south and loot Radagon's Soreseal via the fort's roof-to-rafters route", "WARNING — Radagon's Soreseal increases all damage taken by 15%; use it only while the early stat gain outweighs the penalty, then unequip it", "Limgrave Tunnels: sweep the wall deposits and collect the finite Somber Smithing Stone [1] before leaving"], directions: "Walk north from The First Step to Church of Elleh, then continue to Gatefront and rest there to accept Melina's accord and receive Torrent. Return to Elleh at night for Renna, visit Roderika, and enter Margit's arena once; defeating him is not required for Melina's Roundtable invitation. Meet Hewg before the route asks for upgrades beyond the Church of Elleh table's +3 regular or +1 Somber limit. Then sweep Fort Haight, Third Church and Limgrave Tunnels. The Fort Faroth run is an optional no-boss loot detour: avoid combat, grab the Soreseal and fast-travel out." },
-  { id: "weeping", act: "Base game", title: "The Weeping Peninsula", region: "Weeping Peninsula", level: "18–30", upgrade: "+3–5 / Somber +2", grace: "Castle Morne Rampart", x: 37, y: 91, phase: "early", summary: "Finish early weapon pickups, finite Somber stones, Boc's sewing tools and the complete Irina and Edgar chain.", essentials: ["Clear Coastal Cave and return Boc's Sewing Needle", "Defeat Darriwil with Blaidd at Forlorn Hound Evergaol, then speak to Blaidd for the finite Somber Smithing Stone [2]", "Morne Tunnel: collect the finite Somber Smithing Stone [1] and sweep the wall deposits", "Speak to Irina before entering Castle Morne", "Give Irina's letter to Edgar before the boss", "Defeat Leonine Misbegotten", "Collect the finite Somber Smithing Stone [1] on the shoreline behind Castle Morne", "Show Edgar the Grafted Blade Greatsword", "Return to Irina and Edgar before leaving"], directions: "Clear Coastal Cave and claim Blaidd's fixed Somber [2] reward before crossing the Bridge of Sacrifice. Sweep Morne Tunnel, then speak to Irina, take her letter through Castle Morne to Edgar, defeat Leonine and collect the shoreline Somber [1] before reporting back to Edgar and Irina.", boss: "Leonine Misbegotten", quest: "Blaidd, Boc, Irina and Edgar", repeatInStandard: true },
+  { id: "weeping", act: "Base game", title: "The Weeping Peninsula", region: "Weeping Peninsula", level: "18–30", upgrade: "+3–5 / Somber +2", grace: "Castle Morne Rampart", x: 37, y: 91, phase: "early", summary: "Sweep the peninsula's early upgrade materials and complete only the optional NPC tracks selected for this run.", essentials: ["Clear Coastal Cave and return Boc's Sewing Needle", "Defeat Darriwil with Blaidd at Forlorn Hound Evergaol, then speak to Blaidd for the finite Somber Smithing Stone [2]", "Morne Tunnel: collect the finite Somber Smithing Stone [1] and sweep the wall deposits", "Speak to Irina before entering Castle Morne", "Give Irina's letter to Edgar before the boss", "Defeat Leonine Misbegotten", "Collect the finite Somber Smithing Stone [1] on the shoreline behind Castle Morne", "Show Edgar the Grafted Blade Greatsword", "Return to Irina and Edgar before leaving"], directions: "Clear Coastal Cave and claim Blaidd's fixed Somber [2] reward if those optional tracks are enabled. Sweep Morne Tunnel, then follow the Irina and Edgar cards only when that quest was selected.", boss: "Leonine Misbegotten", quest: "Selected optional tracks: Blaidd, Boc, Irina and Edgar", repeatInStandard: true },
   { id: "stormveil", act: "Base game", title: "Stormveil Castle", region: "Stormhill & Stormveil", level: "30–40", upgrade: "+4–7 / Somber +2–3", grace: "Stormveil Main Gate", x: 28, y: 63, phase: "early", summary: "Secure the first Great Rune while preserving Gostoc, Rogier, Nepheli and Roderika's later rewards.", essentials: ["Defeat Margit", "Keep Gatekeeper Gostoc alive for his later Ancient Dragon Smithing Stone", "Collect Chrysalids' Memento for Roderika", "Collect Iron Whetblade and Misericorde", "Defeat the Lion Guardian for its fixed Somber Smithing Stone [1]", "Meet Rogier in the chapel and inspect the corpse below Stormveil", "Meet Nepheli before Godrick", "Defeat Godrick the Grafted", "Move Roderika to Roundtable Hold and unlock spirit tuning"], directions: "Take Gostoc's side path but leave him alive. Meet Rogier and Nepheli, collect Roderika's memento, the Lion Guardian's fixed Somber [1] and the rewards beneath the castle before Godrick. Afterward alternate Roderika and Hewg dialogue at Roundtable until spirit tuning opens.", boss: "Godrick the Grafted", remembrance: true, quest: "Gostoc, Rogier, Nepheli and Roderika", repeatInStandard: true },
-  { id: "liurnia-south", act: "Base game", title: "Liurnia South", region: "Liurnia of the Lakes", level: "40–50", upgrade: "+7–10 / Somber +3–4", grace: "Lake-Facing Cliffs", x: 37, y: 47, phase: "mid", summary: "Start Varre and Latenna, preserve Ensha's missable gesture and prepare the Academy key route.", essentials: ["Meet Hyetta and give her the first Shabriri Grape", "Meet Thops at Church of Irith", "Speak to Ensha at Roundtable Hold before taking a secret medallion", "Find Albus and collect Haligtree Secret Medallion (Right)", "Clear Lakeside Crystal Cave and show Latenna the medallion", "Accept Latenna's request and receive her spirit ashes", "Meet Varre at Rose Church and choose that the Fingers seemed off", "Complete three invasions or defeat Magnus at Writheblood Ruins", "Soak the Lord of Blood's Favor in maiden blood and return to Varre", "Keep the Pureblood Knight's Medal but do not use it for early farming", "Reach Iji in north-west Liurnia; buy only the finite Somber Smithing Stone [3] and [4] stock each active unique weapon needs", "Collect Academy Glintstone Key", "Defeat the Crystalian for Smithing-Stone Miner's Bell Bearing [1]"], directions: "Use the lake shallows as a hub. Start Hyetta and Thops, visit Albus before Latenna beyond Lakeside Crystal Cave, finish Varre at Rose Church and reserve Iji's three finite Somber [3] and three finite Somber [4] stones for active weapons. Collect the Academy key and end at Raya Lucaria Crystal Tunnel.", quest: "Ensha, Latenna, Varre, Hyetta and Thops" },
-  { id: "academy", act: "Base game", title: "Academy of Raya Lucaria", region: "Raya Lucaria", level: "50–60", upgrade: "+10–12 / Somber +4–5", grace: "Main Academy Gate", x: 43, y: 42, phase: "mid", summary: "Unlock rebirth, finish Thops and advance Yura without letting upgraded uniques run ahead.", essentials: ["Use Yura's red summon sign on the Main Academy Gate bridge", "Defeat Red Wolf of Radagon", "Collect Radagon Icon", "Collect the second Academy Glintstone Key", "Give the spare key to Thops and recover Thops's Barrier afterward", "Defeat Rennala", "Unlock respecs with Larval Tears"], directions: "Before entering, help Yura from the red sign beyond the northern seal. Inside, collect the spare key from the church rooftop route, give it to Thops and later recover his bell bearing and Barrier near Schoolhouse Classroom before Rennala.", boss: "Rennala, Queen of the Full Moon", remembrance: true, quest: "Yura and Thops", repeatInStandard: true },
-  { id: "caria", act: "Base game", title: "Caria and Ranni", region: "West Liurnia", level: "55–65", upgrade: "+11–13 / Somber +5", grace: "Road to the Manor", x: 28, y: 35, phase: "mid", summary: "Preserve Rogier and Nepheli's rewards, begin Ranni and activate Radahn's Festival without entering Altus early.", essentials: ["Clear Black Knife Catacombs and give the Black Knifeprint to Rogier", "Use the Four Belfries return waygate and collect the Stormhawk King", "Give Nepheli the Stormhawk King after her Village of the Albinaurics dialogue", "Defeat Royal Knight Loretta", "Exhaust Rogier before joining Ranni", "Speak to Ranni and all three retainers", "Meet Blaidd in Siofra", "Ask Seluvis about Nokron and take his introduction", "Give Seluvis's Introduction to Sellen at Waypoint Ruins", "Return to Blaidd in Siofra and exhaust his dialogue", "Do not attack Seluvis or any quest NPC"], directions: "Finish Rogier's Black Knifeprint and collect Nepheli's Stormhawk King first. Clear Caria Manor, enter Ranni's service, then follow Blaidd through Seluvis and Sellen to activate Radahn's Festival.", boss: "Royal Knight Loretta", quest: "Rogier, Nepheli, Ranni and Radahn Festival activation", repeatInStandard: true },
+  { id: "liurnia-south", act: "Base game", title: "Liurnia South", region: "Liurnia of the Lakes", level: "40–50", upgrade: "+7–10 / Somber +3–4", grace: "Lake-Facing Cliffs", x: 37, y: 47, phase: "mid", summary: "Start Varre and Latenna, preserve Ensha's missable gesture and prepare the Academy key route.", essentials: ["Meet Hyetta and give her the first Shabriri Grape", "Meet Thops at Church of Irith", "Speak to Ensha at Roundtable Hold before taking a secret medallion", "Find Albus and collect Haligtree Secret Medallion (Right)", "Clear Lakeside Crystal Cave and show Latenna the medallion", "Accept Latenna's request and receive her spirit ashes", "Meet Varre at Rose Church and choose that the Fingers seemed off", "Use three Festering Bloody Fingers for Varre; offline players may defer Magnus to Altus", "If Varre's invasion trial is complete, soak the Lord of Blood's Favor in maiden blood and return to Varre", "Keep the Pureblood Knight's Medal if received, but do not use it for early farming", "Reach Iji in north-west Liurnia; buy only the finite Somber Smithing Stone [3] and [4] stock each active unique weapon needs", "Collect Academy Glintstone Key", "Defeat the Crystalian for Smithing-Stone Miner's Bell Bearing [1]"], directions: "Use the lake shallows as a hub. Start Hyetta and Thops, visit Albus before Latenna beyond Lakeside Crystal Cave, and advance Varre with three online invasion attempts. Offline players defer Magnus until the Altus route reaches Writheblood Ruins. Reserve Iji's finite Somber [3] and [4] stones for active weapons, collect the Academy key and end at Raya Lucaria Crystal Tunnel.", quest: "Ensha, Latenna, Varre, Hyetta and Thops" },
+  { id: "academy", act: "Base game", title: "Academy of Raya Lucaria", region: "Raya Lucaria", level: "50–60", upgrade: "+10–12 / Somber +4–5", grace: "Main Academy Gate", x: 43, y: 42, phase: "mid", summary: "Defeat Rennala, finish Thops and advance Yura without letting upgraded uniques run ahead.", essentials: ["Use Yura's red summon sign on the Main Academy Gate bridge", "Defeat Red Wolf of Radagon", "Collect Radagon Icon", "Collect the second Academy Glintstone Key", "Give the spare key to Thops and recover Thops's Barrier afterward", "Defeat Rennala"], directions: "Before entering, help Yura from the red sign beyond the northern seal. Inside, collect the spare key from the church rooftop route, give it to Thops and later recover his bell bearing and Barrier near Schoolhouse Classroom before Rennala. Rebirth is now available if the player deliberately chooses it, but this route never requires a respec.", boss: "Rennala, Queen of the Full Moon", remembrance: true, quest: "Yura and Thops", repeatInStandard: true },
+  { id: "caria", act: "Base game", title: "Caria and Ranni", region: "West Liurnia", level: "55–65", upgrade: "+11–13 / Somber +5", grace: "Road to the Manor", x: 28, y: 35, phase: "mid", summary: "Preserve Rogier and Nepheli's rewards, begin Ranni and activate Radahn's Festival without entering Altus early.", essentials: ["Clear Black Knife Catacombs and give the Black Knifeprint to Rogier", "Use the Four Belfries return waygate and collect the Stormhawk King", "Give Nepheli the Stormhawk King after her Village of the Albinaurics dialogue", "Defeat Royal Knight Loretta", "Exhaust Rogier before joining Ranni", "Speak to Ranni and all three retainers", "Meet Blaidd in Siofra", "Ask Iji about Jerren to confirm the Radahn Festival", "Return to Blaidd in Siofra and exhaust his dialogue", "Do not attack Seluvis or any quest NPC"], directions: "Finish Rogier's Black Knifeprint and collect Nepheli's Stormhawk King first. Clear Caria Manor, enter Ranni's service, meet Blaidd in Siofra, then ask Iji about Jerren to start the Radahn Festival. Seluvis and Sellen are visited here only when that optional questline was selected.", boss: "Royal Knight Loretta", quest: "Rogier, Nepheli, Ranni and Radahn Festival activation", repeatInStandard: true },
   { id: "caelid", act: "Base game", title: "The Radahn Festival", region: "South Caelid", level: "60–70", upgrade: "+12–15 / Somber +5–6", grace: "Chamber Outside the Plaza", x: 72, y: 63, phase: "mid", summary: "Start Millicent safely, open Nokron and satisfy the first half of the DLC access requirement.", essentials: ["Collect Map: Caelid", "Defeat Commander O'Neil in Aeonia Swamp and take the Unalloyed Gold Needle", "Give the needle to Gowry, reload, then give the repaired needle to Millicent", "Reload Church of the Plague, exhaust Millicent, then revisit Gowry's Shack", "Collect Dectus Medallion (Right) at Fort Faroth without fighting Greyoll", "If the optional early detour was skipped, loot Radagon's Soreseal now via Fort Faroth's roof-to-rafters route; WARNING — it increases all damage taken by 15%", "Sellia Crystal Tunnel: defeat the Fallingstar Beast for Somberstone Miner's Bell Bearing [1]", "Use the sending gate at Impassable Greatbridge", "Speak to Jerren in Redmane Plaza to begin the festival", "Defeat Starscourge Radahn", "Exhaust Alexander and Blaidd in the Wailing Dunes before leaving"], directions: "Enter from Smoldering Church, finish O'Neil and Millicent's Church of the Plague steps, then clear Sellia Crystal Tunnel for Somber stones [1] and [2]. Visit Fort Faroth for the medallion and the Soreseal fallback if needed, then follow the southern road to Impassable Greatbridge and the Wailing Dunes.", boss: "Starscourge Radahn", remembrance: true, quest: "Millicent, Ranni and Alexander; DLC access requirement", repeatInStandard: true },
   { id: "nokron", act: "Base game", title: "Nokron Expedition", region: "Nokron & Siofra", level: "70–80", upgrade: "+15–18 / Somber +6", grace: "Nokron, Eternal City", x: 51, y: 70, phase: "mid", summary: "Collect Mimic Tear and the Fingerslayer Blade, but hold the blade until Altus supplies Seluvis's missable reward.", essentials: ["Defeat Mimic Tear", "Collect Mimic Tear Ashes behind Stonesword seal", "Collect Fingerslayer Blade but do not give it to Ranni", "Defeat Regal Ancestor Spirit"], directions: "Enter the crater south of Mistwood and cross the rooftops. Take the Fingerslayer Blade from Night's Sacred Ground but keep it in inventory; giving it to Ranni now kills Seluvis and loses Magic Scorpion Charm.", boss: "Regal Ancestor Spirit", remembrance: true, quest: "Hold the Fingerslayer Blade for Seluvis", repeatInStandard: true },
   { id: "altus", act: "Base game", title: "Altus Supply Line", region: "Altus Plateau", level: "75–90", upgrade: "+16–19 / Somber +6–7", grace: "Altus Highway Junction", x: 55, y: 35, phase: "mid", summary: "Resolve Seluvis safely, advance Boc, Fia, Millicent and Goldmask, and avoid entering the capital early.", essentials: ["Use both Dectus Medallion halves at the Grand Lift", "Rest at Altus Plateau grace and revisit Roundtable quest NPCs", "Give D the Weathered Dagger from Fia and reload Roundtable Hold", "Collect Amber Starlight north-east of Altus Highway Junction", "Finish Seluvis's potion and puppet steps unless delaying for Dung Eater Puppet", "Give Amber Starlight to Seluvis and collect Magic Scorpion Charm", "Do not give Ranni the Amber Draught", "Give Fingerslayer Blade to Ranni only after the selected Seluvis outcome", "Receive the Carian Inverted Statue from Ranni", "Use the statue in Carian Study Hall and collect the Cursemark of Death", "Give Boc the Gold Sewing Needle and use You're Beautiful instead of a Larval Tear", "Collect Valkyrie's Prosthesis from the Shaded Castle", "Give the prosthesis to Millicent at Erdtree-Gazing Hill", "Defeat the Godskin Apostle at Windmill Village and speak to Millicent", "Find Goldmask at the Forest-Spanning Greatbridge and reunite Corhyn with him", "Altus Tunnel: defeat the Crystalian duo for Somberstone Miner's Bell Bearing [2]", "Sealed Tunnel: Smithing-Stone Miner's Bell Bearing [2]"], directions: "Rest on Altus to advance Roundtable, resolve Fia's dagger and Seluvis before handing Ranni the blade. If a selected build needs Dung Eater Puppet, hold the potion, charm and blade hand-in until Leyndell instead. Finish Boc, Millicent and Goldmask, then clear Altus Tunnel and Sealed Tunnel for both upgrade-material bell bearings before the capital.", quest: "Seluvis hard lock, Boc, Fia, Millicent and Goldmask", repeatInStandard: true },
@@ -694,18 +782,18 @@ const chapterData: Chapter[] = [
   { id: "mountaintops", act: "Base game", title: "Mountaintops of the Giants", region: "Mountaintops", level: "105–120", upgrade: "+22–24 / Somber +8–9", grace: "Zamor Ruins", x: 68, y: 20, phase: "late", summary: "Finish the last Manor, Latenna, Millicent and Goldmask stops, secure the Haligtree route and stop before the Forge.", essentials: ["Receive Rold Medallion from Melina after Morgott", "Use Grand Lift of Rold and enter the Mountaintops", "Zamor Ruins: Smithing-Stone Miner's Bell Bearing [3]", "First Church of Marika: collect Somberstone Miner's Bell Bearing [3]", "Meet Millicent at Ancient Snow Valley Ruins", "Meet Corhyn and Goldmask on the bridge south of Stargazers' Ruins", "Complete Shabriri and Yura decisions without inheriting the Frenzied Flame by accident", "Defeat Juno Hoslow for the final Volcano Manor contract", "Defeat Commander Niall at Castle Sol", "Collect Haligtree Secret Medallion (Left)", "Summon Latenna at Apostate Derelict for the Somber Ancient Dragon Smithing Stone", "Defeat Fire Giant", "Do not use the Forge until the quest safety check is complete"], directions: "Use Rold, collect both miner bell bearings at Zamor Ruins and First Church of Marika, then finish Millicent, Goldmask and Juno before clearing Castle Sol. With both secret halves reach Apostate Derelict and summon Latenna before Fire Giant. Wait at the Forge until every pre-burning card is complete.", boss: "Fire Giant", remembrance: true, quest: "Latenna and final pre-Forge NPC checks", repeatInStandard: true },
   { id: "rykard", act: "Base game", title: "Volcano Manor — Rykard", region: "Mt. Gelmir", level: "110–125", upgrade: "+22–24 / Somber +8–9", grace: "Volcano Manor", x: 35, y: 29, phase: "late", summary: "Return only after the Mountaintops contract so no Manor or Jarburg reward is lost.", essentials: ["Report Juno Hoslow's defeat to Tanith", "Finish Rya's dialogue and choice", "Collect Bernahl, Patches and Tanith contract rewards", "Advance Diallos to Jarburg and exhaust Jar-Bairn", "Defeat Rykard", "Reload Rykard's arena for Tanith and finish Patches at Shaded Castle and Murkwater Cave"], directions: "After Juno, exhaust every Manor resident and advance Diallos in Jarburg before fighting Rykard. Afterward reload the arena for Tanith, find Patches at Shaded Castle for the castanets, then return to Murkwater Cave for his final shop state.", boss: "Rykard, Lord of Blasphemy", remembrance: true, quest: "Final Volcano Manor, Patches, Diallos and Jar-Bairn lock point", repeatInStandard: true },
   { id: "haligtree", act: "Base game", title: "Consecrated Snowfield & Haligtree", region: "Consecrated Snowfield, Miquella's Haligtree & Elphael", level: "120–140", upgrade: "+24–25 / Somber +9–10", grace: "Haligtree Canopy", x: 23, y: 17, phase: "late", summary: "Open the secret lift route, finish Millicent's final branch and clear the optional endgame Remembrances without skipping their prerequisites.", essentials: ["Hoist the secret medallion at the Grand Lift of Rold", "Clear Hidden Path to the Haligtree and collect the Snowfield map", "Light all four Ordina evergaol statues", "Use the Ordina waygate to reach the Haligtree Canopy", "Defeat Loretta and descend into Elphael", "Meet Millicent at the Prayer Room", "Defeat the Ulcerated Tree Spirit beside the Drainage Channel", "Choose Millicent's gold summon sign and collect Rotten Winged Sword Insignia", "Return to Millicent after reloading and recover the Unalloyed Gold Needle", "Collect Dragoncrest Greatshield Talisman in Elphael", "Defeat Malenia", "Return the needle to Malenia's bloom for Miquella's Needle"], directions: "At the Grand Lift of Rold choose 'Hoist secret medallion'. Clear the Hidden Path, cross the snowfield to Ordina and light its four rooftop statues inside the evergaol. The opened waygate reaches Haligtree Canopy. Defeat Loretta before entering Elphael, then complete Millicent's Drainage Channel summon branch before Malenia.", boss: "Malenia, Goddess of Rot", remembrance: true, quest: "Millicent's summon choice and Miquella's Needle", repeatInStandard: true },
-  { id: "mohgwyn", act: "Base game", title: "Mohgwyn Palace", region: "Mohgwyn Palace", level: "120–140", upgrade: "+24–25 / Somber +9–10", grace: "Dynasty Mausoleum Midpoint", x: 45, y: 82, phase: "late", summary: "Complete Varre's remaining rewards, collect Mohg's countermeasure and defeat the second boss required for DLC access.", essentials: ["Finish Varre's invasion and maiden-blood steps", "Use the Pureblood Knight's Medal or Consecrated Snowfield waygate", "Speak to Varre at Dynasty Mausoleum Midpoint and invade him", "Collect the Purifying Crystal Tear from Eleonora at the Second Church of Marika", "Mix Purifying Crystal Tear before Mohg", "Defeat Mohg"], directions: "Enter with Varre's medal after completing his audience or use the blood-stained waygate on the Snowfield's western cliff. Follow the blood marsh to Dynasty Mausoleum Midpoint, finish Varre's red-sign invasion, then use the tear in the Wondrous Physick before Mohg's phase-transition ritual.", boss: "Mohg, Lord of Blood", remembrance: true, quest: "Varre rewards and DLC access gate", repeatInStandard: true },
+  { id: "mohgwyn", act: "Base game", title: "Mohgwyn Palace", region: "Mohgwyn Palace", level: "120–140", upgrade: "+24–25 / Somber +9–10", grace: "Dynasty Mausoleum Midpoint", x: 45, y: 82, phase: "late", summary: "Complete Varre's remaining rewards, use Mohg's countermeasure and defeat the second boss required for DLC access.", essentials: ["Use the Pureblood Knight's Medal or Consecrated Snowfield waygate", "Speak to Varre at Dynasty Mausoleum Midpoint and invade him", "Mix Purifying Crystal Tear before Mohg", "Defeat Mohg"], directions: "Enter with Varre's medal after completing his audience or use the blood-stained waygate on the Snowfield's western cliff. Follow the blood marsh to Dynasty Mausoleum Midpoint, finish Varre's red-sign invasion, then use Eleonora's tear in the Wondrous Physick before Mohg's phase-transition ritual.", boss: "Mohg, Lord of Blood", remembrance: true, quest: "Varre rewards and DLC access gate", repeatInStandard: true },
   { id: "farum", act: "Base game", title: "Crumbling Farum Azula", region: "Farum Azula", level: "125–145", upgrade: "+25 / Somber +10", grace: "Dragon Temple", x: 78, y: 25, phase: "late", summary: "Finish Alexander, Gideon's reports and the original-capital checks before Maliketh changes the world.", essentials: ["Confirm Goldmask's Mountaintops message and every original-capital pickup are complete", "Collect Gideon's rewards for Mohg, Malenia, Haligtree and Mohgwyn before Maliketh", "Speak to Melina at the Forge and commit to the cardinal sin", "Tempest-Facing Balcony: collect Somberstone Miner's Bell Bearing [4] from the nearby cliff-edge corpse", "Defeat Godskin Duo for Smithing-Stone Miner's Bell Bearing [4]", "Meet Alexander beyond the Dragon Temple Lift and finish his duel", "Beside the Great Bridge: collect Somberstone Miner's Bell Bearing [5] from the altar below the grace", "Find the hidden Placidusax drop-down", "Defeat Dragonlord Placidusax", "Confirm Bolt of Gransax and Coded Sword are collected", "Defeat Maliketh only after every listed check"], directions: "Finish Gideon's reports before using the Forge. In Farum Azula take Somber bearing [4] just after Tempest-Facing Balcony, defeat the Godskin Duo, finish Alexander and collect Somber bearing [5] below Beside the Great Bridge. Take the Placidusax drop-down and only then approach Maliketh; his defeat permanently creates the Ashen Capital and moves Gideon.", boss: "Maliketh, the Black Blade", remembrance: true, quest: "Gideon, Alexander and the hard Ashen Capital world-state change", repeatInStandard: true },
   { id: "ashen", act: "Base game", title: "The Elden Throne", region: "Leyndell, Ashen Capital", level: "135–155", upgrade: "+25 / Somber +10", grace: "Leyndell, Capital of Ash", x: 62, y: 38, phase: "late", summary: "Collect the post-Maliketh quest rewards and conclude the base game without accidentally entering Journey 2.", essentials: ["Collect Goldmask's Mending Rune of Perfect Order below the colosseum", "Collect any remaining Ashen Capital rewards", "Defeat Gideon Ofnir", "Defeat Godfrey / Hoarah Loux", "Defeat Radagon and Elden Beast", "Choose ending; do not start Journey 2"], directions: "From Capital of Ash, collect Goldmask's rune before crossing the buried capital. Defeat Gideon, climb to the Queen's Bedchamber, defeat Godfrey and enter the Erdtree. After choosing an ending, decline Journey 2 at Roundtable Hold so the DLC route remains available.", boss: "Elden Beast", remembrance: true, quest: "Goldmask reward and base-game finale", repeatInStandard: true },
   { id: "gravesite", act: "Shadow of the Erdtree", title: "Gravesite Plain", region: "Gravesite Plain", level: "150+", upgrade: "Max weapons", blessing: "Scadutree 1–3", grace: "Gravesite Plain", x: 35, y: 79, phase: "dlc", summary: "Enter after Radahn and Mohg, collect the pre-rune-break NPC rewards and establish a modest blessing curve.", essentials: ["Confirm Radahn and Mohg are defeated", "Touch Miquella's withered arm in Mohg's arena", "Speak to Leda at the cocoon and enter the Realm of Shadow", "Meet Freyja and Hornsent at Three-Path Cross", "Meet Moore and Ansbach at Main Gate Cross", "Assist the friendly Forager Brood before its cookbook opportunities close", "Get Black Syrup from Moore and give it to Thiollier", "Tell Thiollier you are weary of life and keep Thiollier's Concoction", "Collect two Scadutree Fragments at Church of Consolation", "Defeat Blackgaol Knight", "Defeat Fire Knight Queelign's Belurat invasion", "Clear Belurat and defeat Divine Beast Dancing Lion", "Wear the Divine Beast Head for Hornsent Grandam and give her Scorpion Stew to Hornsent"], directions: "After Elden Beast, enter through Mohg's cocoon. Meet every follower, collect Moore and Thiollier's pre-break items and help the non-hostile Forager Brood. Defeat Queelign's Belurat invasion and Dancing Lion, then use the Divine Beast Head with Hornsent Grandam before the rune breaks.", boss: "Divine Beast Dancing Lion", remembrance: true, quest: "Pre-rune-break follower, Hornsent Grandam and Queelign rewards", repeatInStandard: true },
   { id: "ensiss", act: "Shadow of the Erdtree", title: "Castle Ensis", region: "Castle Ensis", level: "150+", upgrade: "Max weapons", blessing: "Scadutree 4–6", grace: "Castle Ensis Checkpoint", x: 55, y: 63, phase: "dlc", summary: "Clear Ensis, meet Dane and only then cross one of the great-rune trigger boundaries.", essentials: ["Collect the Three-Path Cross and Castle Ensis Cross fragments", "Finish Moore, Thiollier, Freyja, Hornsent and Ansbach dialogue", "Collect Milady and Wing Stance inside Castle Ensis", "Defeat Rellana", "Enter Scadu Altus but stop at Highroad Cross", "Read the Monk's Missive and use May the Best Win before Dryleaf Dane", "Defeat Dryleaf Dane and collect Dryleaf Arts", "Revisit every follower before any rune-break boundary", "Avoid Shadow Keep, eastern Scadu Altus, Rauh Base and the Bonny Village bridges until ready", "Trigger the great-rune break only after the follower check"], directions: "Clear Castle Ensis and Rellana, stop at Highroad Cross and duel Dane with the gesture from the Monk's Missive. Revisit all followers before crossing a Shadow Keep, eastern-Altus, Bonny or Rauh trigger boundary.", boss: "Rellana, Twin Moon Knight", remembrance: true, quest: "Dryleaf Dane and DLC great-rune break checkpoint", repeatInStandard: true },
-  { id: "fissure", act: "Shadow of the Erdtree", title: "Cerulean Coast & Fissure", region: "Southern Shore", level: "150+", upgrade: "Max weapons", blessing: "Scadutree 6–8", grace: "Fissure Depths", x: 32, y: 92, summary: "Use the great-rune break to open the Fissure, then finish Thiollier and St. Trina's required dialogue before the DLC finale.", essentials: ["Confirm Miquella's great rune has broken and the Fissure seal is open", "Buy Thiollier's remaining stock and give him the Black Syrup", "Reach the Cerulean Coast map by the Ellac River route", "Descend Stone Coffin Fissure", "Defeat Putrescent Knight", "Imbibe St. Trina's nectar four times until she speaks", "Tell Thiollier St. Trina's words and defeat his invasion", "Imbibe again and exhaust Thiollier's dialogue"], directions: "From Castle Front descend through the Ellac River cave and follow the river south to Cerulean Coast. After the great-rune message removes the seal, descend the coffins to Fissure Depths. Defeat Putrescent Knight, repeatedly imbibe the nectar despite the deaths, relay the words to Thiollier and resolve his invasion so he remains available at Enir-Ilim.", boss: "Putrescent Knight", remembrance: true, quest: "Thiollier summon and St. Trina reward", repeatInStandard: true },
+  { id: "fissure", act: "Shadow of the Erdtree", title: "Cerulean Coast & Fissure", region: "Southern Shore", level: "150+", upgrade: "Max weapons", blessing: "Scadutree 6–8", grace: "Fissure Depths", x: 32, y: 92, summary: "Use the great-rune break to open the Fissure, then finish Thiollier and St. Trina's required dialogue before the DLC finale.", essentials: ["Confirm Miquella's great rune has broken and the Fissure seal is open", "Buy Thiollier's remaining stock and tell him St. Trina's location", "Reach the Cerulean Coast map by the Ellac River route", "Descend Stone Coffin Fissure", "Defeat Putrescent Knight", "Imbibe St. Trina's nectar four times until she speaks", "Tell Thiollier St. Trina's words and defeat his invasion", "Imbibe again and exhaust Thiollier's dialogue"], directions: "From Castle Front descend through the Ellac River cave and follow the river south to Cerulean Coast. After the great-rune message removes the seal, send Thiollier to St. Trina and descend the coffins to Fissure Depths. Defeat Putrescent Knight, repeatedly imbibe the nectar despite the deaths, relay the words to Thiollier and resolve his invasion so he remains available at Enir-Ilim.", boss: "Putrescent Knight", remembrance: true, quest: "Thiollier summon and St. Trina reward", repeatInStandard: true },
   { id: "shadow-keep", act: "Shadow of the Erdtree", title: "Shadow Keep Crossroads", region: "Scadu Altus", level: "150+", upgrade: "Max weapons", blessing: "Scadutree 8–10", grace: "Highroad Cross", x: 57, y: 45, summary: "Resolve every post-break choice, Queelign's Iris reward and the Storehouse exchanges before Messmer.", essentials: ["Speak to Leda, Hornsent, Ansbach, Freyja, Moore, Thiollier and Dane after the rune breaks", "Choose Moore's answer only after collecting the available Forager Brood cookbooks", "Collect the O Mother gesture north of Bonny Village", "Defeat Fire Knight Queelign's Church of the Crusade invasion", "Find Queelign in Shadow Keep Prayer Room and choose the Iris reward", "Resolve the Leda and Hornsent bridge summon signs before entering Messmer's arena", "Defeat Golden Hippopotamus", "Open Storehouse First Floor, Seventh Floor, Loft and Back Gate paths", "Speak to Freyja on the seventh floor and then tell Ansbach about her", "Give Ansbach the Secret Rite Scroll and receive the Letter for Freyja", "Deliver Ansbach's letter to Freyja and exhaust both characters", "Resolve the Leda and Ansbach Storehouse signs for the party's required reward", "Do not enter Messmer's arena until every faction card is complete"], directions: "Revisit all followers first. Collect O Mother and finish Queelign's second invasion and Prayer Room choice. Resolve Leda's bridge signs, then complete the Freyja/Ansbach scroll and letter order before Messmer.", quest: "Queelign, Moore, Hornsent, Leda, Ansbach and Freyja irreversible choices", repeatInStandard: true },
-  { id: "gaius-avatar", act: "Shadow of the Erdtree", title: "Scaduview & Hinterland", region: "Shadow Keep rear", level: "150+", upgrade: "Max weapons", blessing: "Scadutree 10–12", grace: "Shadow Keep, Back Gate", x: 67, y: 32, summary: "Collect a measured set of fragments and clear two optional Remembrances behind the keep.", essentials: ["Defeat Commander Gaius", "Collect Scaduview Chalice fragments but stop at target", "Open Hinterland with the O Mother gesture", "Defeat Scadutree Avatar"], directions: "Climb the Specimen Storehouse to the loft and back gate. Take the field path for Gaius, then use the hidden statue route for Hinterland and the Tree-Worship Passage.", boss: "Commander Gaius & Scadutree Avatar", remembrance: true, repeatInStandard: true },
+  { id: "gaius-avatar", act: "Shadow of the Erdtree", title: "Scaduview & Hinterland", region: "Shadow Keep rear", level: "150+", upgrade: "Max weapons", blessing: "Scadutree 10–12", grace: "Shadow Keep, Back Gate", x: 67, y: 32, summary: "Collect a measured set of fragments and clear two optional Remembrances behind the keep.", essentials: ["Defeat Commander Gaius", "Collect Scaduview Chalice fragments but stop at target", "Open Hinterland with the O Mother gesture", "Defeat Scadutree Avatar"], directions: "Climb the Specimen Storehouse to the loft and back gate. Take the field path for Gaius, then use the hidden statue route for Hinterland and the Tree-Worship Passage.", boss: "Commander Gaius, Scadutree Avatar", remembrance: true, repeatInStandard: true },
   { id: "jagged", act: "Shadow of the Erdtree", title: "Jagged Peak", region: "Jagged Peak", level: "150+", upgrade: "Max weapons", blessing: "Scadutree 11–13", grace: "Jagged Peak Summit", x: 81, y: 66, summary: "Finish Igon and deliberately choose the Dragon Communion Priestess reward branch before Bayle.", essentials: ["Speak to Igon beside Pillar Path Waypoint", "Defeat Ancient Dragon-Man in Dragon's Pit", "Meet the Dragon Communion Priestess at the Grand Altar", "Choose whether to give the Priestess Thiollier's Concoction at night", "Speak to Igon after the two drakes fight and receive his finger", "Defeat Ancient Dragon Senessax", "Use Igon's summon sign inside Bayle's arena", "Defeat Bayle the Dread", "Return to Igon and the Dragon Communion Priestess for both reward sets"], directions: "Meet Igon and the Priestess before climbing. Give the Priestess Thiollier's Concoction at night only for her spirit and Dragonbolt; leave her awake for Flowerstone Gavel and Priestess Heart. Summon Igon inside Bayle's arena and revisit both afterward.", boss: "Bayle the Dread", quest: "Igon and mutually exclusive Dragon Communion Priestess rewards", repeatInStandard: true },
   { id: "abyss", act: "Shadow of the Erdtree", title: "Abyssal Woods", region: "Abyssal Woods", level: "150+", upgrade: "Max weapons", blessing: "Scadutree 12–14", grace: "Second Floor Chamber", x: 76, y: 83, summary: "Use Shadow Keep's hidden coffin route and clear the mandatory catacomb boss before Midra.", essentials: ["Take the hidden ladder beside Shadow Keep's main plaza", "Ride the stone coffin to Castle Watering Hole", "Clear Darklight Catacombs and defeat Jori, Elder Inquisitor", "Cross Abyssal Woods without Torrent", "Enter Midra's Manse and pull the portrait lever", "Defeat Midra"], directions: "Use the ladder and waterfall passage in Shadow Keep to reach the coffin. Clear Darklight Catacombs and Jori to open Abyssal Woods, sneak past the untouchable enemies, then reach Midra through the manse library and portrait passage.", boss: "Midra, Lord of Frenzied Flame", remembrance: true, repeatInStandard: true },
-  { id: "metyr", act: "Shadow of the Erdtree", title: "Cathedral of Manus Metyr", region: "Scadu Altus & Finger Ruins", level: "150+", upgrade: "Max weapons", blessing: "Scadutree 13–15", grace: "Cathedral of Manus Metyr", x: 76, y: 46, summary: "Complete Ymir's two maps in order, ring both ruin bells and resolve Jolan only after Metyr and Ymir.", essentials: ["Meet Ymir and Jolan at the cathedral", "Ring the Finger Ruins of Rhia bell", "Return to Ymir for the second ruins map", "Open the Hinterland with O Mother and ring the Dheo bell", "Return to Ymir and exhaust both characters' dialogue", "Inspect Ymir's empty throne and defeat Swordhand of Night Anna", "Ring the Miyr bell and defeat Metyr", "Defeat Ymir and Jolan's invasion", "Choose Jolan's Iris reward before leaving the cathedral"], directions: "Reach the cathedral from Bonny Village. Follow Ymir's first map to Rhia, report back for the second map, then use O Mother at Shadow Keep's statue to reach Dheo. After reporting both bells, reload until Ymir leaves his throne, descend to Miyr and finish Metyr before resolving Ymir and Jolan above.", boss: "Metyr, Mother of Fingers", remembrance: true, quest: "Ymir, Jolan and Anna reward choice", repeatInStandard: true },
-  { id: "messmer", act: "Shadow of the Erdtree", title: "The Dark Chamber", region: "Shadow Keep", level: "150+", upgrade: "Max weapons", blessing: "Scadutree 14–16", grace: "Dark Chamber Entrance", x: 58, y: 38, summary: "Enter the arena only after the bridge signs and Storehouse exchanges, then use the intended Hornsent summon outcome.", essentials: ["Confirm the Leda and Hornsent bridge signs are no longer pending", "Confirm Ansbach and Freyja's letter exchange is complete", "Choose whether to summon Hornsent inside Messmer before crossing the fog", "Defeat Messmer", "Exhaust Hornsent after the fight if he was summoned", "Collect Messmer's Kindling"], directions: "At Dark Chamber Entrance, stop once more before crossing the fog because entering the arena removes the Leda/Hornsent bridge signs. If continuing Hornsent's route, use his sign inside the arena and exhaust him after the fight. Keep Messmer's Kindling for Rauh.", boss: "Messmer the Impaler", remembrance: true, quest: "Hornsent outcome and Messmer's Kindling", repeatInStandard: true },
+  { id: "metyr", act: "Shadow of the Erdtree", title: "Cathedral of Manus Metyr", region: "Scadu Altus & Finger Ruins", level: "150+", upgrade: "Max weapons", blessing: "Scadutree 13–15", grace: "Cathedral of Manus Metyr", x: 76, y: 46, summary: "Complete Ymir's two maps in order, ring both ruin bells and resolve Jolan only after Metyr and Ymir.", essentials: ["Meet Ymir and Jolan at the cathedral", "Ring the Finger Ruins of Rhia bell", "Return to Ymir for the second ruins map", "Open the Hinterland with O Mother and ring the Dheo bell", "Return to Ymir and exhaust both characters' dialogue", "Inspect Ymir's empty throne and defeat Swordhand of Night Anna", "Defeat Metyr after ringing the Miyr bell", "Defeat Ymir and Jolan's invasion", "Choose Jolan's Iris reward before leaving the cathedral"], directions: "Reach the cathedral from Bonny Village. Follow Ymir's first map to Rhia, report back for the second map, then use O Mother at Shadow Keep's statue to reach Dheo. After reporting both bells, reload until Ymir leaves his throne, descend to Miyr, ring its bell and defeat Metyr before resolving Ymir and Jolan above.", boss: "Metyr, Mother of Fingers", remembrance: true, quest: "Ymir, Jolan and Anna reward choice", repeatInStandard: true },
+  { id: "messmer", act: "Shadow of the Erdtree", title: "The Dark Chamber", region: "Shadow Keep", level: "150+", upgrade: "Max weapons", blessing: "Scadutree 14–16", grace: "Dark Chamber Entrance", x: 58, y: 38, summary: "Enter the arena only after the bridge signs and Storehouse exchanges, then use the intended Hornsent summon outcome.", essentials: ["Confirm the Leda and Hornsent bridge signs are no longer pending", "Confirm Ansbach and Freyja's letter exchange is complete", "Choose whether to summon Hornsent inside Messmer before crossing the fog", "Defeat Messmer the Impaler", "Exhaust Hornsent after the fight if he was summoned", "Collect Messmer's Kindling"], directions: "At Dark Chamber Entrance, stop once more before crossing the fog because entering the arena removes the Leda/Hornsent bridge signs. If continuing Hornsent's route, use his sign inside the arena and exhaust him after the fight. Keep Messmer's Kindling for Rauh.", boss: "Messmer the Impaler", remembrance: true, quest: "Hornsent outcome and Messmer's Kindling", repeatInStandard: true },
   { id: "rauh", act: "Shadow of the Erdtree", title: "Ancient Ruins of Rauh", region: "Rauh", level: "150+", upgrade: "Max weapons", blessing: "Scadutree 15–17", grace: "Church of the Bud", x: 31, y: 33, summary: "Cross Rauh and verify the actual sealing-tree blockers before committing Messmer's Kindling.", essentials: ["Collect Map: Rauh Ruins from the lower ravine route", "Resolve Hornsent's Rauh invasion if his Messmer route continued", "Confirm Thiollier was invaded and heard St. Trina's final words", "Confirm Ansbach has the Secret Rite Scroll and the Freyja exchange is complete", "Confirm the Leda, Hornsent and Ansbach invasion choices are resolved", "Confirm Moore's answer and resulting location are known", "Defeat Romina", "Confirm Messmer's Kindling is in inventory", "Do not touch the sealing tree until every follower check is complete", "Burn the sealing tree with Messmer's Kindling"], directions: "Take Shadow Keep's western bridge to Rauh and resolve Hornsent before Church of the Bud if his route remains active. After Romina, stop at the sealing tree and verify each named state. Using Messmer's Kindling advances Enir-Ilim and closes unresolved follower branches.", boss: "Romina, Saint of the Bud", remembrance: true, quest: "Hard DLC quest lock point", repeatInStandard: true },
   { id: "enir", act: "Shadow of the Erdtree", title: "Enir-Ilim Finale", region: "Enir-Ilim", level: "150+", upgrade: "Max weapons", blessing: "Scadutree 17–20", grace: "Divine Gate Front Staircase", x: 43, y: 23, summary: "Resolve the follower battle, finish Ansbach and Thiollier, and complete every Remembrance.", essentials: ["Defeat Leda and her allies", "Summon eligible allies for their quest rewards", "Spend remaining fragments up to the desired difficulty", "Defeat Promised Consort Radahn"], directions: "From the cleansed tower, climb Enir-Ilim's spiral streets and rooftops, pass the purification chamber, and ascend the final staircase to the Gate of Divinity.", boss: "Promised Consort Radahn", remembrance: true, quest: "DLC finale", repeatInStandard: true },
 ];
@@ -751,6 +839,14 @@ export const itemGuides: Record<string, string> = {
   "Astrologer's Staff": "Use the staff included in the Astrologer's starting equipment; this starter is only assigned when the recommended origin begins with it.",
   "Glintstone Staff": "Use the staff included in the Prisoner's starting equipment; this starter is only assigned when the recommended origin begins with it.",
   "Finger Seal": "Buy it from the Twin Maiden Husks at Roundtable Hold after accepting Melina's invitation. A Confessor or Prophet already starts with one.",
+  "Memory Stone - Twin Maiden Husks": "After accepting Melina's Roundtable Hold invitation, buy the Memory Stone from the Twin Maiden Husks for 3,000 runes. It permanently adds one memory slot.",
+  "Memory Stone - Oridys's Rise": "At Oridys's Rise in the Weeping Peninsula, interact with the imp statue, find the three spectral wise beasts around the tower, then open the chest at the top.",
+  "Memory Stone - Converted Tower": "At Converted Tower in south-west Liurnia, climb the broken outer wall and jump onto the roof, then open the chest at the top. The Erudition puzzle is optional.",
+  "Memory Stone - Testu's Rise": "On Testu's Rise island in north Liurnia, interact with the imp statue, find the three spectral wise beasts, then open the tower chest.",
+  "Memory Stone - Raya Lucaria Academy": "Defeat the Red Wolf of Radagon inside Raya Lucaria; the Memory Stone is awarded automatically.",
+  "Memory Stone - Seluvis's Rise": "After defeating Royal Knight Loretta and entering Ranni's service, climb Seluvis's Rise and open the chest on its upper floor.",
+  "Memory Stone - Lenne's Rise": "In Dragonbarrow, use the spirit spring east of Lenne's Rise to land on its balcony, enter through the upper opening and open the chest. The sealed front door is not required.",
+  "Memory Stone - Hermit Village": "At the north end of Hermit Village on Mt. Gelmir, defeat Demi-Human Queen Maggie; she drops the Memory Stone.",
   Shortbow: "Use the Bandit's starting Shortbow, or buy one from the Nomadic Merchant on the west Limgrave beach beneath the Coastal Cave approach.",
   "Light Crossbow": "Buy it from the Nomadic Merchant on the west side of the Weeping Peninsula before entering Castle Morne.",
   "Short Spear": "Buy it from the Twin Maiden Husks at Roundtable Hold after accepting Melina's invitation.",
@@ -812,10 +908,23 @@ export const itemGuides: Record<string, string> = {
   "Ansbach's Longbow": "In the Specimen Storehouse, use the gold summon sign to protect Ansbach from Leda; the bow is awarded when the invasion ends.",
   "Lacerating Crossed-Tree": "At the Shadow Keep bridge signs, assist Leda against Hornsent, then report to her at Highroad Cross.",
   "Retaliatory Crossed-Tree": "At Ansbach's Storehouse signs, assist Leda against Ansbach, then report to her at Highroad Cross. This ends Ansbach's finale rewards.",
+  "Assassin's Cerulean Dagger": "In Black Knife Catacombs, ride a rising guillotine to the upper passage, reveal the hidden wall at the dead end and defeat the Black Knife Assassin.",
+  "Horn Bow": "Take the Siofra River Well lift in Mistwood, reach Hallowhorn Grounds and drop from the bridge-support route to the corpse below the stairs.",
+  "Gargoyle's Twinblade": "Defeat both Valiant Gargoyles in Siofra Aqueduct; the twinblade is awarded with the boss drops before taking the coffin to Deeproot.",
+  "Wing of Astel": "Enter Ainsel River Main through Renna's Rise, take the left tunnel and follow the upper Uhl Palace Ruins cliff path to the chest above the Withered Astel.",
+  "Magic Scorpion Charm": "Complete Seluvis's potion and puppet steps, give him the Amber Starlight and collect the charm before giving Ranni the Fingerslayer Blade.",
+  "Taker's Cameo": "Defeat Juno Hoslow for the third Volcano Manor letter in the Mountaintops, then report to Tanith before defeating Rykard.",
+  "Swarm of Flies": "In Mohgwyn Palace's blood marsh, loot the corpse inside the shallow cave along the eastern wall; the nearby Albinaurics can be bypassed or cleared.",
+  "White Mask": "Before killing Mohg, defeat the Nameless White Mask invader beside the Giant Crow near the blood-marsh tunnel exit in Mohgwyn Palace.",
+  "Old Lord's Talisman": "After the Godskin Duo, reach Dragon Temple Rooftop, descend the ladder from the balcony north of the Great Bridge and open the Beastman-guarded rotunda chest.",
+  "Talisman of the Dread": "In Gravesite Plain, enter Elder's Hovel and loot the corpse inside; no boss is required.",
+  "Bloodsucking Cracked Tear": "Reach Ruins of Unte from Shadow Keep and defeat the dormant Furnace Golem blocking the entrance after waking it with a Hefty Furnace Pot.",
+  "Gaius's Greaves": "After Commander Gaius, follow the road toward Scadutree Chalice and defeat the wolf-riding Albinauric near Albinauric's Shack.",
 };
 
 export const sources = [
-  ["Patch 1.16.1", "https://en.bandainamcoent.eu/elden-ring/news/elden-ring-patch-notes-version-1161"],
+  ["Verified data baseline: patch 1.17", "https://en.bandainamcoent.eu/elden-ring/news/elden-ring-patch-notes-version-117"],
+  ["Tarnished Pack contents and availability", "https://en.bandainamcoent.eu/elden-ring/news/how-get-new-elden-ring-classes-weapons-and-torrent-skin-customizations"],
   ["Starting origins and base stats", "https://eldenring.wiki.gg/wiki/Origin"],
   ["Build calculator and base weapon requirements", "https://eldenring.wiki.fextralife.com/Build+Calculator"],
   ["Exact rune level costs", "https://eldenring.wiki.gg/wiki/Level"],

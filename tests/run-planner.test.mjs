@@ -18,7 +18,7 @@ import {
 } from "../app/run-planner.ts";
 
 test("origin and rune constants match known game values", () => {
-  assert.equal(ORIGINS.length, 10);
+  assert.equal(ORIGINS.length, 12);
   for (const origin of ORIGINS) {
     assert.equal(Object.values(origin.attributes).reduce((sum, value) => sum + value, 0), origin.level + 79);
   }
@@ -27,6 +27,13 @@ test("origin and rune constants match known game values", () => {
     vigor: 60, mind: 9, endurance: 30, strength: 80,
     dexterity: 9, intelligence: 7, faith: 8, arcane: 11,
   }).origin.name, "Hero");
+  assert.deepEqual(
+    ORIGINS.filter((origin) => origin.name.endsWith("Knight")).map(({ name, level, attributes }) => ({ name, level, attributes })),
+    [
+      { name: "Idus Knight", level: 7, attributes: { vigor: 10, mind: 12, endurance: 11, strength: 13, dexterity: 15, intelligence: 8, faith: 11, arcane: 6 } },
+      { name: "Heavy Knight", level: 10, attributes: { vigor: 14, mind: 8, endurance: 17, strength: 15, dexterity: 11, intelligence: 7, faith: 8, arcane: 9 } },
+    ],
+  );
 });
 
 test("all chapter budgets have complete, coherent income bands", () => {

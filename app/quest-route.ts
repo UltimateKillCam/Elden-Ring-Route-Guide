@@ -28,6 +28,7 @@ const QUEST_ROUTE_PATCHES: Record<string, QuestRoutePatch[]> = {
         step("Defeat Bloody Finger Nerijus with Yura at Murkwater", "Follow the stream north from Agheel Lake toward Murkwater Cave. When Nerijus invades, survive until Yura arrives, defeat Nerijus, then continue north beneath the overpass and exhaust Yura's dialogue."),
         step("Spare Patches and reopen his Murkwater Cave shop", "Enter Murkwater Cave, open the boss chest and fight Patches only until he surrenders at roughly half health. Stop attacking, accept his surrender, reload the cave and exhaust his dialogue so his shop opens. Never kill him if preserving his Volcano Manor rewards."),
         step("Meet D and defeat the Summonwater Village Tibia Mariner", "Speak to D west of Summonwater Village, defeat the Tibia Mariner in the flooded ruins, then speak to D again at the village entrance or Roundtable Hold. Use the waygate he marks behind Third Church and give the Deathroot to Gurranq."),
+        step("Collect the second Deathroot in Deathtouched Catacombs", "From Saintsbridge, climb the western slope into Deathtouched Catacombs. Pull the lever in the skeleton chamber, defeat the already-wounded Black Knife Assassin, then open the chest behind the boss arena for the second Deathroot. Return through the Third Church waygate and give it to Gurranq for Bestial Sling."),
         step("Free Iron Fist Alexander above Saintsbridge", "Climb the ledge south of Saintsbridge, follow Alexander's calls and strike his rear with charged attacks until he comes free. Exhaust his dialogue for the Triumphant Delight gesture before he moves toward Gael Tunnel."),
         step("Meet Knight Bernahl at Warmaster's Shack", "Visit Warmaster's Shack during daytime and exhaust Bernahl's dialogue. This encounter is optional for progress, but records him before he relocates to Volcano Manor."),
       ],
@@ -89,7 +90,7 @@ const QUEST_ROUTE_PATCHES: Record<string, QuestRoutePatch[]> = {
       after: "Meet Thops at Church of Irith",
       steps: [
         step("Find Diallos beside Lanya in Academy Gate Town", "From Academy Gate Town grace, go north-northwest across the flooded rooftops to find Diallos over Lanya's body. Exhaust him here, then return to Roundtable Hold and exhaust his new dialogue before joining Volcano Manor."),
-        step("Meet Rya and recover her necklace without killing Boggart", "Meet Rya in the pavilion east of Scenic Isle. Speak to Blackguard Big Boggart at Boilprawn Shack, buy Rya's Necklace for 1,000 runes, buy at least one Boiled Prawn to preserve his Dung Eater route, then return the necklace to Rya and exhaust her invitation."),
+        step("Meet Rya and recover her necklace without killing Boggart", "Meet Rya in the pavilion east of Scenic Isle. Speak to Blackguard Big Boggart at Boilprawn Shack, buy Rya's Necklace for 1,000 runes, and buy at least one Boiled Prawn if preserving Boggart's later shop and Dung Eater invasion branch. Return the necklace to Rya and exhaust her invitation."),
         step("Meet Patches at Scenic Isle", "After sparing Patches in Murkwater Cave, speak to him at Scenic Isle and exhaust his dialogue about Raya Lucaria and Volcano Manor before travelling to Mt. Gelmir."),
       ],
     },
@@ -122,6 +123,26 @@ const QUEST_ROUTE_PATCHES: Record<string, QuestRoutePatch[]> = {
     },
   ],
   caria: [
+    {
+      before: "Clear Black Knife Catacombs and give the Black Knifeprint to Rogier",
+      steps: [
+        step("Collect the third Deathroot from the eastern Liurnia Tibia Mariner", "From Artist's Shack, ride south-east to the flooded ruins below Carian Study Hall. Defeat the Tibia Mariner and take its Deathroot; this open-field fight is placed here so the route does not return to eastern Liurnia later."),
+      ],
+    },
+    {
+      after: "Clear Black Knife Catacombs and give the Black Knifeprint to Rogier",
+      steps: [
+        step("Collect the fourth Deathroot behind the Black Knife Catacombs Cemetery Shade", "In Black Knife Catacombs, the hidden Black Knife Assassin gives Rogier's Knifeprint, but the Deathroot is behind the normal Cemetery Shade boss. Lower the guillotine-path lever, defeat the Shade and open the chest at the rear of its arena."),
+        step("Give Gurranq Deathroots three and four, then calm him", "Return to Bestial Sanctum and hand over both Liurnia Deathroots. After the fourth total hand-in, rest or reload and Gurranq turns hostile. Fight only until roughly 30% of his health is removed; stop when he yields, speak to him, then reload. Do not kill him. This secures Bestial Vitality and Beast's Roar and reopens later hand-ins."),
+      ],
+    },
+    {
+      remove: ["Ask Iji about Jerren to confirm the Radahn Festival", "Return to Blaidd in Siofra and exhaust his dialogue"],
+      before: "Do not attack Seluvis or any quest NPC",
+      steps: [
+        step("Confirm the Radahn Festival through Blaidd or Iji", "After joining Ranni, meet Blaidd beside Siofra River Bank and exhaust him about Nokron and Radahn. Then return to Iji at Road to the Manor, ask about Jerren and exhaust the festival topic. Either Blaidd's Radahn conversation or Iji's Jerren conversation can start the festival; the Seluvis introduction and Sellen detour are not required and only appear when Seluvis's optional quest is selected."),
+      ],
+    },
     {
       before: "Clear Black Knife Catacombs and give the Black Knifeprint to Rogier",
       steps: [
@@ -160,6 +181,7 @@ const QUEST_ROUTE_PATCHES: Record<string, QuestRoutePatch[]> = {
     {
       before: "Collect Amber Starlight north-east of Altus Highway Junction",
       steps: [
+        step("Collect the fifth Deathroot from the Wyndham Ruins Tibia Mariner", "Ride north-west from Erdtree-Gazing Hill into Wyndham Ruins. Stay mounted, ignore the summoned skeletons and strike the Tibia Mariner whenever it teleports. Take the Deathroot and give it to the subdued Gurranq for Beast Claw before continuing toward Mt. Gelmir."),
         step("Meet Yura at the Second Church and defeat Eleonora", "Prerequisite check: you must already have met Yura beneath the ruin north-east of Seaside Ruins, defeated Bloody Finger Nerijus in the Murkwater stream, exhausted Yura beneath the overpass afterward, used Yura's red summon sign beyond Main Academy Gate, and spoken to him on the bridge after defeating the Ravenmount Assassin. If any earlier card remains unfinished, return to it before continuing. Then travel from Altus Highway Junction to the Second Church of Marika, speak to the dying Yura, take Nagakiba and defeat Eleonora's invasion. Keep the Purifying Crystal Tear for Mohg."),
       ],
     },
@@ -176,6 +198,7 @@ const QUEST_ROUTE_PATCHES: Record<string, QuestRoutePatch[]> = {
       after: "Advance Diallos and Rya dialogue",
       steps: [
         step("Speak to every Manor resident after each contract", "After each Tanith contract, exhaust Tanith, Rya, Diallos, Bernahl and Patches before taking the next letter. Their dialogue advances independently and several rewards disappear when Rykard dies."),
+        step("Collect the sixth Deathroot in Gelmir Hero's Grave", "Enter Gelmir Hero's Grave south-west of First Mt. Gelmir Campsite. Follow the safe alcoves past the chariots, defeat the Red Wolf of the Champion and open the chest behind it for the sixth Deathroot. Give it to Gurranq for Stone of Gurranq before leaving the Altus and Gelmir circuit."),
       ],
     },
     {
@@ -219,7 +242,7 @@ const QUEST_ROUTE_PATCHES: Record<string, QuestRoutePatch[]> = {
     },
     {
       remove: ["Collect Dark Moon Greatsword and exhaust Iji, Blaidd and Ranni aftermath dialogue"],
-      after: "Collect Dark Moon Greatsword and exhaust Iji, Blaidd and Ranni aftermath dialogue",
+      after: "Give Ranni the Dark Moon Ring beneath Cathedral of Manus Celes",
       steps: [
         step("Collect the Dark Moon Greatsword", "After placing the Dark Moon Ring on Ranni's finger, wait for her scene to finish and collect the Dark Moon Greatsword where she was sitting before leaving the cavern."),
         step("Resolve Blaidd and Iji's aftermath", "Return to Ranni's Rise, defeat the hostile Blaidd outside and collect his equipment. Speak to Iji about Blaidd, reload Road to the Manor and collect Iji's Bell Bearing and helm from his body. Return to Ranni's chamber grace for her final doll dialogue."),
@@ -232,6 +255,8 @@ const QUEST_ROUTE_PATCHES: Record<string, QuestRoutePatch[]> = {
       steps: [
         step("Give Goldmask the Law of Regression revelation", "If not already completed in Leyndell, cast Law of Regression before Radagon's statue and tell Goldmask that Radagon is Marika. In the Mountaintops, exhaust Goldmask and Corhyn on the bridge south of Stargazers' Ruins before using the Forge."),
         step("Reunite the Spirit Jellyfish sisters at Stargazers' Ruins", "At Stargazers' Ruins, summon Roderika's Spirit Jellyfish Ashes beside the speaking jellyfish. Wait for their dialogue and disappearance, then open the newly unsealed cellar for the Primal Glintstone Blade."),
+        step("Collect the seventh Deathroot in Giants' Mountaintop Catacombs", "From Zamor Ruins, follow the lower north-east path to Giants' Mountaintop Catacombs. Use the two identical lift layouts carefully, defeat the Ulcerated Tree Spirit and open the chest behind its arena for the seventh Deathroot."),
+        step("Collect the eighth Deathroot from the Mountaintops Tibia Mariner", "On the north road toward Castle Sol, enter the graveyard west of Snow Valley Ruins Overlook. Ride past the giant skeleton summons, find the Tibia Mariner on the cliff and defeat it for the eighth Deathroot and Helphen's Steeple. Give both Mountaintops roots to Gurranq for the Beastclaw Greathammer and Gurranq's Beast Claw."),
       ],
     },
   ],
@@ -253,6 +278,12 @@ const QUEST_ROUTE_PATCHES: Record<string, QuestRoutePatch[]> = {
     },
   ],
   haligtree: [
+    {
+      after: "Hoist the secret medallion at the Grand Lift of Rold",
+      steps: [
+        step("Collect the ninth Deathroot in Hidden Path to the Haligtree", "After using the secret medallion at the Grand Lift of Rold, enter Hidden Path to the Haligtree. Drop onto the invisible floor from the broken railing, follow the glowstone-tested path to the lever, defeat the Stray Mimic Tear and open the chest behind it for the ninth Deathroot. Return to Bestial Sanctum and give it to Gurranq for an Ancient Dragon Smithing Stone; he then leaves the sanctum."),
+      ],
+    },
     {
       after: "Return to Millicent after reloading and recover the Unalloyed Gold Needle",
       steps: [
@@ -315,7 +346,7 @@ const QUEST_ROUTE_PATCHES: Record<string, QuestRoutePatch[]> = {
     },
     {
       remove: ["Defeat Ymir and Jolan's invasion", "Choose Jolan's Iris reward before leaving the cathedral"],
-      after: "Ring the Miyr bell and defeat Metyr",
+      after: "Defeat Metyr after ringing the Miyr bell",
       steps: [
         step("Defeat Swordhand of Night Jolan and Count Ymir", "Return to the cathedral after Metyr. Defeat Jolan when she invades, then defeat Count Ymir when he appears. Reload the cathedral and collect Ymir's Bell Bearing and equipment from the throne."),
         step("Choose Jolan's Iris reward", "Find the wounded Jolan at her usual pillar. Iris of Grace gives the Swordhand of Night Jolan spirit ash; Iris of Occultation gives the Sword of Night. The choice is permanent in this world."),
@@ -381,7 +412,9 @@ const EXISTING_QUEST_GUIDES: Record<string, string> = {
   "Meet Thops at Church of Irith": "Enter Church of Irith immediately west of Lake-Facing Cliffs. Speak to Thops, donate 10 runes and exhaust every academy topic; do not try to give him the Academy entrance key.",
   "Accept Latenna's request and receive her spirit ashes": "After Albus gives the right medallion half, clear Lakeside Crystal Cave and exit through the rear to Slumbering Wolf's Shack. Show Latenna the medallion, promise to take her to the Haligtree and exhaust her until she becomes Latenna the Albinauric spirit ash.",
   "Meet Varre at Rose Church and choose that the Fingers seemed off": "After the Two Fingers audience, meet Varre outside Rose Church, exhaust him and answer that the Fingers seemed off. Accept five Festering Bloody Fingers; do not attack him.",
-  "Soak the Lord of Blood's Favor in maiden blood and return to Varre": "Use the corpse at Church of Inhibition or Chapel of Anticipation for maiden blood; do not kill Irina or Hyetta. Return the bloodied Favor to Varre, let him anoint the finger, exhaust him and receive both the Bloody Finger and Pureblood Knight's Medal.",
+  "Use three Festering Bloody Fingers for Varre; offline players may defer Magnus to Altus": "Online, use three Festering Bloody Fingers; wins are not required. Offline, keep one finger and defer the trial until Writheblood Ruins in Altus, where invading and defeating Magnus the Beast Claw replaces all three online attempts.",
+  "If Varre's invasion trial is complete, soak the Lord of Blood's Favor in maiden blood and return to Varre": "After completing either invasion route, use the corpse at Church of Inhibition or Chapel of Anticipation for maiden blood; do not kill Irina or Hyetta. Return the bloodied Favor to Varre, let him anoint the finger and exhaust him.",
+  "Keep the Pureblood Knight's Medal if received, but do not use it for early farming": "Keep Varre's medal in inventory until the route reaches Mohgwyn at its intended level. Using it early is unnecessary and would break the route's rune and upgrade progression.",
   "Give the spare key to Thops and recover Thops's Barrier afterward": "Take the second Academy Glintstone Key from the chandelier reached across Raya Lucaria's rooftops. Give that spare key to Thops at Church of Irith, collect the Erudition gesture, reload, then find his body outside Schoolhouse Classroom for his staff, Bell Bearing and Barrier sorcery.",
   "Clear Black Knife Catacombs and give the Black Knifeprint to Rogier": "Ride north-east from Ruined Labyrinth to Black Knife Catacombs. Reveal the hidden wall at the end of the guillotine-riding route, defeat the Black Knife Assassin, take the Black Knifeprint to Rogier at Roundtable Hold and exhaust his explanation.",
   "Use the Four Belfries return waygate and collect the Stormhawk King": "Take the Imbued Sword Key at The Four Belfries and use it on the 'Precipice of Anticipation' waygate. Defeat the Grafted Scion, return to the chapel, open the side door and climb to the roof for the Stormhawk King; also collect the Stormhawk Deenh ashes inside.",
@@ -461,15 +494,18 @@ export function applyQuestRoutePatches<T extends { id: string; essentials: strin
   for (const patch of patches) {
     for (const label of patch.remove || []) {
       const existing = essentials.indexOf(label);
-      if (existing >= 0) essentials.splice(existing, 1);
+      if (existing < 0) throw new Error(`Quest route patch for ${chapter.id} has missing removal label: ${label}`);
+      essentials.splice(existing, 1);
     }
     let insertion = essentials.length;
     if (patch.before) {
       const anchor = essentials.indexOf(patch.before);
-      if (anchor >= 0) insertion = anchor;
+      if (anchor < 0) throw new Error(`Quest route patch for ${chapter.id} has missing before anchor: ${patch.before}`);
+      insertion = anchor;
     } else if (patch.after) {
       const anchor = essentials.indexOf(patch.after);
-      if (anchor >= 0) insertion = anchor + 1;
+      if (anchor < 0) throw new Error(`Quest route patch for ${chapter.id} has missing after anchor: ${patch.after}`);
+      insertion = anchor + 1;
     }
     essentials.splice(insertion, 0, ...patch.steps.map((entry) => entry.label));
   }

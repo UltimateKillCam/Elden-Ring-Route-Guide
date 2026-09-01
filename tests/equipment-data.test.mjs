@@ -10,6 +10,14 @@ test("starting and sourced armour sets expand into exact weighted pieces", () =>
   assert.equal(vagabond.reduce((sum, piece) => sum + piece.weight, 0), 23.8);
   assert.deepEqual(splitArmourSpecification("Carian Knight Set").map((piece) => piece.slot), ["head", "chest", "arms", "legs"]);
   assert.equal(isGenericArmourSpecification("N/A; wear anything that allows a medium roll"), true);
+  const idus = splitArmourSpecification("Idus Knight starting armour");
+  assert.equal(idus.reduce((sum, piece) => sum + piece.weight, 0), 16.9);
+  assert.equal(idus.reduce((sum, piece) => sum + piece.poise, 0), 33);
+  const heavy = splitArmourSpecification("Steel Set");
+  assert.equal(heavy.reduce((sum, piece) => sum + piece.weight, 0), 43.8);
+  assert.equal(heavy.reduce((sum, piece) => sum + piece.poise, 0), 77);
+  assert.equal(splitArmourSpecification("Silver Grooved Armor (Altered)")[0]?.weight, 6.5);
+  assert.equal(splitArmourSpecification("Leontiel's Hat (Altered)")[0]?.weight, 3);
 });
 
 test("calculator weapon records supply path, weight and requirements", () => {
@@ -23,6 +31,13 @@ test("calculator weapon records supply path, weight and requirements", () => {
   assert.equal(weaponUpgradePath("Milady + Wing Stance"), "standard");
   assert.equal(weaponUpgradePath("Carian Sorcery Sword"), "somber");
   assert.equal(weaponUpgradePath("Beast Claw + Savage Claws"), "standard");
+  assert.equal(weaponUpgradePath("Leontiel's Greatsword"), "somber");
+  assert.equal(weaponUpgradePath("Hefty Scimitar"), "standard");
+  assert.deepEqual(findWeaponUpgradeRecord("Idus Sword"), {
+    name: "Idus Sword", type: "Normal", weaponClass: "Light Greatsword", weight: 7,
+    reqStr: 10, reqDex: 15, reqInt: 0, reqFai: 0, reqArc: 0,
+  });
+  assert.equal(weaponUpgradePath("Longsword + Carian Regal Scepter"), "standard", "compound weapons follow the first named armament");
   assert.equal(findWeaponUpgradeRecord("Beast Claw + Savage Claws")?.weight, 3);
 
   const milady = findWeaponUpgradeRecord("Milady + Wing Stance");

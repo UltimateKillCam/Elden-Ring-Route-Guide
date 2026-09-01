@@ -58,8 +58,9 @@ const output = `// Generated from the Fextralife interactive-map data. Do not ha
 `export type MapItem = { name: string; category: string; description: string; layer: "surface" | "underground" | "ashen" | "shadow"; x: number; y: number; url: string };\n\n` +
 `export const mapItems: MapItem[] = ${JSON.stringify(records, null, 2)};\n\n` +
 `export type MapRoutePoint = MapItem;\n\n` +
+`// @ts-expect-error TypeScript cannot represent the union inferred for this generated 1,700+ entry literal.\n` +
 `export const mapRoutePoints: MapRoutePoint[] = ${JSON.stringify(routeRecords, null, 2)};\n\n` +
-`const clean = (value: string) => value.toLowerCase().replace(/[+＋]\\d+/g, "").replace(/[^a-z0-9' ]/g, " ").replace(/\\s+/g, " ").trim();\n\n` +
+`const clean = (value: string) => value.toLowerCase().replace(/＋/g, "+").replace(/[^a-z0-9+' ]/g, " ").replace(/\\s+/g, " ").trim();\n\n` +
 `export function findMapItems(value: string, preferredLayer?: MapItem["layer"], categoryPattern?: RegExp) {\n` +
 `  const query = clean(value);\n` +
 `  const candidates = mapItems\n` +

@@ -1,7 +1,8 @@
-import type { BuildSource } from "./data";
+import type { BuildSource, PhaseKey } from "./data";
 
 type WeaponResolution = {
   weapon: string;
+  weapons?: Partial<Record<PhaseKey, string>>;
   rationale: string;
   sources: BuildSource[];
 };
@@ -24,14 +25,6 @@ export const weaponResolutions: Record<string, WeaponResolution> = {
     weapon: "Carian Thrusting Shield (two-handed)",
     rationale: "The build's apparent N/A main-hand entry is resolved to the Carian Thrusting Shield that the same guide lists with Cragblade; it functions as both weapon and shield.",
     sources: [fextra("carianshieldknight", "Carian Shield Knight")],
-  },
-  "fextra-mage": {
-    weapon: "Meteorite Staff + Rogier's Rapier +8 (Glintblade Phalanx)",
-    rationale: "Meteorite Staff is a documented best early staff. Rogier's Rapier arrives already at +8 after Godrick and supplies the build's named Glintblade Phalanx skill.",
-    sources: [
-      { label: "Gamer Guides: best early Meteorite Staff", url: "https://www.gamerguides.com/elden-ring/guide/weapons/special-unique-weapons/how-to-get-the-meteorite-staff-early" },
-      wiki("Sorcerer_Rogier", "Eldenpedia: Rogier and his Rapier +8"),
-    ],
   },
   "fextra-spellblade": {
     weapon: "Demi-Human Queen's Staff + Estoc",
@@ -137,7 +130,7 @@ export const weaponResolutions: Record<string, WeaponResolution> = {
     sources: [{ label: "UTPlay: Fextralife Dragon Knight equipment", url: "https://www.utplay.com/news/2278--elden-ring-faith-arcane-build-guide-equipment-stats-talismans-spells--gameplay-tips-of-level-100-dragon-knight" }],
   },
   "fextra-frenziedacolyte": {
-    weapon: "Occult Glaive (Bloodhound's Step) + Dragon Communion, Frenzied Flame, Gravel Stone and Godslayer's Seals",
+    weapon: "Occult Glaive (Bloodhound's Step) + Dragon Communion Seal + Frenzied Flame Seal + Gravel Stone Seal + Godslayer's Seal",
     rationale: "A sourced walkthrough of this exact Fextralife build names the Occult Glaive, using Bloodhound's Step for spacing before returning to spellcasting.",
     sources: [{ label: "GoldKK: Fextralife Frenzied Acolyte equipment", url: "https://www.goldkk.com/news/2211--elden-ring-madness-incantation-build-guide--how-to-build-a-frenzied-acolyte-at-level-100" }],
   },
