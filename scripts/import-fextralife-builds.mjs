@@ -105,6 +105,70 @@ function statCodes(value) {
   return [...new Set(codes)].join(" / ") || "Source stats";
 }
 
+const offensiveStats = [
+  [/\b(?:strength|str)\b/i, "STR", "Strength"],
+  [/\b(?:dexterity|dex)\b/i, "DEX", "Dexterity"],
+  [/\b(?:intelligence|int)\b/i, "INT", "Intelligence"],
+  [/\b(?:faith|fai|fth)\b/i, "FAI", "Faith"],
+  [/\b(?:arcane|arc)\b/i, "ARC", "Arcane"],
+];
+
+const attributeOverrides = new Map([
+  ["Cipher Prophet", ["FAI"]],
+  ["Knight of Thorns", ["ARC", "INT"]],
+  ["Level 80/90 Sorcerer Duelist", ["INT"]],
+]);
+
+function offensiveStatCodes(name, value) {
+  const override = attributeOverrides.get(name);
+  if (override) return override;
+  const codes = [];
+  for (const segment of value.split(";")) {
+    for (const [pattern, code] of offensiveStats) {
+      if (pattern.test(segment) && !codes.includes(code)) codes.push(code);
+    }
+  }
+  return codes;
+}
+
+const meleeBuilds = new Set([
+  "Barbarian", "Berserker", "Black Guard", "Black Hammer", "Black Knife Assassin", "Blazing Blackblade", "Blazing Executioner", "Blood Lancer", "Bloodblade", "Bloodhound",
+  "Bloody Ballerina", "Bloody Beastclaw", "Blue Baller", "Carian Shield Knight", "Carian Twinblade", "Champion", "Cipher Prophet", "Coldstorm Cleric", "Colossal Crusher", "Colossal Knight",
+  "Colossus Guardian", "Crimson Duelist", "Crucible Knight", "Dark Paladin", "Devonia's Hammer", "Divine Warrior", "Double Dragon", "Dragonscale Daimyo", "Dragonslayer", "Drake Knight",
+  "Duel Sword Duelist", "Elden Lord", "Eochaid Executioner", "Fire Knight Impaler", "Flying Mantis", "Frost Paladin", "Frost-Fu Monk", "Ghostblade", "Ghostflame Warrior", "Gladiator",
+  "Godslayer", "Gold Breaker", "Golden Champion", "Gravity God", "Guardian Golem", "Haima Hoplite", "Howling Starfist", "Inquisitor", "Knight Blade", "Knight of Thorns",
+  "Kung Fu Katarist", "Level 30 Poison/Bleed Wretch", "Level 75 Sanguine Lightning Assassin", "Lightning Dragoon", "Magma Blade", "Meteoric Marauder", "Moonveil Resurrected", "Nebula Knight", "Noble Swordsman", "Paladin",
+  "Perfect Paladin", "Piercing Paladin", "Pyromancer Perfumer", "Red Rogue", "Royal Knight", "Sanguine Samurai", "Savage Slasher", "Scarlet Spear", "Scorching Slayer", "Serpent Samurai",
+  "Slumbering Swordstress", "Sorcery Sentinel", "Spellsword", "Spellthief", "Star-Lined Samurai", "Starscourge", "Storm Blessed", "Stormblade", "Stormblade Samurai", "Supreme Samurai",
+  "Sword Saint", "Swordsman of St. Trina", "Templar", "Thundering Swordspear", "Tower Knight", "Twin Axe Death Knight", "Vampiric Knight", "Vanquisher", "Venomous Bloodblade", "Void Knight",
+  "Warrior of Waves", "Waterfowl Warrior",
+]);
+
+const rangedBuilds = new Set([
+  "Archer", "Battlemage", "Black Arrow", "Bloody Bowman", "Crystal Mage", "Dragon Priest", "Elementalist", "Enchanted Knight", "Freezing Battlemage", "Goldeneye Bow",
+  "Gravity Sorcerer", "Maternal Mage", "Meteor Mage", "Pyromancer", "Red Lightning", "Sorcerer", "Storm Arrow", "Warrior Wizard",
+]);
+
+const hybridBuilds = new Set([
+  "Acolyte", "All-Knowing Sage", "Black Blade", "Black Blade Slicer", "Black Flame Spellblade", "Blackflame Apostle", "Blackflame Bushido", "Blasphemous Beastmaster", "Blasphemous Herald", "Blazing Bushido",
+  "Blood Dancer", "Blood Dragon", "Carian Cavalier", "Carian Cleaver", "Carian Knight", "Carian Sovereignty", "Carian Spellknight", "Champion of Rot", "Cold-Blooded Raptor", "Crusader",
+  "Darkmoon Spellblade", "Death Knight", "Death Mage", "Deathblade", "Dragon Dancer", "Dragon God", "Dragon Knight", "Dragon Priestess", "Dragon Warrior", "Flame Dancer",
+  "Flame Guardian", "Frenzied Acolyte", "Frost Knight", "Golden Sword Sage", "Grim Reaper", "Hellfire Herald", "Level 60 St. Trina's Confessor", "Level 80/90 Sorcerer Duelist", "Lightning Lancer", "Mad King",
+  "Magic Archer", "Magic Dragonknight", "Magus", "Messmer Flame", "Moonlight Crusader", "Moonveil Samurai", "Moonveil Shinobi", "Nightclaw", "Rime Ronin", "Roundtable Assassin",
+  "Samurai", "Samurai Sniper", "Sanguine Spellblade", "Shadow Sunflower Blossom", "Shadowblade", "Silent Spearcaller", "Silent Spellblade", "Soul Samurai", "Spellblade", "Sword Sage",
+  "Zealous Fury Templar",
+]);
+
+const researchedBuildNames = new Set([...meleeBuilds, ...rangedBuilds, ...hybridBuilds]);
+
+function combatStylesFor(name, fields) {
+  if (meleeBuilds.has(name)) return ["Melee"];
+  if (rangedBuilds.has(name)) return ["Ranged"];
+  if (hybridBuilds.has(name)) return ["Melee", "Ranged"];
+  const source = Object.values(fields).join(" ");
+  return /\b(?:bow|crossbow|staff|seal|spell|sorcer|incant)\b/i.test(source) ? ["Ranged"] : ["Melee"];
+}
+
 function mechanicFor(value) {
   const lower = value.toLowerCase();
   if (/parry|critical|backstab/.test(lower)) return "Critical attacks";
@@ -226,7 +290,7 @@ const sourceCategories = (categories) => [...new Set(categories
 
 const fieldFallbacks = new Map([
   ["Knight of Thorns", {
-    class: "Any", primarystats: "Arcane, Vigor", secondarystats: "Mind, Faith, Intelligence",
+    class: "Any", primarystats: "Arcane, Vigor", secondarystats: "Mind, Intelligence",
     weapon: "Ripple Blade or any blood-loss weapon", offhand: "Albinauric Staff or Staff of the Guilty", skills: "Wild Strikes",
     talismans: "Lord of Blood's Exultation, Graven-Mass Talisman, Dragoncrest Greatshield Talisman, Radagon Icon",
     armor: "Alberich's Set", spells: "Impenetrable Thorns", flask: "At least 5 Cerulean, remaining Crimson",
@@ -319,6 +383,7 @@ export function parseFextralifeBuildPage({ title, wikitext, categories = [] }) {
   const phase = phaseFor(name, fields, wikitext);
   const level = levelFor(fields, phase);
   const statsText = combine(fields.primarystats, fields.secondarystats);
+  const attributeCodes = offensiveStatCodes(name, statsText);
   const weapon = combine(primaryChoice(fields.weapon), primaryChoice(fields.altweapon || fields.alternateweapon));
   const spells = splitItems(fields.spells || "").filter((item) => !/^(?:optional|any other|anything you want|choose from|definitely utilize|two fingers incantations|namely:)\b/i.test(item) && !/[.;].{24,}/.test(item));
   let offhand = combine(primaryChoice(fields.offhand), primaryChoice(fields.shield), primaryChoice(fields.sealstaff));
@@ -356,7 +421,9 @@ export function parseFextralifeBuildPage({ title, wikitext, categories = [] }) {
   return {
     id: `fextra-${anchor}`,
     name,
-    stats: statCodes(statsText),
+    stats: attributeCodes.join(" / ") || "Source stats",
+    attributes: attributeCodes.map((code) => offensiveStats.find(([, candidate]) => candidate === code)[2]),
+    combatStyles: combatStylesFor(name, fields),
     role: pvp ? "Published PvP build" : "Published build",
     playstyle: `${researchedPlaystyle}${legacyPatchBuilds.has(name) ? " The source's obsolete chain-casting note is not used." : ""}`,
     complexity: legacyPatchBuilds.has(name) ? "Published legacy guide" : "Published guide",
@@ -400,6 +467,9 @@ export function parseFextralifeBuilds(pages, { expectedCount = EXPECTED_BUILD_CO
   if (expectedCount === EXPECTED_BUILD_COUNT && missingAdditions.length) throw new Error(`Verified Fextralife additions are missing: ${missingAdditions.join(", ")}`);
   if (expectedCount === EXPECTED_BUILD_COUNT && records.filter((record) => record.tags.includes("pvp")).length !== 4) throw new Error("Expected exactly four published PvP builds.");
   if (expectedCount === EXPECTED_BUILD_COUNT) {
+    const unclassified = records.filter((record) => !researchedBuildNames.has(record.name));
+    if (unclassified.length) throw new Error(`Fextralife builds lack researched combat styles: ${unclassified.map((record) => record.name).join(", ")}`);
+    if (researchedBuildNames.size !== EXPECTED_BUILD_COUNT) throw new Error(`Expected ${EXPECTED_BUILD_COUNT} researched combat classifications, found ${researchedBuildNames.size}.`);
     const genericDescriptions = records.filter((record) => /^Published .* setup using /i.test(record.playstyle));
     if (genericDescriptions.length) throw new Error(`Fextralife source guidance is missing for: ${genericDescriptions.map((record) => record.name).join(", ")}`);
     const duplicateDescriptions = records.filter((record, index) => records.findIndex((candidate) => candidate.playstyle.toLowerCase() === record.playstyle.toLowerCase()) !== index);

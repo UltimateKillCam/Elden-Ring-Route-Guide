@@ -131,7 +131,7 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /Updates from the host/);
   assert.match(page, /catalogueOnly/);
   assert.match(page, /Compare every selectable build before the run controller assigns them/);
-  assert.match(page, /Strength.*Dexterity.*Intelligence.*Faith.*Arcane.*Ranged/);
+  assert.match(page, /\["All builds", "Strength", "Dexterity", "Intelligence", "Faith", "Arcane", "Melee", "Ranged"\]/);
   assert.doesNotMatch(page, /Party role|All roles/);
   assert.match(server, /Only the controller can change expedition settings/);
   assert.match(server, /String\(randomInt\(100000, 1_000_000\)\)/);

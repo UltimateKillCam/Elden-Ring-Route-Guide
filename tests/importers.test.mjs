@@ -36,6 +36,8 @@ test("Fextralife build parsing is bounded and preserves known source corrections
   assert.equal(records[0].publishedLoadout.armour, "Divine Beast Head");
   assert.deepEqual(records[0].guideCategories, ["Strength Builds", "SOTE Builds"]);
   assert.deepEqual(records[0].publishedLoadout.talismans, []);
+  assert.deepEqual(records[0].attributes, ["Strength", "Faith"]);
+  assert.deepEqual(records[0].combatStyles, ["Melee", "Ranged"]);
   assert.throws(() => parseFextralifeBuilds([buildFixture], { expectedCount: 2 }), /Expected 2 Fextralife builds, parsed 1/);
   assert.throws(() => parseBuildLoadoutWikitext("{{Template:BuildLoadout\n| name = Broken"), /not closed/);
 });
@@ -57,6 +59,26 @@ test("Fextralife build parsing resolves compound spell and reward defects", () =
   assert.equal(record.publishedLoadout.weapon, "Sword of Night and Flame, Golden Order Seal & Prince of Death's Staff");
   assert.deepEqual(record.publishedLoadout.spells, ["Explosive Ghostflame", "Terra Magica"]);
   assert.deepEqual(record.publishedLoadout.talismans, ["Rotten Winged Sword Insignia"]);
+});
+
+test("Fextralife classification overrides reject noisy or invented attributes", () => {
+  const fixture = (name, primary, secondary, weapon) => ({
+    title: `${name} Build`,
+    categories: ["Category:PvE Builds"],
+    wikitext: `{{Template:BuildLoadout
+| name = ${name}
+| primarystats = ${primary}
+| secondarystats = ${secondary}
+| weapon = ${weapon}
+}}`,
+  });
+  const [cipher] = parseFextralifeBuilds([fixture("Cipher Prophet", "Faith, 12 Strength for weapons and shields", "10 Dexterity, 7 Intelligence, 10 Arcane (Prophet Initial)", "Cipher Pata")], { expectedCount: 1 });
+  const [thorns] = parseFextralifeBuilds([fixture("Knight of Thorns", "Arcane, Vigor", "Mind, Faith, Intelligence", "Ripple Blade")], { expectedCount: 1 });
+  const [duelist] = parseFextralifeBuilds([fixture("Level 80/90 Sorcerer Duelist", "Intelligence", "Vigor, Mind (do not meet the Strength requirement)", "Azur's Glintstone Staff")], { expectedCount: 1 });
+  assert.deepEqual([cipher.stats, thorns.stats, duelist.stats], ["FAI", "ARC / INT", "INT"]);
+  assert.deepEqual(cipher.attributes, ["Faith"]);
+  assert.deepEqual(thorns.attributes, ["Arcane", "Intelligence"]);
+  assert.deepEqual(duelist.attributes, ["Intelligence"]);
 });
 
 test("Jerp armour parsing rejects truncated, duplicate, and unresolved input", () => {

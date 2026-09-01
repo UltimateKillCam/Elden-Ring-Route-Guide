@@ -8,11 +8,15 @@ import { applyQuestRoutePatches } from "./quest-route";
 export type PhaseKey = "early" | "mid" | "late" | "dlc";
 
 export type BuildSource = { label: string; url: string };
+export type BuildAttribute = "Strength" | "Dexterity" | "Intelligence" | "Faith" | "Arcane";
+export type CombatStyle = "Melee" | "Ranged";
 
 export type Build = {
   id: string;
   name: string;
   stats: string;
+  attributes: BuildAttribute[];
+  combatStyles: CombatStyle[];
   role: string;
   playstyle: string;
   complexity: "Easy" | "Moderate" | "Advanced" | "Published guide" | "Published legacy guide";
@@ -71,6 +75,40 @@ function inferMechanic(role: string, playstyle: string, tags: string[]) {
   return "Skill damage";
 }
 
+const BUILD_ATTRIBUTE_CODES: [BuildAttribute, string][] = [
+  ["Strength", "STR"],
+  ["Dexterity", "DEX"],
+  ["Intelligence", "INT"],
+  ["Faith", "FAI"],
+  ["Arcane", "ARC"],
+];
+
+const attributesForStats = (stats: string) => stats.split("/").flatMap((part) => {
+  const match = BUILD_ATTRIBUTE_CODES.find(([, code]) => new RegExp(`\\b${code}\\b`, "i").test(part));
+  return match ? [match[0]] : [];
+});
+
+const curatedCombatStyles = new Map<string, CombatStyle[]>([
+  ["quality-knight", ["Melee"]],
+  ["colossal-hammer", ["Melee"]],
+  ["powerstance-spears", ["Melee"]],
+  ["guardian-swordspear", ["Melee"]],
+  ["blasphemous-vicar", ["Melee"]],
+  ["halo-reaper", ["Melee", "Ranged"]],
+  ["nebula-astel", ["Melee"]],
+  ["poison-lizard", ["Melee"]],
+  ["thorn-sorcerer", ["Ranged"]],
+  ["lightning-perfumer", ["Melee", "Ranged"]],
+  ["sword-of-darkness", ["Melee"]],
+  ["carian-shield-sorcerer", ["Melee", "Ranged"]],
+  ["wing-stance-duelist", ["Melee"]],
+  ["red-bear", ["Melee"]],
+  ["pure-priestess", ["Ranged"]],
+  ["magma-sorcerer", ["Melee", "Ranged"]],
+  ["black-blade-colossus", ["Melee"]],
+  ["messmer-impaler", ["Melee", "Ranged"]],
+]);
+
 const build = (
   id: string,
   name: string,
@@ -88,6 +126,8 @@ const build = (
   id,
   name,
   stats,
+  attributes: attributesForStats(stats),
+  combatStyles: curatedCombatStyles.get(id) || [/ranged|caster/i.test(role) ? "Ranged" : "Melee"],
   role,
   playstyle,
   complexity,

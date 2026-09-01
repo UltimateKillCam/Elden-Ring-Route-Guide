@@ -118,7 +118,7 @@ const wikiUrl = (item: string) => {
   return `https://eldenring.wiki.fextralife.com/${encodeURIComponent(page)}`;
 };
 
-const ATTRIBUTE_FILTERS = ["All builds", "Strength", "Dexterity", "Intelligence", "Faith", "Arcane", "Ranged"];
+const ATTRIBUTE_FILTERS = ["All builds", "Strength", "Dexterity", "Intelligence", "Faith", "Arcane", "Melee", "Ranged"];
 const COLLECTION_FILTERS = ["All sources", "Curated", "Fextralife", "Other guides", "Meme / cosplay"];
 const FEXTRA_CATEGORY_FILTERS = ["All Fextralife groups", ...Array.from(new Set(selectableBuilds.flatMap((candidate) => candidate.guideCategories || [])))];
 const MECHANIC_FILTERS = ["All focuses", ...Array.from(new Set(selectableBuilds.map((candidate) => candidate.mechanic))).sort()];
@@ -140,19 +140,9 @@ function carriedCheckpointStats(record: Record<string, Partial<AttributeBlock>> 
 }
 
 function buildClassification(build: Build) {
-  const stats = build.stats.toUpperCase();
-  const attributes = ([
-    ["Strength", "STR"],
-    ["Dexterity", "DEX"],
-    ["Intelligence", "INT"],
-    ["Faith", "FAI"],
-    ["Arcane", "ARC"],
-  ] as const).filter(([, code]) => stats.includes(code)).map(([attribute]) => attribute);
-  const text = `${build.name} ${build.stats} ${build.role} ${build.tags.join(" ")} ${Object.values(build.phases).join(" ")}`.toLowerCase();
-  const ranged = /bow|crossbow|ranged|sorcer|spell|incant|caster|projectile|throw|cannon/.test(text);
   return {
-    attributes: attributes.length ? attributes.join(" / ") : "Quality",
-    range: ranged ? "Ranged" : "Melee",
+    attributes: build.attributes.length ? build.attributes.join(" / ") : "Not specified",
+    range: build.combatStyles.join(" / "),
   };
 }
 
@@ -176,10 +166,9 @@ function buildSearchText(build: Build) {
 }
 
 function matchesBuildFilter(build: Build, filter: string) {
-  const classification = buildClassification(build);
   if (filter === "All builds") return true;
-  if (filter === "Ranged") return classification.range === "Ranged";
-  return classification.attributes.includes(filter);
+  if (filter === "Melee" || filter === "Ranged") return build.combatStyles.includes(filter);
+  return build.attributes.includes(filter as Build["attributes"][number]);
 }
 
 function matchesCollection(build: Build, collection: string) {

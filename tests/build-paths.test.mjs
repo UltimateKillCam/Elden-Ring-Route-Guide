@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import test, { after } from "node:test";
 import { createServer } from "vite";
 
 const PHASES = ["early", "mid", "late", "dlc"];
 const DAMAGE_STATS = ["STR", "DEX", "INT", "FAI", "ARC"];
+const ATTRIBUTE_NAMES = { STR: "Strength", DEX: "Dexterity", INT: "Intelligence", FAI: "Faith", ARC: "Arcane" };
 const GENERIC_EQUIPMENT_WORDS = new Set(["and", "with", "weapon", "weapons", "sourced", "bridge", "utility", "sidearm", "compatible", "early", "late"]);
 
 let cataloguePromise;
@@ -115,6 +117,12 @@ test("the selectable catalogue has stable contiguous numbers and distinct resear
     const descriptionsMissingEquipment = [];
     for (const build of catalogue.selectableBuilds) {
       assert.equal(catalogue.catalogueNumber({ ...build }), catalogue.catalogueNumber(build), `${build.name} numbering depends on object identity`);
+      assert.equal(new Set(build.attributes).size, build.attributes.length, `${build.name} repeats an attribute tag`);
+      assert.equal(new Set(build.combatStyles).size, build.combatStyles.length, `${build.name} repeats a combat-style tag`);
+      assert.ok(build.attributes.every((attribute) => Object.values(ATTRIBUTE_NAMES).includes(attribute)), `${build.name} has an invalid attribute tag`);
+      assert.ok(build.combatStyles.length > 0 && build.combatStyles.every((style) => ["Melee", "Ranged"].includes(style)), `${build.name} has invalid combat styles`);
+      const expectedAttributes = build.stats.split("/").map((part) => part.trim()).filter((code) => ATTRIBUTE_NAMES[code]).map((code) => ATTRIBUTE_NAMES[code]);
+      assert.deepEqual(build.attributes, expectedAttributes, `${build.name} attribute tags disagree with its researched stats`);
       assert.ok(build.playstyle.length >= 600, `${build.name} lacks a detailed combat description`);
       assert.ok((build.playstyle.match(/[.!?](?:["']|$|\s)/g) || []).length >= 5, `${build.name} needs at least five substantive sentences`);
       assert.doesNotMatch(build.playstyle, /^Published .* setup using /i, `${build.name} retained generic importer prose`);
@@ -132,6 +140,37 @@ test("the selectable catalogue has stable contiguous numbers and distinct resear
       }
     }
     assert.deepEqual(descriptionsMissingEquipment, [], `descriptions do not explain their defining equipment: ${descriptionsMissingEquipment.join(", ")}`);
+    const styleCount = (collection, styles) => catalogue.selectableBuilds.filter((build) => (!collection || build.collection === collection) && build.combatStyles.join("/") === styles).length;
+    assert.deepEqual({
+      melee: styleCount(undefined, "Melee"),
+      ranged: styleCount(undefined, "Ranged"),
+      hybrid: styleCount(undefined, "Melee/Ranged"),
+    }, { melee: 112, ranged: 21, hybrid: 67 });
+    assert.deepEqual({
+      melee: styleCount("Fextralife", "Melee"),
+      ranged: styleCount("Fextralife", "Ranged"),
+      hybrid: styleCount("Fextralife", "Melee/Ranged"),
+    }, { melee: 92, ranged: 18, hybrid: 61 });
+    const styleManifest = catalogue.selectableBuilds.map((build) => `${build.id}:${build.combatStyles.join("+")}`).join("\n");
+    assert.equal(createHash("sha256").update(styleManifest).digest("hex"), "90424524acc03ed25dcace8d70bf16335369e6aa32909e10c97e20b8278a146a", "a researched per-build combat style changed");
+    for (const [id, rangedTool] of [
+      ["fextra-grimreaper", "Swarm of Flies"],
+      ["fextra-magus", "Glintstone Pebble"],
+      ["fextra-shadowsunflowerblossom", "Elden Stars"],
+    ]) {
+      const build = catalogue.selectableBuilds.find((candidate) => candidate.id === id);
+      assert.deepEqual(build.combatStyles, ["Melee", "Ranged"]);
+      assert.ok(build.publishedLoadout.spells.includes(rangedTool), `${build.name} lacks its researched ranged tool`);
+    }
+    assert.deepEqual(catalogue.selectableBuilds.filter((build) => !build.attributes.length).map((build) => build.id), [
+      "meme-sonic-lightning-ram",
+      "meme-minecraft-steve",
+      "meme-soldier-of-godrick",
+      "meme-bubble-boy",
+    ], "undocumented source stats must not be presented as Quality");
+    assert.deepEqual(catalogue.selectableBuilds.find((build) => build.id === "fextra-cipherprophet").attributes, ["Faith"]);
+    assert.deepEqual(catalogue.selectableBuilds.find((build) => build.id === "fextra-knightofthorns").attributes, ["Arcane", "Intelligence"]);
+    assert.deepEqual(catalogue.selectableBuilds.find((build) => build.id === "fextra-level8090sorcererduelist").attributes, ["Intelligence"]);
     assert.equal(new Set(catalogue.selectableBuilds.map((build) => build.playstyle.toLowerCase())).size, 200, "build descriptions must be unique");
     assert.equal(catalogue.catalogueNumber("meme-jar-jar"), 200);
   } finally {
