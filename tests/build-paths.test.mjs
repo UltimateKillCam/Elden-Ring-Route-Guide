@@ -4,6 +4,7 @@ import { createServer } from "vite";
 
 const PHASES = ["early", "mid", "late", "dlc"];
 const DAMAGE_STATS = ["STR", "DEX", "INT", "FAI", "ARC"];
+const GENERIC_EQUIPMENT_WORDS = new Set(["and", "with", "weapon", "weapons", "sourced", "bridge", "utility", "sidearm", "compatible", "early", "late"]);
 
 let cataloguePromise;
 let catalogueServer;
@@ -111,15 +112,26 @@ test("the selectable catalogue has stable contiguous numbers and distinct resear
   try {
     assert.equal(catalogue.selectableBuilds.length, 200);
     assert.deepEqual(catalogue.selectableBuilds.map((build) => catalogue.catalogueNumber(build)), Array.from({ length: 200 }, (_, index) => index + 1));
+    const descriptionsMissingEquipment = [];
     for (const build of catalogue.selectableBuilds) {
       assert.equal(catalogue.catalogueNumber({ ...build }), catalogue.catalogueNumber(build), `${build.name} numbering depends on object identity`);
-      assert.ok(build.playstyle.length >= 200, `${build.name} lacks a detailed combat description`);
+      assert.ok(build.playstyle.length >= 600, `${build.name} lacks a detailed combat description`);
+      assert.ok((build.playstyle.match(/[.!?](?:["']|$|\s)/g) || []).length >= 5, `${build.name} needs at least five substantive sentences`);
       assert.doesNotMatch(build.playstyle, /^Published .* setup using /i, `${build.name} retained generic importer prose`);
+      const publishedEquipment = build.publishedLoadout
+        ? [build.publishedLoadout.weapon, build.publishedLoadout.offhand, build.publishedLoadout.skill, ...build.publishedLoadout.spells]
+        : [];
+      const equipmentWords = [...PHASES.map((phase) => build.phases[phase]), ...publishedEquipment]
+        .flatMap((value) => value.match(/[A-Za-z][A-Za-z'-]{3,}/g) || [])
+        .map((word) => word.toLowerCase())
+        .filter((word) => !GENERIC_EQUIPMENT_WORDS.has(word));
+      if (!equipmentWords.some((word) => build.playstyle.toLowerCase().includes(word))) descriptionsMissingEquipment.push(build.name);
       for (const phase of PHASES) {
         const stage = catalogue.stageLoadout(build, phase);
         assert.ok(stage.weapon && stage.skill && stage.stats, `${build.name} ${phase} lacks actionable progression`);
       }
     }
+    assert.deepEqual(descriptionsMissingEquipment, [], `descriptions do not explain their defining equipment: ${descriptionsMissingEquipment.join(", ")}`);
     assert.equal(new Set(catalogue.selectableBuilds.map((build) => build.playstyle.toLowerCase())).size, 200, "build descriptions must be unique");
     assert.equal(catalogue.catalogueNumber("meme-jar-jar"), 200);
   } finally {

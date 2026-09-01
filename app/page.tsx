@@ -148,7 +148,7 @@ function buildClassification(build: Build) {
     ["Faith", "FAI"],
     ["Arcane", "ARC"],
   ] as const).filter(([, code]) => stats.includes(code)).map(([attribute]) => attribute);
-  const text = `${build.name} ${build.stats} ${build.tags.join(" ")} ${build.playstyle} ${Object.values(build.phases).join(" ")}`.toLowerCase();
+  const text = `${build.name} ${build.stats} ${build.role} ${build.tags.join(" ")} ${Object.values(build.phases).join(" ")}`.toLowerCase();
   const ranged = /bow|crossbow|ranged|sorcer|spell|incant|caster|projectile|throw|cannon/.test(text);
   return {
     attributes: attributes.length ? attributes.join(" / ") : "Quality",
@@ -1297,7 +1297,7 @@ function FullBuildDetails({ build, onClose, assignLabel, onAssign }: { build: Bu
       <section className="loadout-dialog" role="dialog" aria-modal="true" aria-label={`${build.name} full build`}>
         <button className="drawer-close" onClick={onClose} aria-label="Close build detail">×</button>
         <div className="loadout-title">
-          <div><p className="eyebrow">Build {catalogueNumber(build)} of {selectableBuilds.length}</p><h2>{build.name}</h2><p>{build.playstyle}</p></div>
+          <div><p className="eyebrow">Build {catalogueNumber(build)} of {selectableBuilds.length}</p><h2>{build.name}</h2><p className="drawer-playstyle">{build.playstyle}</p></div>
           <div className="drawer-meta"><span>{build.collection}</span><span>{classification.attributes}</span><span>{classification.range}</span><span>{build.mechanic}</span><span>Start: {plannedClass}{build.startingClass === "Not specified" ? " · calculated" : ""}</span><span>{build.complexity}</span></div>
         </div>
         <a className="build-source" href={build.source.url} target="_blank" rel="noreferrer">Source: {build.source.label} ↗</a>
@@ -1388,7 +1388,7 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
             const classification = buildClassification(candidate);
             return <article className={selected ? "selected" : ""} key={candidate.id}>
               <header><div><span>{String(catalogueNumber(candidate)).padStart(3, "0")}</span><small>{candidate.complexity}</small></div><h3>{candidate.name}</h3><p>{classification.attributes} · {classification.range}</p><b className="collection-pill">{candidate.collection}</b>{candidate.guideCategories?.length ? <p className="guide-groups">{candidate.guideCategories.join(" · ")}</p> : null}</header>
-              <p className="setup-playstyle">{candidate.playstyle}</p>
+              <p className="setup-playstyle build-summary">{candidate.playstyle}</p>
               <div className="build-facts"><span><small>Starting class</small>{plannerStartingClass(candidate)}{candidate.startingClass === "Not specified" ? " (calculated)" : ""}</span><span><small>Combat focus</small>{candidate.mechanic}</span></div>
               <div className="weapon-timeline">{(["early", "mid", "late", "dlc"] as PhaseKey[]).map((phase) => { const stage = stageLoadout(candidate, phase); return <div key={phase}><small>{phase}{stage.borrowedFrom ? " · sourced bridge" : ""}</small><span>{stage.weapon}</span><em>{stage.skill}</em></div>; })}</div>
               <footer><button type="button" onClick={() => setDetail(candidate)}>Full loadout</button><button type="button" className={selected ? "assigned" : ""} onClick={() => chooseBuild(candidate)}>{selected ? "Assigned" : `Assign to ${players[activePlayer].name}`}</button></footer>
@@ -1921,7 +1921,7 @@ function CodexView({ expedition, catalogueOnly = false }: { expedition?: Expedit
           const classification = buildClassification(candidate);
           return <article className="build-card" key={candidate.id} onClick={() => setSelected(candidate)} tabIndex={0} onKeyDown={(event) => { if (event.key === "Enter") setSelected(candidate); }}>
             <div className="build-card-top"><span className="build-number">{String(catalogueNumber(candidate)).padStart(3, "0")}</span><div className="difficulty"><i />{candidate.complexity}</div></div>
-            <h3>{candidate.name}</h3><p className="stats">{classification.attributes} · {classification.range}</p><b className="collection-pill">{candidate.collection}</b>{candidate.guideCategories?.length ? <p className="guide-groups">{candidate.guideCategories.join(" · ")}</p> : null}<p>{candidate.playstyle}</p>
+            <h3>{candidate.name}</h3><p className="stats">{classification.attributes} · {classification.range}</p><b className="collection-pill">{candidate.collection}</b>{candidate.guideCategories?.length ? <p className="guide-groups">{candidate.guideCategories.join(" · ")}</p> : null}<p className="build-summary">{candidate.playstyle}</p>
             <div className="build-facts"><span><small>Starting class</small>{plannerStartingClass(candidate)}{candidate.startingClass === "Not specified" ? " (calculated)" : ""}</span><span><small>Combat focus</small>{candidate.mechanic}</span></div>
             <div className="mini-phases"><span>{stageLoadout(candidate, "early").weapon}</span><i>→</i><span>{stageLoadout(candidate, "dlc").weapon}</span></div>
             <div className="tag-row">{candidate.tags.slice(0, 3).map((tag) => <span key={tag}>{tag}</span>)}</div>

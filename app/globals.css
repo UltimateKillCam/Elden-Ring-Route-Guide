@@ -386,7 +386,7 @@ body::before {
 .codex-tools label > span { display: block; margin-bottom: 7px; color: #66625b; font-size: 8px; letter-spacing: .12em; text-transform: uppercase; }
 .codex-tools input, .codex-tools select { height: 43px; padding: 0 13px; }
 .build-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
-.build-card { position: relative; min-height: 330px; display: flex; flex-direction: column; padding: 21px; border: 1px solid var(--line); background: linear-gradient(145deg, #1a1b17, #151612); cursor: pointer; transition: .2s ease; outline: none; }
+.build-card { position: relative; min-width: 0; min-height: 330px; display: flex; flex-direction: column; padding: 21px; border: 1px solid var(--line); background: linear-gradient(145deg, #1a1b17, #151612); cursor: pointer; transition: .2s ease; outline: none; }
 .build-card:hover, .build-card:focus { transform: translateY(-3px); border-color: rgba(201,164,95,.43); box-shadow: 0 15px 40px rgba(0,0,0,.25); }
 .build-card-top { display: flex; align-items: center; justify-content: space-between; }
 .build-number { color: #5c594f; font-family: Georgia, serif; font-size: 19px; }
@@ -397,6 +397,7 @@ body::before {
 .guide-groups { margin: 5px 0 0 !important; color: #777165 !important; font-size: 8px !important; line-height: 1.35 !important; }
 .build-card .stats { color: var(--gold); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; }
 .build-card > p:not(.stats) { margin: 11px 0 15px; color: #7e7a71; font-size: 11px; line-height: 1.55; }
+.build-summary { min-width: 0; display: -webkit-box; overflow: hidden; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
 .build-card .build-facts { margin: 0 0 12px; }
 .mini-phases { display: grid; grid-template-columns: 1fr 16px 1fr; align-items: center; gap: 5px; margin-top: auto; padding: 10px; border: 1px solid var(--line); background: #11120f; color: #918b80; font-size: 9px; line-height: 1.3; }
 .mini-phases i { color: #5d584c; font-style: normal; text-align: center; }
@@ -700,10 +701,10 @@ body::before {
   .codex-page, .party-page, .selected-builds-page { padding: 35px 14px 65px; }
   .selected-build-heading { flex-direction: column; }
   .selected-build-heading dl { min-width: 0; }
-  .page-heading { align-items: start; }
+  .page-heading { align-items: start; flex-direction: column; gap: 18px; }
   .codex-count, .progress-medallion { min-width: 75px; height: 75px; }
   .codex-count strong, .progress-medallion strong { font-size: 21px; }
-  .codex-tools, .build-grid, .party-cards { grid-template-columns: 1fr; }
+  .codex-tools, .build-grid, .party-cards { grid-template-columns: minmax(0, 1fr); }
   .build-card { min-height: 310px; }
   .build-drawer { padding: 54px 22px; }
   .build-drawer h2 { font-size: 36px; }

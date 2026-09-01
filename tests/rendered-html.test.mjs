@@ -29,11 +29,12 @@ test("server-renders the finished expedition setup", async () => {
 });
 
 test("ships the curated, complete wiki and sourced build catalogues with the full remembrance route", async () => {
-  const [data, wikiBuilds, sourcedBuilds, memeBuilds] = await Promise.all([
+  const [data, wikiBuilds, sourcedBuilds, memeBuilds, styles] = await Promise.all([
     readFile(new URL("../app/data.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/wiki-builds.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/sourced-builds.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/meme-builds.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.equal((data.match(/^\s*build\(/gm) ?? []).length, 100);
@@ -98,8 +99,11 @@ test("ships the curated, complete wiki and sourced build catalogues with the ful
   assert.doesNotMatch(sourcedBuilds, /Guard counters/);
   assert.match(data, /build\("quality-knight"[\s\S]*?\["Longsword", "Claymore", "Quality Great .*?", "Milady \+ Wing Stance"\]/);
   assert.match(data, /build\("colossal-hammer"[\s\S]*?\["Large Club", "Great Club", "Giant-Crusher", "Anvil Hammer"\]/);
-  assert.match(sourcedBuilds, /Build the run around Taker’s Flames/);
+  assert.match(sourcedBuilds, /Taker’s Flames is the engine/);
   assert.match(sourcedBuilds, /Bloodhound’s Fang Finesse/);
+  assert.match(page, /className="build-summary"/);
+  assert.match(page, /className="drawer-playstyle"/);
+  assert.match(styles, /\.build-summary[\s\S]*?-webkit-line-clamp:\s*4/);
 });
 
 test("uses plain product copy and the revised social card", async () => {
