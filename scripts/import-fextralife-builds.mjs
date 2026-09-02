@@ -161,12 +161,11 @@ const hybridBuilds = new Set([
 
 const researchedBuildNames = new Set([...meleeBuilds, ...rangedBuilds, ...hybridBuilds]);
 
-function combatStylesFor(name, fields) {
+function combatStylesFor(name) {
   if (meleeBuilds.has(name)) return ["Melee"];
   if (rangedBuilds.has(name)) return ["Ranged"];
   if (hybridBuilds.has(name)) return ["Melee", "Ranged"];
-  const source = Object.values(fields).join(" ");
-  return /\b(?:bow|crossbow|staff|seal|spell|sorcer|incant)\b/i.test(source) ? ["Ranged"] : ["Melee"];
+  throw new Error(`Fextralife build lacks researched combat styles: ${name}`);
 }
 
 function mechanicFor(value) {
@@ -423,7 +422,7 @@ export function parseFextralifeBuildPage({ title, wikitext, categories = [] }) {
     name,
     stats: attributeCodes.join(" / ") || "Source stats",
     attributes: attributeCodes.map((code) => offensiveStats.find(([, candidate]) => candidate === code)[2]),
-    combatStyles: combatStylesFor(name, fields),
+    combatStyles: combatStylesFor(name),
     role: pvp ? "Published PvP build" : "Published build",
     playstyle: `${researchedPlaystyle}${legacyPatchBuilds.has(name) ? " The source's obsolete chain-casting note is not used." : ""}`,
     complexity: legacyPatchBuilds.has(name) ? "Published legacy guide" : "Published guide",

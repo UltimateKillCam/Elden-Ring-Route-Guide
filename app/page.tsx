@@ -1,7 +1,7 @@
 "use client";
 
-import { Component, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from "react";
-import { builds, catalogueNumber, selectableBuilds, chapters, itemGuides, sources, stageLoadout, type Build, type Chapter, type PhaseKey } from "./data";
+import { Component, useCallback, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from "react";
+import { builds, catalogueNumber, selectableBuilds, chapters, itemGuides, recommendStartingClass, sources, stageLoadout, type Build, type Chapter, type PhaseKey } from "./data";
 import { findMapItem, findMapItems, findMapRoutePoint, type MapItem } from "./map-items";
 import { deferredPickupGate, literalItemName, PHASE_START, type PickupGate } from "./progression";
 import { splitArmourSpecification } from "./equipment-data";
@@ -39,7 +39,8 @@ import {
 type Mode = "solo" | "standard" | "seamless";
 type View = "route" | "selected" | "codex" | "party";
 type LanMode = "none" | "controller" | "follower";
-type Player = { id: string; name: string; buildId: string; color: string };
+type StartingClass = "Vagabond" | "Warrior" | "Hero" | "Bandit" | "Astrologer" | "Prophet" | "Samurai" | "Prisoner" | "Confessor" | "Wretch";
+type Player = { id: string; name: string; buildId: string; color: string; startingClass?: StartingClass };
 type Expedition = {
   schema: 1;
   saveId?: string;
@@ -70,6 +71,10 @@ type RemoteExpeditionState = {
   error?: string;
 };
 type LanInfo = { joinCode: string; address: string; players: Array<{ id: string; name: string; code: string }> };
+type SessionChannel = "none" | "lan" | "public";
+type PublicSlot = { playerId: string; claimed: boolean; name?: string; buildId?: string; startingClass?: StartingClass };
+type PublicSessionSnapshot = RemoteExpeditionState & { code: string; mode: Mode; playerCount: number; slots: PublicSlot[]; hostToken?: string; guestToken?: string };
+type PublicSessionState = { code: string; token: string; role: "controller" | "follower"; playerId?: string };
 type SaveLibrary = { activeId: string | null; saves: Record<string, Expedition> };
 type Task = {
   id: string;
@@ -89,11 +94,15 @@ type Task = {
 };
 
 const PLAYER_COLORS = ["#d8ad62", "#7db6a8", "#b987aa", "#7698c8", "#c5775e", "#a7a36c"];
+const STARTING_CLASSES: StartingClass[] = ["Vagabond", "Warrior", "Hero", "Bandit", "Astrologer", "Prophet", "Samurai", "Prisoner", "Confessor", "Wretch"];
 const STORAGE_KEY = "tarnished-together-expedition-v1";
 const SAVE_LIBRARY_KEY = "tarnished-together-save-library-v2";
+const PUBLIC_SESSION_STORAGE_KEY = "tarnished-together-public-session-v1";
+const PUBLIC_SESSION_API = String(process.env.NEXT_PUBLIC_SESSION_API_BASE || "").replace(/\/$/, "");
 
 const newSaveId = () => `run-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 const responseJson = <T,>(response: Response) => response.json() as Promise<T>;
+const publicSessionUrl = (path: string) => `${PUBLIC_SESSION_API}${path}`;
 
 class RouteErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
@@ -105,13 +114,16 @@ class RouteErrorBoundary extends Component<{ children: ReactNode }, { failed: bo
   }
 }
 
-const makePlayers = (count: number): Player[] =>
-  Array.from({ length: count }, (_, index) => ({
+const makePlayers = (count: number): Player[] => Array.from({ length: count }, (_, index) => {
+  const build = selectableBuilds[index % selectableBuilds.length];
+  return {
     id: `player-${index + 1}`,
     name: `Tarnished ${index + 1}`,
-    buildId: selectableBuilds[index % selectableBuilds.length].id,
+    buildId: build.id,
     color: PLAYER_COLORS[index],
-  }));
+    startingClass: defaultPlayerStartingClass(build),
+  };
+});
 
 const wikiUrl = (item: string) => {
   const page = item.startsWith("Golden Seed") ? "Golden Seed" : item.startsWith("Sacred Tear") ? "Sacred Tear" : item.replace(/ \+.*/, "").replace(/ \/.*/, "");
@@ -148,6 +160,18 @@ function buildClassification(build: Build) {
 
 function plannerStartingClass(build: Build): Build["startingClass"] {
   return build.startingClass === "Not specified" ? planBuildStatTarget(build, 170).origin.name as Build["startingClass"] : build.startingClass;
+}
+
+function defaultPlayerStartingClass(build: Build): StartingClass {
+  const planned = plannerStartingClass(build);
+  if (STARTING_CLASSES.includes(planned as StartingClass)) return planned as StartingClass;
+  const recommended = recommendStartingClass(build.stats, build.tags);
+  return STARTING_CLASSES.includes(recommended as StartingClass) ? recommended as StartingClass : "Wretch";
+}
+
+function buildForPlayer(player: Player) {
+  const build = builds.find((candidate) => candidate.id === player.buildId) || selectableBuilds[0];
+  return player.startingClass ? { ...build, startingClass: player.startingClass } : build;
 }
 
 function buildSearchText(build: Build) {
@@ -903,7 +927,7 @@ function runeSupportPlan(expedition: Expedition): Record<string, RuneSupportChap
       && playersWithRecordedLevels.every((player) => (carriedCheckpointNumber(expedition.checkpointLevels, chapterIndex, player.id) ?? 0) >= targets.runeLevel);
 
     for (const player of expedition.players) {
-      const selected = builds.find((candidate) => candidate.id === player.buildId)!;
+      const selected = buildForPlayer(player);
       const loadout = stageLoadout(selected, phaseForChapter(chapter));
       const plannedClass = selected.startingClass === "Not specified" ? planBuildStatTarget(selected, 170).origin.name : selected.startingClass;
       const plan = planBuildStatTarget({ ...selected, startingClass: plannedClass }, targets.runeLevel, weaponRequirements(loadout.weapon, loadout.offhand));
@@ -938,7 +962,7 @@ function runeSupportPlan(expedition: Expedition): Record<string, RuneSupportChap
     const levels: Record<string, number> = {};
     const upgrades: Record<string, number> = {};
     for (const player of expedition.players) {
-      const selected = builds.find((candidate) => candidate.id === player.buildId)!;
+      const selected = buildForPlayer(player);
       const loadout = stageLoadout(selected, phaseForChapter(chapter));
       const plannedClass = selected.startingClass === "Not specified" ? planBuildStatTarget(selected, 170).origin.name : selected.startingClass;
       const plan = planBuildStatTarget({ ...selected, startingClass: plannedClass }, targets.runeLevel, weaponRequirements(loadout.weapon, loadout.offhand));
@@ -997,7 +1021,7 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition, su
   }));
 
   for (const player of expedition.players) {
-    const selected = builds.find((candidate) => candidate.id === player.buildId)!;
+    const selected = buildForPlayer(player);
     const currentLoadout = stageLoadout(selected, phase);
     const plannedClass = selected.startingClass === "Not specified"
       ? planBuildStatTarget(selected, 170).origin.name
@@ -1114,7 +1138,7 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition, su
 
 function tasksForChapter(chapter: Chapter, expedition: Expedition, support?: Record<string, RuneSupportChapter>): Task[] {
   const tasks: Task[] = [];
-  const selectedBuilds = expedition.players.map((player) => builds.find((candidate) => candidate.id === player.buildId)).filter((candidate): candidate is Build => Boolean(candidate));
+  const selectedBuilds = expedition.players.map(buildForPlayer);
   const requiredQuestTracks = new Set(requiredQuestTracksForParty(selectedBuilds));
   const enabledQuestTracks = new Set<QuestTrackId>(expandQuestTrackIds(expedition.optionalQuestTracks === undefined ? ALL_OPTIONAL_QUEST_TRACK_IDS : expedition.optionalQuestTracks));
   requiredQuestTracks.forEach((track) => enabledQuestTracks.add(track));
@@ -1163,7 +1187,7 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition, support?: Rec
   if (chapter.phase && PHASE_START[chapter.phase] === chapter.id) {
     const pickupTasks: Task[] = [];
     expedition.players.forEach((player) => {
-      const selected = builds.find((candidate) => candidate.id === player.buildId)!;
+      const selected = buildForPlayer(player);
       const loadout = stageLoadout(selected, chapter.phase!);
       const playerPickupTasks: Task[] = [];
       const phaseIndex = PHASE_ORDER.indexOf(chapter.phase!);
@@ -1207,7 +1231,7 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition, support?: Rec
 
   const deferredTasks: Task[] = [];
   expedition.players.forEach((player) => {
-    const selected = builds.find((candidate) => candidate.id === player.buildId)!;
+    const selected = buildForPlayer(player);
     const seen = new Set<string>();
     PHASE_ORDER.forEach((phase) => {
       const loadout = stageLoadout(selected, phase);
@@ -1300,13 +1324,14 @@ function FullBuildDetails({ build, onClose, assignLabel, onAssign }: { build: Bu
   );
 }
 
-function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => void; imported: (event: React.ChangeEvent<HTMLInputElement>) => void }) {
-  const [mode, setMode] = useState<Mode>("standard");
-  const [count, setCount] = useState(2);
+function Setup({ onCreate, imported, initialMode = "solo", initialPlayerCount = 1, publicCode, publicBusy, publicError, onCoopSettings, onJoinCode }: { onCreate: (expedition: Expedition) => void; imported: (event: React.ChangeEvent<HTMLInputElement>) => void; initialMode?: Mode; initialPlayerCount?: number; publicCode?: string; publicBusy?: boolean; publicError?: string; onCoopSettings?: (mode: Mode, playerCount: number) => void; onJoinCode?: (code: string) => void }) {
+  const startingCount = initialMode === "solo" ? 1 : Math.max(2, Math.min(6, initialPlayerCount));
+  const [mode, setMode] = useState<Mode>(initialMode);
+  const [count, setCount] = useState(startingCount);
   const [name, setName] = useState("Our path to the Elden Ring");
   const [lossRate, setLossRate] = useState(20);
   const [levelOffset, setLevelOffset] = useState(0);
-  const [players, setPlayers] = useState<Player[]>(makePlayers(2));
+  const [players, setPlayers] = useState<Player[]>(makePlayers(startingCount));
   const [activePlayer, setActivePlayer] = useState(0);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All builds");
@@ -1316,9 +1341,14 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
   const [sort, setSort] = useState("Catalogue order");
   const [detail, setDetail] = useState<Build | null>(null);
   const [optionalQuestTracks, setOptionalQuestTracks] = useState<QuestTrackId[]>([]);
+  const [joinEntry, setJoinEntry] = useState("");
+
+  useEffect(() => {
+    onCoopSettings?.(mode, count);
+  }, [mode, count, onCoopSettings]);
 
   const requiredQuestTracks = useMemo(() => requiredQuestTracksForParty(
-    players.map((player) => builds.find((candidate) => candidate.id === player.buildId)).filter((candidate): candidate is Build => Boolean(candidate)),
+    players.map(buildForPlayer),
   ), [players]);
   const activeQuestTracks = new Set(expandQuestTrackIds([...optionalQuestTracks, ...requiredQuestTracks]));
 
@@ -1340,7 +1370,7 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
   };
 
   const chooseBuild = (candidate: Build) => {
-    updatePlayer(activePlayer, { buildId: candidate.id });
+    updatePlayer(activePlayer, { buildId: candidate.id, startingClass: defaultPlayerStartingClass(candidate) });
     setDetail(null);
   };
 
@@ -1348,11 +1378,15 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
     <main className="setup-page">
       <header className="setup-header">
         <div><strong>Tarnished Together</strong><span>Elden Ring co-op route planner</span></div>
-        <label className="plain-import">Import saved run<input type="file" accept="application/json" onChange={imported} /></label>
+        <div className="setup-header-actions">
+          {onJoinCode && <form className="quick-join" onSubmit={(event) => { event.preventDefault(); if (joinEntry.length === 6 && !publicBusy) onJoinCode(joinEntry); }}><label>Join code<input aria-label="Join a co-op run" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} placeholder="000000" value={joinEntry} onChange={(event) => setJoinEntry(event.target.value.replace(/\D/g, "").slice(0, 6))} /></label><button type="submit" disabled={joinEntry.length !== 6 || publicBusy}>Join</button></form>}
+          <label className="plain-import">Import saved run<input type="file" accept="application/json" onChange={imported} /></label>
+        </div>
       </header>
 
       <section className="run-settings" aria-label="Run settings">
         <div className="settings-title"><span>1</span><div><h1>Set up the party</h1><p>Choose the multiplayer rules and name each player.</p></div></div>
+        {mode !== "solo" && onCoopSettings && <div className={`public-share-card ${publicCode ? "ready" : ""}`}><div><small>Online co-op room</small><strong>{publicCode || (publicBusy ? "Creating join code..." : "Join code unavailable")}</strong></div><p>{publicCode ? "Share this six-digit code. Player two can join from the top of the GitHub Pages app and choose their own build and starting class." : publicError || "Connecting to the public session service."}{!publicCode && !publicBusy && publicError && <button type="button" onClick={() => onCoopSettings(mode, count)}>Retry room</button>}</p></div>}
         <div className="settings-grid">
           <label><span>Run name</span><input value={name} onChange={(event) => setName(event.target.value)} /></label>
           <div><span className="settings-label">Mode</span><div className="plain-segmented"><button type="button" className={mode === "solo" ? "active" : ""} onClick={() => { setMode("solo"); changeCount(1); }}>Solo</button><button type="button" className={mode === "standard" ? "active" : ""} onClick={() => { setMode("standard"); if (count < 2) changeCount(2); }}>Standard co-op</button><button type="button" className={mode === "seamless" ? "active" : ""} onClick={() => { setMode("seamless"); if (count < 2) changeCount(2); }}>Seamless Co-op</button></div></div>
@@ -1362,8 +1396,8 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
         </div>
         <div className="player-setup-list">
           {players.map((player, index) => {
-            const selected = builds.find((candidate) => candidate.id === player.buildId)!;
-            return <div className={activePlayer === index ? "active" : ""} key={player.id} style={{ "--player": player.color } as React.CSSProperties}><button type="button" onClick={() => setActivePlayer(index)}><i>{index + 1}</i><span><strong>{player.name}</strong><small>{selected.name}</small></span><b>{activePlayer === index ? "Choosing now" : "Edit build"}</b></button><input aria-label={`Player ${index + 1} name`} value={player.name} onChange={(event) => updatePlayer(index, { name: event.target.value })} /></div>;
+            const selected = buildForPlayer(player);
+            return <div className={activePlayer === index ? "active" : ""} key={player.id} style={{ "--player": player.color } as React.CSSProperties}><button type="button" onClick={() => setActivePlayer(index)}><i>{index + 1}</i><span><strong>{player.name}</strong><small>{selected.name}</small></span><b>{activePlayer === index ? "Choosing now" : "Edit build"}</b></button><div className="player-identity-fields"><input aria-label={`Player ${index + 1} name`} value={player.name} onChange={(event) => updatePlayer(index, { name: event.target.value })} /><select aria-label={`Player ${index + 1} starting class`} value={player.startingClass || defaultPlayerStartingClass(selected)} onChange={(event) => updatePlayer(index, { startingClass: event.target.value as StartingClass })}>{STARTING_CLASSES.map((startingClass) => <option key={startingClass}>{startingClass}</option>)}</select></div></div>;
           })}
         </div>
       </section>
@@ -1407,7 +1441,7 @@ function Setup({ onCreate, imported }: { onCreate: (expedition: Expedition) => v
         </div>)}
       </section>
 
-      <div className="setup-actions"><div><strong>{players.length} {players.length === 1 ? "player" : "players"} ready</strong><span>{mode === "solo" ? "Solo route with no co-op rune reduction." : mode === "standard" ? "Standard co-op; world steps will be repeated per player." : "Seamless Co-op; host and individual pickups are tracked separately."} {activeQuestTracks.size} optional quest track{activeQuestTracks.size === 1 ? "" : "s"}. Rune plans keep a {lossRate}% loss allowance and run {levelOffset ? `${levelOffset} levels below guide pace` : "at guide pace"}.</span></div><button type="button" onClick={() => onCreate({ schema: 1, saveId: newSaveId(), activeChapterId: chapters[0].id, name: name.trim() || "Untitled expedition", mode, players, hostId: players[0].id, completed: {}, createdAt: new Date().toISOString(), lossRate, levelOffset, checkpointRunes: {}, checkpointLevels: {}, checkpointStats: {}, checkpointWeaponLevels: {}, runeBossSelections: {}, optionalQuestTracks: Array.from(activeQuestTracks) })}>Create route</button></div>
+      <div className="setup-actions"><div><strong>{players.length} {players.length === 1 ? "player" : "players"} ready</strong><span>{mode === "solo" ? "Solo route with no co-op rune reduction." : mode === "standard" ? "Standard co-op; world steps will be repeated per player." : "Seamless Co-op; host and individual pickups are tracked separately."} {activeQuestTracks.size} optional quest track{activeQuestTracks.size === 1 ? "" : "s"}. Rune plans keep a {lossRate}% loss allowance and run {levelOffset ? `${levelOffset} levels below guide pace` : "at guide pace"}.</span></div><button type="button" disabled={Boolean(onCoopSettings) && (publicBusy || (mode !== "solo" && !publicCode))} onClick={() => onCreate({ schema: 1, saveId: newSaveId(), activeChapterId: chapters[0].id, name: name.trim() || "Untitled expedition", mode, players, hostId: players[0].id, completed: {}, createdAt: new Date().toISOString(), lossRate, levelOffset, checkpointRunes: {}, checkpointLevels: {}, checkpointStats: {}, checkpointWeaponLevels: {}, runeBossSelections: {}, optionalQuestTracks: Array.from(activeQuestTracks) })}>{publicBusy ? (mode === "solo" ? "Switching to solo..." : "Creating room...") : "Create route"}</button></div>
       <footer className="setup-footer">Unofficial fan project. Full spoilers. Verified data: App/Regulation 1.17, checked 1 September 2026.</footer>
       {detail && <FullBuildDetails build={detail} onClose={() => setDetail(null)} assignLabel={`Assign to ${players[activePlayer].name}`} onAssign={() => chooseBuild(detail)} />}
     </main>
@@ -1618,7 +1652,7 @@ function RuneCheckpointPanel({
     <header><div><p className="eyebrow">Start-of-chapter checkpoint</p><h3>Fill this in before spending anything</h3><p><strong>Complete this once when you arrive in the chapter, before levelling or reinforcing a weapon.</strong> Rune level, attributes and the same active weapon&apos;s reinforcement level carry forward from the latest earlier checkpoint, so only change values that have increased. Enter held runes again because that balance does not carry forward. These values drive the chapter&apos;s level, weapon and optional-boss recommendations; do not wait until the end of the chapter. <a href="https://eldenring.wiki.gg/wiki/Recommended_Level_by_Location" target="_blank" rel="noreferrer">Level basis ↗</a></p></div>{!viewerPlayerId && !everyPlayerIsOverTarget && expedition.runeBossSelections?.[chapter.id] && <button type="button" disabled={locked} onClick={resetBosses}>Restore recommended bosses</button>}</header>
     <div className="rune-balance-grid">
       {expedition.players.map((player) => {
-        const build = builds.find((candidate) => candidate.id === player.buildId)!;
+        const build = buildForPlayer(player);
         const loadout = stageLoadout(build, phaseForChapter(chapter));
         const pathResult = weaponUpgradePath(loadout.weapon);
         const path: UpgradePath | undefined = pathResult === "none" ? undefined : pathResult;
@@ -1857,7 +1891,7 @@ function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, act
       <aside className="company-panel">
         <p className="eyebrow">Your company</p>
         {expedition.players.map((player) => {
-          const selected = builds.find((candidate) => candidate.id === player.buildId)!;
+          const selected = buildForPlayer(player);
           const loadout = stageLoadout(selected, phaseForChapter(chapter));
           return <div className="company-member" key={player.id} style={{ "--player": player.color } as React.CSSProperties}><span>{player.name.slice(0, 1).toUpperCase()}</span><div><strong>{player.name}</strong><small>{selected.name}</small><p>{loadout.weapon}</p></div></div>;
         })}
@@ -1871,7 +1905,7 @@ function SelectedBuildsView({ expedition, viewerPlayerId }: { expedition: Expedi
   const availablePlayers = viewerPlayerId ? expedition.players.filter((player) => player.id === viewerPlayerId) : expedition.players;
   const [selectedPlayerId, setSelectedPlayerId] = useState(availablePlayers[0]?.id ?? "");
   const player = availablePlayers.find((candidate) => candidate.id === selectedPlayerId) ?? availablePlayers[0];
-  const build = player ? builds.find((candidate) => candidate.id === player.buildId) : undefined;
+  const build = player ? buildForPlayer(player) : undefined;
   if (!player || !build) return null;
   const classification = buildClassification(build);
   const plannedClass = plannerStartingClass(build);
@@ -1940,17 +1974,29 @@ function ReadOnlyBuildCatalogue({ lanAvailable }: { lanAvailable: boolean }) {
 function PartyView({ expedition, setExpedition, saveLibrary, activeSaveId, onSelectSave, onNewSave, onDuplicateSave, onDeleteSave, onExport, onImport }: { expedition: Expedition; setExpedition: React.Dispatch<React.SetStateAction<Expedition | null>>; saveLibrary: SaveLibrary; activeSaveId: string | null; onSelectSave: (id: string) => void; onNewSave: () => void; onDuplicateSave: () => void; onDeleteSave: () => void; onExport: () => void; onImport: (event: React.ChangeEvent<HTMLInputElement>) => void }) {
   const totalKeys = chapters.flatMap((chapter) => tasksForChapter(chapter, expedition)).flatMap((task) => taskKeys(task, expedition));
   const completed = totalKeys.filter((key) => expedition.completed[key]).length;
-  const requiredTracks = requiredQuestTracksForParty(expedition.players.map((player) => builds.find((candidate) => candidate.id === player.buildId)).filter((candidate): candidate is Build => Boolean(candidate)));
+  const requiredTracks = requiredQuestTracksForParty(expedition.players.map(buildForPlayer));
   const selectedTracks = new Set(expandQuestTrackIds(expedition.optionalQuestTracks === undefined ? ALL_OPTIONAL_QUEST_TRACK_IDS : expedition.optionalQuestTracks));
   requiredTracks.forEach((track) => selectedTracks.add(track));
   const updatePlayer = (id: string, patch: Partial<Player>) => setExpedition((current) => current ? { ...current, players: current.players.map((player) => player.id === id ? { ...player, ...patch } : player) } : current);
   return <section className="party-page"><div className="page-heading"><div><p className="eyebrow">Run settings</p><h2>{expedition.name}</h2><p>{expedition.mode === "solo" ? "Solo playthrough" : expedition.mode === "standard" ? "Standard co-op across independent worlds" : "Seamless Co-op with host-led progression"}</p></div><div className="progress-medallion"><strong>{Math.round((completed / Math.max(totalKeys.length, 1)) * 100)}%</strong><span>route complete</span></div></div>
-    <div className="party-cards">{expedition.players.map((player, index) => { const selected = builds.find((candidate) => candidate.id === player.buildId)!; const choices = selectableBuilds.some((candidate) => candidate.id === selected.id) ? selectableBuilds : [selected, ...selectableBuilds]; const classification = buildClassification(selected); return <article key={player.id} style={{ "--player": player.color } as React.CSSProperties}><div className="portrait">{player.name.slice(0, 1).toUpperCase()}</div><div className="party-card-head"><input value={player.name} onChange={(event) => updatePlayer(player.id, { name: event.target.value })} /><span>Player {index + 1}</span></div><select value={player.buildId} onChange={(event) => updatePlayer(player.id, { buildId: event.target.value })}>{choices.map((candidate) => <option value={candidate.id} key={candidate.id}>{candidate.name}</option>)}</select><p>{selected.playstyle}</p><div className="party-stats"><span><small>Attributes</small>{classification.attributes}</span><span><small>Range</small>{classification.range}</span></div><label className="host-radio"><input type="radio" name="host" checked={expedition.hostId === player.id} onChange={() => setExpedition((current) => current ? { ...current, hostId: player.id } : current)} /> {expedition.hostId === player.id ? "Current host" : "Make host"}</label></article>; })}</div>
+    <div className="party-cards">{expedition.players.map((player, index) => { const selected = buildForPlayer(player); const choices = selectableBuilds.some((candidate) => candidate.id === selected.id) ? selectableBuilds : [selected, ...selectableBuilds]; const classification = buildClassification(selected); return <article key={player.id} style={{ "--player": player.color } as React.CSSProperties}><div className="portrait">{player.name.slice(0, 1).toUpperCase()}</div><div className="party-card-head"><input value={player.name} onChange={(event) => updatePlayer(player.id, { name: event.target.value })} /><span>Player {index + 1}</span></div><select value={player.buildId} onChange={(event) => { const build = builds.find((candidate) => candidate.id === event.target.value)!; updatePlayer(player.id, { buildId: build.id, startingClass: defaultPlayerStartingClass(build) }); }}>{choices.map((candidate) => <option value={candidate.id} key={candidate.id}>{candidate.name}</option>)}</select><select aria-label={`${player.name} starting class`} value={player.startingClass || defaultPlayerStartingClass(selected)} onChange={(event) => updatePlayer(player.id, { startingClass: event.target.value as StartingClass })}>{STARTING_CLASSES.map((startingClass) => <option key={startingClass}>{startingClass}</option>)}</select><p>{selected.playstyle}</p><div className="party-stats"><span><small>Attributes</small>{classification.attributes}</span><span><small>Range</small>{classification.range}</span></div><label className="host-radio"><input type="radio" name="host" checked={expedition.hostId === player.id} onChange={() => setExpedition((current) => current ? { ...current, hostId: player.id } : current)} /> {expedition.hostId === player.id ? "Current host" : "Make host"}</label></article>; })}</div>
     <div className="save-panel"><div><p className="eyebrow">Rune plan</p><h3>Level and loss allowances</h3><p>Expected field income is reduced before levels are assigned. If the conservative balance cannot pay for the selected pace, the route inserts easier optional bosses and only recommends a fully funded level. Golden Rune items remain emergency reserves.</p></div><div className="loss-setting"><label>Allow for <select value={expedition.lossRate ?? 20} onChange={(event) => setExpedition((current) => current ? { ...current, lossRate: Number(event.target.value) } : current)}><option value={10}>10% lost</option><option value={20}>20% lost</option><option value={30}>30% lost</option></select></label><label>Run <select value={expedition.levelOffset ?? 0} onChange={(event) => setExpedition((current) => current ? { ...current, levelOffset: Number(event.target.value), completed: {} } : current)}><option value={0}>at guide level</option><option value={5}>5 levels below</option><option value={10}>10 levels below</option><option value={15}>15 levels below</option><option value={20}>20 levels below</option></select></label></div></div>
     <div className="quest-settings-panel"><div><p className="eyebrow">Questlines</p><h3>Included in this run</h3><p>Core progression and all-Remembrance requirements cannot be removed. Changing this list removes or restores only optional cards; completed progress remains saved.</p></div><div className="quest-settings-actions"><button type="button" onClick={() => setExpedition((current) => current ? { ...current, optionalQuestTracks: [...requiredTracks] } : current)}>Build-required only</button><button type="button" onClick={() => setExpedition((current) => current ? { ...current, optionalQuestTracks: [...ALL_OPTIONAL_QUEST_TRACK_IDS] } : current)}>Select all</button></div><div className="quest-settings-grid">{OPTIONAL_QUEST_TRACKS.map((track) => { const required = requiredTracks.includes(track.id); return <label key={track.id}><input type="checkbox" checked={selectedTracks.has(track.id)} disabled={required} onChange={(event) => setExpedition((current) => { if (!current) return current; const values = new Set(current.optionalQuestTracks === undefined ? ALL_OPTIONAL_QUEST_TRACK_IDS : current.optionalQuestTracks); if (event.target.checked) values.add(track.id); else values.delete(track.id); return { ...current, optionalQuestTracks: [...values] }; })} /><span><strong>{track.name}</strong><small>{required ? "Required by selected build" : track.act}</small></span></label>; })}</div></div>
     <div className="save-panel save-library-panel"><div><p className="eyebrow">Saved runs</p><h3>Switch without moving files</h3><p>Every run is stored in this browser. Export is still available for backups and moving a run to another device.</p><div className="save-library-list">{Object.values(saveLibrary.saves).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map((save) => <button type="button" className={save.saveId === activeSaveId ? "active" : ""} key={save.saveId} onClick={() => onSelectSave(save.saveId!)}><strong>{save.name}</strong><span>{save.players.length === 1 ? "Solo" : `${save.players.length} players`} · {new Date(save.createdAt).toLocaleDateString()}</span></button>)}</div></div><div className="save-actions"><button type="button" className="primary" onClick={onNewSave}>New run</button><button type="button" onClick={onDuplicateSave}>Duplicate current</button><button type="button" onClick={onExport}>Export current</button><label>Import file<input type="file" accept="application/json" onChange={onImport} /></label><button type="button" className="danger" onClick={onDeleteSave}>Delete current</button></div></div>
     <div className="source-panel"><p className="eyebrow">Reference shelf</p><h3>Sources and version</h3><p>Locally verified numeric data: App/Regulation 1.17, checked 1 September 2026. The Tarnished Pack origins, eight armaments, four armour sets, and two altered armour variants are included. External references open in a new tab.</p><div>{sources.map(([label, url]) => <a key={url} href={url} target="_blank" rel="noreferrer">{label}<span>↗</span></a>)}</div></div>
   </section>;
+}
+
+function PublicJoinSetup({ snapshot, error, onJoin, onBack }: { snapshot: PublicSessionSnapshot; error: string; onJoin: (choice: { playerId: string; name: string; buildId: string; startingClass: StartingClass }) => void; onBack: () => void }) {
+  const availableSlots = snapshot.slots.filter((slot) => !slot.claimed);
+  const [playerId, setPlayerId] = useState(availableSlots[0]?.playerId || "");
+  const [name, setName] = useState("Tarnished 2");
+  const [buildId, setBuildId] = useState(selectableBuilds[1]?.id || selectableBuilds[0].id);
+  const selectedBuild = selectableBuilds.find((build) => build.id === buildId) || selectableBuilds[0];
+  const [startingClass, setStartingClass] = useState<StartingClass>(defaultPlayerStartingClass(selectedBuild));
+  const selectedPlayerId = availableSlots.some((slot) => slot.playerId === playerId) ? playerId : availableSlots[0]?.playerId || "";
+
+  return <main className="public-join-screen"><section><button type="button" className="back-link" onClick={onBack}>Back to planner</button><p className="eyebrow">Online co-op room {snapshot.code}</p><h1>Choose your character</h1><p>Select an open player slot, your build, and the Elden Ring class you are starting with. The host will see these choices automatically.</p>{availableSlots.length ? <form onSubmit={(event) => { event.preventDefault(); onJoin({ playerId: selectedPlayerId, name, buildId, startingClass }); }}><label>Player slot<select value={selectedPlayerId} onChange={(event) => setPlayerId(event.target.value)}>{availableSlots.map((slot) => <option value={slot.playerId} key={slot.playerId}>{slot.playerId.replace("player-", "Player ")}</option>)}</select></label><label>Character name<input maxLength={40} value={name} onChange={(event) => setName(event.target.value)} /></label><label>Build<select value={buildId} onChange={(event) => { const nextBuild = selectableBuilds.find((build) => build.id === event.target.value)!; setBuildId(nextBuild.id); setStartingClass(defaultPlayerStartingClass(nextBuild)); }}>{selectableBuilds.map((build) => <option value={build.id} key={build.id}>{String(catalogueNumber(build)).padStart(3, "0")} · {build.name}</option>)}</select></label><label>Starting class<select value={startingClass} onChange={(event) => setStartingClass(event.target.value as StartingClass)}>{STARTING_CLASSES.map((value) => <option key={value}>{value}</option>)}</select></label><div className="join-build-summary"><strong>{selectedBuild.name}</strong><span>Recommended: {defaultPlayerStartingClass(selectedBuild)} · {buildClassification(selectedBuild).attributes} · {buildClassification(selectedBuild).range}</span><p>{selectedBuild.playstyle}</p></div>{error && <span role="alert">{error}</span>}<button type="submit" disabled={!selectedPlayerId || !name.trim()}>Join as player two</button></form> : <div className="room-full"><strong>This room is full</strong><p>Ask the host to increase the player count or share a different room code.</p></div>}</section></main>;
 }
 
 function Home() {
@@ -1960,6 +2006,11 @@ function Home() {
   const [viewerPlayerId, setViewerPlayerId] = useState("");
   const [hydrated, setHydrated] = useState(false);
   const [lanMode, setLanMode] = useState<LanMode | null>(null);
+  const [sessionChannel, setSessionChannel] = useState<SessionChannel>("none");
+  const [publicSession, setPublicSession] = useState<PublicSessionState | null>(null);
+  const [publicSnapshot, setPublicSnapshot] = useState<PublicSessionSnapshot | null>(null);
+  const [publicSessionBusy, setPublicSessionBusy] = useState(false);
+  const [publicSessionError, setPublicSessionError] = useState("");
   const [catalogueOnly, setCatalogueOnly] = useState(false);
   const [view, setView] = useState<View>("route");
   const [activeId, setActiveId] = useState(chapters[0].id);
@@ -1974,6 +2025,16 @@ function Home() {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const controlToken = useRef("");
   const lanRevision = useRef(-1);
+  const publicSessionRef = useRef<PublicSessionState | null>(null);
+  const publicSettingsQueue = useRef<Promise<void>>(Promise.resolve());
+  const publicJoinPending = useRef(false);
+
+  const rememberPublicSession = useCallback((session: PublicSessionState | null) => {
+    publicSessionRef.current = session;
+    setPublicSession(session);
+    if (session) localStorage.setItem(PUBLIC_SESSION_STORAGE_KEY, JSON.stringify(session));
+    else localStorage.removeItem(PUBLIC_SESSION_STORAGE_KEY);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -2003,6 +2064,37 @@ function Home() {
       } catch { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(SAVE_LIBRARY_KEY); }
       if (!cancelled) { setSaveLibrary(localLibrary); setActiveSaveId(localLibrary.activeId); }
 
+      if (PUBLIC_SESSION_API) {
+        const requestedJoin = String(params.get("join") || "").replace(/\D/g, "").slice(0, 6);
+        let storedSession: PublicSessionState | null = null;
+        try {
+          const stored = localStorage.getItem(PUBLIC_SESSION_STORAGE_KEY);
+          if (stored) storedSession = JSON.parse(stored) as PublicSessionState;
+        } catch { localStorage.removeItem(PUBLIC_SESSION_STORAGE_KEY); }
+        const code = requestedJoin.length === 6 ? requestedJoin : storedSession?.code || "";
+        if (code) {
+          const retained = storedSession?.code === code ? storedSession : { code, token: "", role: "follower" as const };
+          try {
+            const response = await fetch(publicSessionUrl(`/api/sessions/${code}`), { cache: "no-store", headers: retained.token ? { authorization: `Bearer ${retained.token}` } : undefined });
+            if (response.ok) {
+              const remote = await responseJson<PublicSessionSnapshot>(response);
+              if (!cancelled) {
+                rememberPublicSession(retained);
+                setSessionChannel("public");
+                setLanMode(retained.role);
+                setPublicSnapshot(remote);
+                setViewerPlayerId(remote.you || retained.playerId || "");
+                setExpedition(remote.expedition || null);
+                lanRevision.current = Number(remote.revision || 0);
+                setHydrated(true);
+              }
+              return;
+            }
+            if (storedSession?.code === code) rememberPublicSession(null);
+          } catch { /* Fall through to LAN or local setup when the public service is unavailable. */ }
+        }
+      }
+
       try {
         const requestedControl = params.get("control") || "";
         const response = await fetch(`/api/expedition${requestedControl ? `?control=${encodeURIComponent(requestedControl)}` : ""}`, { cache: "no-store" });
@@ -2012,6 +2104,7 @@ function Home() {
           if (remote.enabled === true) {
             if (remote.requiresJoin) {
               if (!cancelled) {
+                setSessionChannel("lan");
                 setLanMode("follower");
                 setJoinRequired(true);
                 setExpedition(null);
@@ -2029,6 +2122,7 @@ function Home() {
               window.history.replaceState({}, "", cleanUrl);
             }
             if (!cancelled) {
+              setSessionChannel("lan");
               setLanMode(mode);
               const rawChoice = remote.expedition || (mode === "controller" ? localExpedition : null);
               const chosen = rawChoice && !rawChoice.saveId ? { ...rawChoice, saveId: newSaveId() } : rawChoice;
@@ -2043,6 +2137,7 @@ function Home() {
       } catch { /* Hosted and development builds use device-local storage. */ }
 
       if (!cancelled) {
+        setSessionChannel("none");
         setLanMode("none");
         setExpedition(localExpedition);
         setActiveId(localExpedition?.activeChapterId && chapters.some((chapter) => chapter.id === localExpedition.activeChapterId) ? localExpedition.activeChapterId : chapters[0].id);
@@ -2051,7 +2146,91 @@ function Home() {
     };
     void hydrate();
     return () => { cancelled = true; };
-  }, []);
+  }, [rememberPublicSession]);
+
+  const configurePublicSession = useCallback((mode: Mode, playerCount: number) => {
+    if (!PUBLIC_SESSION_API) return;
+    setPublicSessionBusy(true);
+    setPublicSessionError("");
+    const operation: Promise<void> = publicSettingsQueue.current.then(async () => {
+      if (mode === "solo") {
+        if (publicSessionRef.current) {
+          rememberPublicSession(null);
+          setPublicSnapshot(null);
+          setSessionChannel("none");
+          setLanMode("none");
+          lanRevision.current = -1;
+        }
+        return;
+      }
+      const existing = publicSessionRef.current;
+      const response = existing?.role === "controller"
+        ? await fetch(publicSessionUrl(`/api/sessions/${existing.code}`), { method: "PATCH", headers: { authorization: `Bearer ${existing.token}`, "content-type": "application/json" }, body: JSON.stringify({ mode, playerCount }) })
+        : await fetch(publicSessionUrl("/api/sessions"), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mode, playerCount }) });
+      const body = await responseJson<PublicSessionSnapshot>(response);
+      if (!response.ok) throw new Error(body.error || "Could not create an online co-op room");
+      if (!existing || existing.role !== "controller") {
+        const session = { code: body.code, token: body.hostToken || "", role: "controller" as const };
+        rememberPublicSession(session);
+        setSessionChannel("public");
+        setLanMode("controller");
+        lanRevision.current = Number(body.revision || 0);
+      }
+      setPublicSnapshot(body);
+    }).catch((error) => {
+      setPublicSessionError(error instanceof Error ? error.message : "Could not create an online co-op room");
+    }).finally(() => {
+      if (publicSettingsQueue.current === operation) setPublicSessionBusy(false);
+    });
+    publicSettingsQueue.current = operation;
+    return operation;
+  }, [rememberPublicSession]);
+
+  const openPublicJoin = useCallback(async (code: string) => {
+    if (!PUBLIC_SESSION_API) {
+      setPublicSessionError("Online sessions are not configured for this deployment");
+      return;
+    }
+    if (publicSessionRef.current?.role === "controller") {
+      setPublicSessionError("Start or leave your current hosted room before joining another room");
+      return;
+    }
+    setPublicSessionBusy(true);
+    setPublicSessionError("");
+    try {
+      const response = await fetch(publicSessionUrl(`/api/sessions/${code}`), { cache: "no-store" });
+      const body = await responseJson<PublicSessionSnapshot>(response);
+      if (!response.ok) throw new Error(body.error || "That join code is not active");
+      const session = { code: body.code, token: "", role: "follower" as const };
+      rememberPublicSession(session);
+      setPublicSnapshot(body);
+      setSessionChannel("public");
+      setLanMode("follower");
+      setExpedition(body.expedition || null);
+      setViewerPlayerId("");
+      lanRevision.current = Number(body.revision || 0);
+      const url = new URL(window.location.href);
+      url.searchParams.set("join", body.code);
+      window.history.replaceState({}, "", url);
+    } catch (error) {
+      setPublicSessionError(error instanceof Error ? error.message : "Could not open that co-op room");
+    } finally {
+      setPublicSessionBusy(false);
+    }
+  }, [rememberPublicSession]);
+
+  const leavePublicSession = useCallback(() => {
+    rememberPublicSession(null);
+    setPublicSnapshot(null);
+    setSessionChannel("none");
+    setLanMode("none");
+    setViewerPlayerId("");
+    setExpedition(null);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("join");
+    url.searchParams.delete("follow");
+    window.history.replaceState({}, "", url);
+  }, [rememberPublicSession]);
 
   useEffect(() => {
     if (!hydrated || lanMode === null || lanMode === "follower") return;
@@ -2064,11 +2243,20 @@ function Home() {
       }
       if (lanMode === "controller") {
         const baseRevision = lanRevision.current;
-        void fetch("/api/expedition", {
+        const publicController = sessionChannel === "public" ? publicSessionRef.current : null;
+        if (sessionChannel === "public" && (!publicController?.token || !expedition)) return;
+        const request = sessionChannel === "public" && publicController
+          ? fetch(publicSessionUrl(`/api/sessions/${publicController.code}`), {
+              method: "PUT",
+              headers: { "content-type": "application/json", authorization: `Bearer ${publicController.token}` },
+              body: JSON.stringify({ expedition, baseRevision }),
+            })
+          : fetch("/api/expedition", {
           method: "PUT",
           headers: { "content-type": "application/json", "x-control-token": controlToken.current },
           body: JSON.stringify({ expedition, baseRevision }),
-        }).then(async (response) => {
+        });
+        void request.then(async (response) => {
           const body = await responseJson<RemoteExpeditionState>(response);
           if (response.status === 409) {
             const nextRevision = Number(body.revision || 0);
@@ -2082,6 +2270,8 @@ function Home() {
           }
           if (!response.ok) throw new Error(body.error || "Could not save the LAN route");
           lanRevision.current = Math.max(lanRevision.current, Number(body.revision || 0));
+          if (sessionChannel === "public" && body.expedition && JSON.stringify(body.expedition) !== JSON.stringify(expedition)) setExpedition(body.expedition);
+          if (sessionChannel === "public") return;
           try {
             const infoResponse = await fetch("/api/lan-info", { cache: "no-store", headers: { "x-control-token": controlToken.current } });
             if (infoResponse.ok) setLanInfo(await responseJson<LanInfo>(infoResponse));
@@ -2094,7 +2284,7 @@ function Home() {
       }
     }, 180);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
-  }, [expedition, hydrated, lanMode, lanSaveRetry]);
+  }, [expedition, hydrated, lanMode, lanSaveRetry, sessionChannel]);
 
   useEffect(() => {
     if (!hydrated || lanMode === "follower") return;
@@ -2104,22 +2294,25 @@ function Home() {
   const lanPlayerSignature = expedition?.players.map((player) => `${player.id}:${player.name}`).join("|") || "";
 
   useEffect(() => {
-    if (!hydrated || lanMode !== "controller" || !controlToken.current) return;
+    if (!hydrated || sessionChannel !== "lan" || lanMode !== "controller" || !controlToken.current) return;
     void fetch("/api/lan-info", { cache: "no-store", headers: { "x-control-token": controlToken.current } }).then((response) => response.ok ? responseJson<LanInfo>(response) : null).then((info) => { if (info) setLanInfo(info); }).catch(() => undefined);
-  }, [hydrated, lanMode, lanPlayerSignature]);
+  }, [hydrated, lanMode, lanPlayerSignature, sessionChannel]);
 
   useEffect(() => {
     if (!hydrated || joinRequired || lanMode === "none" || lanMode === null) return;
+    const onlineSession = sessionChannel === "public" ? publicSessionRef.current : null;
+    if (sessionChannel === "public" && !onlineSession?.token) return;
     let active = true;
     let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
-    const applyRemote = (remote: { revision?: number; source?: string; expedition?: Expedition | null }) => {
+    const applyRemote = (remote: { revision?: number; source?: string; expedition?: Expedition | null; code?: string; mode?: Mode; playerCount?: number; slots?: PublicSlot[]; you?: string | null }) => {
       const nextRevision = Number(remote.revision || 0);
       if (!active || nextRevision <= lanRevision.current) return;
-      if (lanMode === "controller" && remote.source !== "player") {
+      if (sessionChannel === "lan" && lanMode === "controller" && remote.source !== "player") {
         lanRevision.current = Math.max(lanRevision.current, nextRevision);
         return;
       }
       lanRevision.current = nextRevision;
+      if (sessionChannel === "public" && remote.code && remote.mode && remote.playerCount && remote.slots) setPublicSnapshot(remote as PublicSessionSnapshot);
       if (lanMode === "follower" && remote.expedition?.activeChapterId && chapters.some((chapter) => chapter.id === remote.expedition!.activeChapterId)) {
         setActiveId(remote.expedition.activeChapterId);
         setView("route");
@@ -2128,8 +2321,10 @@ function Home() {
     };
     const poll = async () => {
       try {
-        const response = await fetch(`/api/expedition?revision=${lanRevision.current}&time=${Date.now()}`, { cache: "no-store", headers: lanMode === "controller" ? { "x-control-token": controlToken.current } : undefined });
-        if (response.ok) applyRemote(await responseJson<RemoteExpeditionState>(response));
+        const response = sessionChannel === "public" && onlineSession
+          ? await fetch(publicSessionUrl(`/api/sessions/${onlineSession.code}?revision=${lanRevision.current}&time=${Date.now()}`), { cache: "no-store", headers: { authorization: `Bearer ${onlineSession.token}` } })
+          : await fetch(`/api/expedition?revision=${lanRevision.current}&time=${Date.now()}`, { cache: "no-store", headers: lanMode === "controller" ? { "x-control-token": controlToken.current } : undefined });
+        if (response.status !== 204 && response.ok) applyRemote(await responseJson<RemoteExpeditionState>(response));
       } catch { /* The event stream reconnects and the next fallback poll retries. */ }
     };
     const scheduleFallback = () => {
@@ -2139,11 +2334,13 @@ function Home() {
         if (active) scheduleFallback();
       }, document.visibilityState === "visible" ? 3000 : 8000);
     };
-    const stream = new EventSource(`/api/expedition/events${lanMode === "controller" ? `?control=${encodeURIComponent(controlToken.current)}` : ""}`);
-    stream.onmessage = (event) => {
-      try { applyRemote(JSON.parse(event.data)); } catch { /* Ignore a malformed event and retain polling. */ }
-    };
-    stream.onerror = () => { void poll(); };
+    const stream = sessionChannel === "lan" ? new EventSource(`/api/expedition/events${lanMode === "controller" ? `?control=${encodeURIComponent(controlToken.current)}` : ""}`) : null;
+    if (stream) {
+      stream.onmessage = (event) => {
+        try { applyRemote(JSON.parse(event.data)); } catch { /* Ignore a malformed event and retain polling. */ }
+      };
+      stream.onerror = () => { void poll(); };
+    }
     const refreshNow = () => { void poll(); };
     const refreshVisible = () => { if (document.visibilityState === "visible") void poll(); };
     window.addEventListener("focus", refreshNow);
@@ -2153,13 +2350,13 @@ function Home() {
     scheduleFallback();
     return () => {
       active = false;
-      stream.close();
+      stream?.close();
       if (fallbackTimer) clearTimeout(fallbackTimer);
       window.removeEventListener("focus", refreshNow);
       window.removeEventListener("online", refreshNow);
       document.removeEventListener("visibilitychange", refreshVisible);
     };
-  }, [hydrated, joinRequired, lanMode]);
+  }, [hydrated, joinRequired, lanMode, publicSession, sessionChannel]);
 
   const routeModel = useMemo(() => {
     if (!expedition) return { runeSupport: {} as Record<string, RuneSupportChapter>, tasksByChapter: {} as Record<string, Task[]>, progress: 0 };
@@ -2221,7 +2418,11 @@ function Home() {
   };
   const viewerUpdate = (kind: "completed" | "runes" | "levels" | "stats" | "weapons", key: string, value: boolean | number | Partial<AttributeBlock>) => {
     if (!viewerPlayerId) return;
-    void fetch("/api/player-progress", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ kind, key, value }) }).then(async (response) => {
+    const onlineSession = sessionChannel === "public" ? publicSessionRef.current : null;
+    const request = onlineSession
+      ? fetch(publicSessionUrl(`/api/sessions/${onlineSession.code}/progress`), { method: "PATCH", headers: { "content-type": "application/json", authorization: `Bearer ${onlineSession.token}` }, body: JSON.stringify({ kind, key, value }) })
+      : fetch("/api/player-progress", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ kind, key, value }) });
+    void request.then(async (response) => {
       const body = await responseJson<RemoteExpeditionState>(response);
       if (!response.ok) throw new Error(body.error || "Update failed");
       const nextRevision = Number(body.revision || 0);
@@ -2232,7 +2433,9 @@ function Home() {
     }).catch(async (error) => {
       notify(error instanceof Error ? error.message : "Could not save progress");
       try {
-        const response = await fetch(`/api/expedition?time=${Date.now()}`, { cache: "no-store" });
+        const response = onlineSession
+          ? await fetch(publicSessionUrl(`/api/sessions/${onlineSession.code}?time=${Date.now()}`), { cache: "no-store", headers: { authorization: `Bearer ${onlineSession.token}` } })
+          : await fetch(`/api/expedition?time=${Date.now()}`, { cache: "no-store" });
         if (!response.ok) return;
         const body = await responseJson<RemoteExpeditionState>(response);
         lanRevision.current = Number(body.revision || lanRevision.current);
@@ -2262,6 +2465,34 @@ function Home() {
     }
   };
 
+  const joinPublicRoom = async (choice: { playerId: string; name: string; buildId: string; startingClass: StartingClass }) => {
+    const room = publicSessionRef.current;
+    if (!room || publicJoinPending.current) return;
+    publicJoinPending.current = true;
+    setPublicSessionBusy(true);
+    setPublicSessionError("");
+    try {
+      const response = await fetch(publicSessionUrl(`/api/sessions/${room.code}/join`), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(choice) });
+      const body = await responseJson<PublicSessionSnapshot>(response);
+      if (!response.ok) throw new Error(body.error || "Could not join this co-op room");
+      const session = { code: room.code, token: body.guestToken || "", role: "follower" as const, playerId: choice.playerId };
+      rememberPublicSession(session);
+      setPublicSnapshot(body);
+      setViewerPlayerId(choice.playerId);
+      setExpedition(body.expedition || null);
+      lanRevision.current = Number(body.revision || 0);
+      const url = new URL(window.location.href);
+      url.searchParams.set("join", room.code);
+      url.searchParams.set("follow", choice.playerId);
+      window.history.replaceState({}, "", url);
+    } catch (error) {
+      setPublicSessionError(error instanceof Error ? error.message : "Could not join this co-op room");
+    } finally {
+      publicJoinPending.current = false;
+      setPublicSessionBusy(false);
+    }
+  };
+
   const claimViewerPlayer = async (playerId: string) => {
     setClaimError("");
     try {
@@ -2282,9 +2513,10 @@ function Home() {
 
   if (!hydrated) return <main className="loading-screen"><span>✦</span><p>Reading the guidance of grace…</p></main>;
   if (catalogueOnly) return <ReadOnlyBuildCatalogue lanAvailable={lanMode !== "none"} />;
+  if (sessionChannel === "public" && publicSession?.role === "follower" && !publicSession.token && publicSnapshot) return <PublicJoinSetup snapshot={publicSnapshot} error={publicSessionError} onJoin={(choice) => { void joinPublicRoom(choice); }} onBack={leavePublicSession} />;
   if (joinRequired) return <main className="join-screen"><form onSubmit={joinLanRun}><strong>Tarnished Together</strong><h1>Join a run</h1><p>Enter the six-digit code shown on the host. You only need to do this once on this computer.</p><label>Join code<input inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={joinCode} onChange={(event) => setJoinCode(event.target.value.replace(/\D/g, "").slice(0, 6))} autoFocus /></label>{joinError && <span role="alert">{joinError}</span>}<button type="submit" disabled={joinCode.length !== 6}>Join route</button><button type="button" className="secondary" onClick={() => { window.location.href = "/?catalog=1"; }}>Browse builds without joining</button></form></main>;
   if (!expedition && lanMode === "follower") return <main className="follower-waiting"><strong>Tarnished Together</strong><h1>Waiting for the host</h1><p>The route will appear here after the host creates or restores an expedition.</p><button type="button" onClick={() => { window.location.href = "/?catalog=1"; }}>Browse all builds while you wait</button><span>Follower view · refreshes automatically</span></main>;
-  if (!expedition) return <Setup onCreate={(created) => { setExpedition(created); notify("Route created"); }} imported={handleImport} />;
+  if (!expedition) return <Setup onCreate={(created) => { setExpedition(created); notify("Route created"); }} imported={handleImport} initialMode={publicSession?.role === "controller" ? publicSnapshot?.mode : undefined} initialPlayerCount={publicSession?.role === "controller" ? publicSnapshot?.playerCount : undefined} publicCode={publicSession?.role === "controller" ? publicSession.code : undefined} publicBusy={publicSessionBusy} publicError={publicSessionError} onCoopSettings={PUBLIC_SESSION_API ? configurePublicSession : undefined} onJoinCode={PUBLIC_SESSION_API && publicSession?.role !== "controller" ? (code) => { void openPublicJoin(code); } : undefined} />;
 
   const readOnly = lanMode === "follower";
   if (readOnly && !expedition.players.some((player) => player.id === viewerPlayerId)) return <main className="viewer-chooser"><div><p className="eyebrow">Join this run</p><h1>Which character are you playing?</h1><p>Enter the character code shown on the host, then choose your character. The server binds this browser to that character’s checklist and rune entries.</p><label>Character code<input inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={claimCode} onChange={(event) => setClaimCode(event.target.value.replace(/\D/g, "").slice(0, 6))} autoFocus /></label>{claimError && <span role="alert">{claimError}</span>}{expedition.players.map((player) => <button type="button" disabled={claimCode.length !== 6} key={player.id} onClick={() => { void claimViewerPlayer(player.id); }}>{player.name}<span>{builds.find((build) => build.id === player.buildId)?.name}</span></button>)}</div></main>;
@@ -2296,7 +2528,8 @@ function Home() {
         <nav aria-label="Primary"><button type="button" className={view === "route" ? "active" : ""} onClick={() => setView("route")}>Route</button><button type="button" className={view === "selected" ? "active" : ""} onClick={() => setView("selected")}>Selected builds</button>{readOnly && <button type="button" onClick={() => { window.location.href = "/?catalog=1"; }}>Build catalogue</button>}{!readOnly && <><button type="button" className={view === "codex" ? "active" : ""} onClick={() => setView("codex")}>Build codex</button><button type="button" className={view === "party" ? "active" : ""} onClick={() => setView("party")}>Company</button></>}</nav>
         <div className="top-progress"><span><i style={{ width: `${progress}%` }} /></span><strong>{progress}%</strong>{readOnly ? <b className="lan-badge">{expedition.players.find((player) => player.id === viewerPlayerId)?.name}</b> : <select className="save-switcher" aria-label="Current saved run" value={activeSaveId || expedition.saveId || ""} onChange={(event) => openSave(event.target.value)}>{Object.values(saveLibrary.saves).map((save) => <option value={save.saveId} key={save.saveId}>{save.name}</option>)}</select>}</div>
       </header>
-      {!readOnly && lanInfo && <div className="lan-share-strip"><span>Other players open <strong>{lanInfo.address}</strong></span><span>Join code <b>{lanInfo.joinCode}</b></span>{lanInfo.players.map((player) => <span key={player.id}>{player.name} code <b>{player.code}</b></span>)}</div>}
+      {!readOnly && sessionChannel === "public" && publicSession?.code && <div className="lan-share-strip public"><span>Other players open the GitHub Pages app</span><span>Online join code <b>{publicSession.code}</b></span><span>They choose their own build and starting class</span></div>}
+      {!readOnly && sessionChannel === "lan" && lanInfo && <div className="lan-share-strip"><span>Other players open <strong>{lanInfo.address}</strong></span><span>Join code <b>{lanInfo.joinCode}</b></span>{lanInfo.players.map((player) => <span key={player.id}>{player.name} code <b>{player.code}</b></span>)}</div>}
       {view === "route" && <RouteView expedition={expedition} setExpedition={setExpedition} tasksByChapter={routeModel.tasksByChapter} runeSupport={routeModel.runeSupport} activeId={activeId} setActiveId={selectRouteChapter} readOnly={readOnly} viewerPlayerId={viewerPlayerId} onViewerUpdate={viewerUpdate} />}
       {view === "selected" && <SelectedBuildsView expedition={expedition} viewerPlayerId={readOnly ? viewerPlayerId : undefined} />}
       {!readOnly && view === "codex" && <CodexView expedition={expedition} />}

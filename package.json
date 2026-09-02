@@ -11,11 +11,13 @@
     "build:pages": "vinext build && node scripts/export-github-pages.mjs",
     "start": "vinext start",
     "lan": "node scripts/lan-server.mjs",
-    "test": "npm run typecheck && npm run audit:builds && npm run build && node --test --test-concurrency=1 tests/run-planner.test.mjs tests/equipment-data.test.mjs tests/importers.test.mjs tests/build-paths.test.mjs tests/rendered-html.test.mjs tests/lan-server.test.mjs",
+    "test": "npm run typecheck && npm run audit:builds && npm run build && node --test --test-concurrency=1 tests/run-planner.test.mjs tests/equipment-data.test.mjs tests/importers.test.mjs tests/build-paths.test.mjs tests/rendered-html.test.mjs tests/lan-server.test.mjs tests/public-session.test.mjs",
     "audit:builds": "node scripts/audit-build-stages.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:sessions": "wrangler d1 execute tarnished-together-sessions --remote --file=drizzle/0000_curvy_lilandra.sql --config wrangler.sessions.jsonc",
+    "deploy:sessions": "wrangler deploy --config wrangler.sessions.jsonc"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",

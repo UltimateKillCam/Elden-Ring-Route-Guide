@@ -118,7 +118,7 @@ test("uses plain product copy and the revised social card", async () => {
 });
 
 test("includes a read-only LAN follower and Elden Ring build filters", async () => {
-  const [page, progression, server, packageJson, mapItems, data, styles] = await Promise.all([
+  const [page, progression, server, packageJson, mapItems, data, styles, sessionApi] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/progression.ts", import.meta.url), "utf8"),
     readFile(new URL("../scripts/lan-server.mjs", import.meta.url), "utf8"),
@@ -126,6 +126,7 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
     readFile(new URL("../app/map-items.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/data.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    readFile(new URL("../worker/session-api.ts", import.meta.url), "utf8"),
   ]);
   assert.match(page, /Complete and continue/);
   assert.match(page, /Updates from the host/);
@@ -145,6 +146,14 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(server, /baseRevision/);
   assert.match(page, /Enter the six-digit code shown on the host/);
   assert.match(page, /Character code/);
+  assert.match(page, /Join a co-op run/);
+  assert.match(page, /Player two can join from the top of the GitHub Pages app/);
+  assert.match(page, /Choose your character/);
+  assert.match(page, /Starting class/);
+  assert.match(page, /NEXT_PUBLIC_SESSION_API_BASE/);
+  assert.match(sessionApi, /Fextralife build lacks researched combat styles|public_sessions/);
+  assert.match(sessionApi, /Players can only update their own checklist/);
+  assert.match(sessionApi, /That player slot has already been claimed/);
   assert.match(page, /\/api\/claim-player/);
   assert.match(page, /body: JSON\.stringify\(\{ kind, key, value \}\)/);
   assert.doesNotMatch(page, /JSON\.stringify\(\{ playerId: viewerPlayerId, kind, key, value \}\)/);

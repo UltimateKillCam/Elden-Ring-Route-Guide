@@ -79,6 +79,10 @@ test("Fextralife classification overrides reject noisy or invented attributes", 
   assert.deepEqual(cipher.attributes, ["Faith"]);
   assert.deepEqual(thorns.attributes, ["Arcane", "Intelligence"]);
   assert.deepEqual(duelist.attributes, ["Intelligence"]);
+  assert.throws(
+    () => parseFextralifeBuilds([fixture("Unresearched Sorcerer", "Intelligence", "Mind", "Glintstone Staff")], { expectedCount: 1 }),
+    /Fextralife build lacks researched combat styles: Unresearched Sorcerer/,
+  );
 });
 
 test("Jerp armour parsing rejects truncated, duplicate, and unresolved input", () => {

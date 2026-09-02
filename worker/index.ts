@@ -1,10 +1,11 @@
 /** Cloudflare Worker entry point for the vinext-starter template. */
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
+import { handleSessionApi, SESSION_CORS_HEADERS } from "./session-api";
 
 interface Env {
   ASSETS: Fetcher;
-  DB: D1Database;
+  DB?: D1Database;
   IMAGES: {
     input(stream: ReadableStream): {
       transform(options: Record<string, unknown>): {
@@ -38,6 +39,11 @@ const worker = {
           return result.response();
         },
       }, allowedWidths);
+    }
+
+    if (url.pathname === "/api/sessions" || url.pathname.startsWith("/api/sessions/")) {
+      if (!env.DB) return Response.json({ error: "Public sessions are not configured" }, { status: 503, headers: SESSION_CORS_HEADERS });
+      return handleSessionApi(request, env.DB);
     }
 
     return handler.fetch(request, env, ctx);

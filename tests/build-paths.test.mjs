@@ -48,6 +48,17 @@ test("optional quest dependencies and core access gates remain explicit", async 
   }
 });
 
+test("every selectable build defaults to a base-game starting class", async () => {
+  const catalogue = await loadCatalogue();
+  const baseClasses = new Set(["Vagabond", "Warrior", "Hero", "Bandit", "Astrologer", "Prophet", "Samurai", "Prisoner", "Confessor", "Wretch"]);
+  for (const build of catalogue.selectableBuilds) {
+    const startingClass = baseClasses.has(build.startingClass)
+      ? build.startingClass
+      : catalogue.recommendStartingClass(build.stats, build.tags);
+    assert.ok(baseClasses.has(startingClass), `${build.id} defaults to unsupported starting class ${startingClass}`);
+  }
+});
+
 test("quest route keeps every Kenneth state change and merges the Soreseal advisory", async () => {
   const catalogue = await loadCatalogue();
   try {
@@ -109,18 +120,24 @@ test("the optional Gurranq route accounts for every Deathroot and the hostile ch
 
 const statCodes = (build) => DAMAGE_STATS.filter((stat) => build.stats.toUpperCase().includes(stat));
 
-test("the selectable catalogue has stable contiguous numbers and distinct researched guidance", async () => {
+test("the full build catalogue has explicit classifications and selectable guidance", async () => {
   const catalogue = await loadCatalogue();
   try {
+    assert.equal(catalogue.builds.length, 282);
     assert.equal(catalogue.selectableBuilds.length, 200);
     assert.deepEqual(catalogue.selectableBuilds.map((build) => catalogue.catalogueNumber(build)), Array.from({ length: 200 }, (_, index) => index + 1));
+    const curatedIds = catalogue.builds.filter((build) => build.collection === "Curated").map((build) => build.id).sort();
+    assert.deepEqual([...catalogue.curatedCombatStyles.keys()].sort(), curatedIds, "curated combat-style metadata must cover exactly every curated build");
+    for (const build of catalogue.builds) {
+      assert.equal(new Set(build.combatStyles).size, build.combatStyles.length, `${build.name} repeats a combat-style tag`);
+      assert.ok(build.combatStyles.length > 0 && build.combatStyles.every((style) => ["Melee", "Ranged"].includes(style)), `${build.name} has invalid combat styles`);
+      if (build.collection === "Curated") assert.deepEqual(build.combatStyles, catalogue.curatedCombatStyles.get(build.id), `${build.name} is not using explicit curated combat metadata`);
+    }
     const descriptionsMissingEquipment = [];
     for (const build of catalogue.selectableBuilds) {
       assert.equal(catalogue.catalogueNumber({ ...build }), catalogue.catalogueNumber(build), `${build.name} numbering depends on object identity`);
       assert.equal(new Set(build.attributes).size, build.attributes.length, `${build.name} repeats an attribute tag`);
-      assert.equal(new Set(build.combatStyles).size, build.combatStyles.length, `${build.name} repeats a combat-style tag`);
       assert.ok(build.attributes.every((attribute) => Object.values(ATTRIBUTE_NAMES).includes(attribute)), `${build.name} has an invalid attribute tag`);
-      assert.ok(build.combatStyles.length > 0 && build.combatStyles.every((style) => ["Melee", "Ranged"].includes(style)), `${build.name} has invalid combat styles`);
       const expectedAttributes = build.stats.split("/").map((part) => part.trim()).filter((code) => ATTRIBUTE_NAMES[code]).map((code) => ATTRIBUTE_NAMES[code]);
       assert.deepEqual(build.attributes, expectedAttributes, `${build.name} attribute tags disagree with its researched stats`);
       assert.ok(build.playstyle.length >= 600, `${build.name} lacks a detailed combat description`);
@@ -151,8 +168,35 @@ test("the selectable catalogue has stable contiguous numbers and distinct resear
       ranged: styleCount("Fextralife", "Ranged"),
       hybrid: styleCount("Fextralife", "Melee/Ranged"),
     }, { melee: 92, ranged: 18, hybrid: 61 });
-    const styleManifest = catalogue.selectableBuilds.map((build) => `${build.id}:${build.combatStyles.join("+")}`).join("\n");
-    assert.equal(createHash("sha256").update(styleManifest).digest("hex"), "90424524acc03ed25dcace8d70bf16335369e6aa32909e10c97e20b8278a146a", "a researched per-build combat style changed");
+    const styleManifest = catalogue.builds.map((build) => `${build.id}:${build.combatStyles.join("+")}`).join("\n");
+    assert.equal(createHash("sha256").update(styleManifest).digest("hex"), "18893e8f73a85cb62ac2655100d736299f9f4864dad427383ae01da9be195867", "a researched per-build combat style changed");
+    const fullStyleCount = (styles) => catalogue.builds.filter((build) => build.combatStyles.join("/") === styles).length;
+    assert.deepEqual({
+      melee: fullStyleCount("Melee"),
+      ranged: fullStyleCount("Ranged"),
+      hybrid: fullStyleCount("Melee/Ranged"),
+    }, { melee: 162, ranged: 35, hybrid: 85 });
+    for (const [id, styles, phase, phasePattern, playstylePattern] of [
+      ["compact-axe", ["Melee", "Ranged"], "dlc", /Smithscript Axe/, /throwable steel/],
+      ["great-spear-paladin", ["Melee", "Ranged"], "late", /Siluria's Tree/, /ranged holy pressure/],
+      ["death-knight", ["Melee", "Ranged"], "dlc", /Spirit Sword/, /rancor pressure/],
+      ["stormcaller", ["Ranged"], "early", /Finger Seal/, /polearm fallback/],
+      ["storm-vanguard", ["Melee", "Ranged"], "early", /Storm Blade/, /Storm skills/],
+      ["night-claws", ["Melee", "Ranged"], "dlc", /Claws of Night/, /two ranges/],
+    ]) {
+      const build = catalogue.builds.find((candidate) => candidate.id === id);
+      assert.deepEqual(build.combatStyles, styles);
+      assert.match(build.phases[phase], phasePattern, `${build.name} lacks its researched combat-style equipment`);
+      assert.match(build.playstyle, playstylePattern, `${build.name} lacks its researched combat-style rationale`);
+    }
+    for (const [id, styles, excludedLoopPattern] of [
+      ["mobile-archer", ["Ranged"], /light melee backup/],
+      ["black-blade-colossus", ["Melee"], /open from range with the Black Blade incantation/],
+    ]) {
+      const build = catalogue.builds.find((candidate) => candidate.id === id);
+      assert.deepEqual(build.combatStyles, styles);
+      assert.match(build.playstyle, excludedLoopPattern, `${build.name} lacks its documented secondary combat option`);
+    }
     for (const [id, rangedTool] of [
       ["fextra-grimreaper", "Swarm of Flies"],
       ["fextra-magus", "Glintstone Pebble"],

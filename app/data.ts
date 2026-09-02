@@ -43,7 +43,7 @@ const BUILD_SOURCES = {
   dlcWeapons: "https://eldenring.wiki.gg/wiki/Weapons_(Shadow_of_the_Erdtree)",
 } as const;
 
-function recommendStartingClass(stats: string, tags: string[]): Build["startingClass"] {
+export function recommendStartingClass(stats: string, tags: string[]): Build["startingClass"] {
   const upper = stats.toUpperCase();
   const has = (stat: string) => upper.includes(stat);
   const count = ["STR", "DEX", "INT", "FAI", "ARC"].filter(has).length;
@@ -88,9 +88,82 @@ const attributesForStats = (stats: string) => stats.split("/").flatMap((part) =>
   return match ? [match[0]] : [];
 });
 
-const curatedCombatStyles = new Map<string, CombatStyle[]>([
+export const curatedCombatStyles = new Map<string, CombatStyle[]>([
   ["quality-knight", ["Melee"]],
+  ["heavy-greatsword", ["Melee"]],
+  ["colossal-wanderer", ["Melee"]],
+  ["lightning-greataxe", ["Melee"]],
+  ["guard-hammer", ["Melee"]],
   ["colossal-hammer", ["Melee"]],
+  ["anchor-bruiser", ["Melee"]],
+  ["compact-axe", ["Melee", "Ranged"]],
+  ["halberd-commander", ["Melee"]],
+  ["great-spear-paladin", ["Melee", "Ranged"]],
+  ["strength-fist", ["Melee"]],
+  ["mobile-claw", ["Melee"]],
+  ["holy-board", ["Melee"]],
+  ["guard-thrust", ["Melee"]],
+  ["rapier-duelist", ["Melee"]],
+  ["heavy-duelist", ["Melee"]],
+  ["samurai", ["Melee"]],
+  ["dragon-samurai", ["Melee"]],
+  ["sacred-twinblade", ["Melee"]],
+  ["curved-dancer", ["Melee"]],
+  ["backhand", ["Melee"]],
+  ["whip", ["Melee"]],
+  ["reaper", ["Melee"]],
+  ["lightning-spear", ["Melee", "Ranged"]],
+  ["mobile-archer", ["Ranged"]],
+  ["crossbow", ["Ranged"]],
+  ["critical-assassin", ["Melee"]],
+  ["throwing-assassin", ["Ranged"]],
+  ["pure-sorcerer", ["Ranged"]],
+  ["carian-greatsword", ["Melee", "Ranged"]],
+  ["dex-spellblade", ["Melee"]],
+  ["gravity-knight", ["Melee", "Ranged"]],
+  ["frost-knight", ["Melee"]],
+  ["death-knight", ["Melee", "Ranged"]],
+  ["magic-polearm", ["Melee", "Ranged"]],
+  ["golden-scholar", ["Ranged"]],
+  ["crucible-paladin", ["Melee"]],
+  ["flame-knight", ["Melee"]],
+  ["blackflame", ["Melee", "Ranged"]],
+  ["lightning-lancer", ["Melee"]],
+  ["bestial-cleric", ["Melee", "Ranged"]],
+  ["stormcaller", ["Ranged"]],
+  ["frenzy", ["Melee", "Ranged"]],
+  ["pyromancer", ["Ranged"]],
+  ["bleed-duelist", ["Melee"]],
+  ["poison-brawler", ["Melee"]],
+  ["rot-duelist", ["Melee"]],
+  ["dragon-communion", ["Melee", "Ranged"]],
+  ["sleep", ["Melee"]],
+  ["thrusting-shield", ["Melee"]],
+  ["storm-vanguard", ["Melee", "Ranged"]],
+  ["frostflail", ["Melee"]],
+  ["dryleaf", ["Melee"]],
+  ["smithscript", ["Ranged"]],
+  ["retaliation", ["Melee", "Ranged"]],
+  ["nightblade", ["Melee"]],
+  ["blood-dancer", ["Melee"]],
+  ["bonebow", ["Ranged"]],
+  ["artillerist", ["Ranged"]],
+  ["ice-dragoon", ["Melee"]],
+  ["eochaid", ["Melee"]],
+  ["finger-oracle", ["Ranged"]],
+  ["liturgist", ["Ranged"]],
+  ["first-lord", ["Melee"]],
+  ["bloodfiend", ["Melee"]],
+  ["ghostflame", ["Melee", "Ranged"]],
+  ["storm-perfumer", ["Melee", "Ranged"]],
+  ["venom-alchemist", ["Melee", "Ranged"]],
+  ["destined-templar", ["Melee"]],
+  ["grafted-scion", ["Melee"]],
+  ["torch-saint", ["Melee"]],
+  ["blue-dancer", ["Melee"]],
+  ["trollsmith", ["Melee", "Ranged"]],
+  ["countermage", ["Melee"]],
+  ["dragonslayer-bow", ["Ranged"]],
   ["powerstance-spears", ["Melee"]],
   ["guardian-swordspear", ["Melee"]],
   ["blasphemous-vicar", ["Melee"]],
@@ -99,6 +172,15 @@ const curatedCombatStyles = new Map<string, CombatStyle[]>([
   ["poison-lizard", ["Melee"]],
   ["thorn-sorcerer", ["Ranged"]],
   ["lightning-perfumer", ["Melee", "Ranged"]],
+  ["fire-knight-greatsword", ["Melee"]],
+  ["sunflower-crusader", ["Melee"]],
+  ["black-steel-bulwark", ["Melee"]],
+  ["night-claws", ["Melee", "Ranged"]],
+  ["rakshasa-counter", ["Melee"]],
+  ["horned-storm", ["Melee"]],
+  ["spread-crossbow", ["Ranged"]],
+  ["golem-fist", ["Melee"]],
+  ["serpent-flail", ["Melee"]],
   ["sword-of-darkness", ["Melee"]],
   ["carian-shield-sorcerer", ["Melee", "Ranged"]],
   ["wing-stance-duelist", ["Melee"]],
@@ -108,6 +190,12 @@ const curatedCombatStyles = new Map<string, CombatStyle[]>([
   ["black-blade-colossus", ["Melee"]],
   ["messmer-impaler", ["Melee", "Ranged"]],
 ]);
+
+function combatStylesForCuratedBuild(id: string) {
+  const styles = curatedCombatStyles.get(id);
+  if (!styles) throw new Error(`Curated build lacks researched combat styles: ${id}`);
+  return styles;
+}
 
 const build = (
   id: string,
@@ -127,7 +215,7 @@ const build = (
   name,
   stats,
   attributes: attributesForStats(stats),
-  combatStyles: curatedCombatStyles.get(id) || [/ranged|caster/i.test(role) ? "Ranged" : "Melee"],
+  combatStyles: combatStylesForCuratedBuild(id),
   role,
   playstyle,
   complexity,

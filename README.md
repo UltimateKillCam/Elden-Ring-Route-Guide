@@ -12,6 +12,20 @@ The app includes:
 - level, weapon-upgrade and Scadutree Blessing targets;
 - multiple local autosave slots plus JSON export/import.
 - a controller/follower LAN mode where each follower can browse the full route, update their own item checks and rune counters, and receive live host progress.
+- public co-op rooms where GitHub Pages users join with a six-digit code and choose their own build and starting class.
+
+## Public co-op rooms
+
+Public rooms use the dedicated Cloudflare Worker in `worker/public-session-worker.ts` and the D1 schema in `db/schema.ts`. The production binding is declared in `wrangler.sessions.jsonc`. After authenticating Wrangler, apply and deploy it with:
+
+```bash
+npm run db:migrate:sessions
+npm run deploy:sessions
+```
+
+Set the GitHub repository variable `SESSION_API_BASE` to the resulting `workers.dev` origin.
+
+The Pages workflow exposes that origin as `NEXT_PUBLIC_SESSION_API_BASE`. Standard or Seamless Co-op creates a 24-hour room immediately and shows its code during setup. A joining player enters the code at the top of the Pages app, reserves an open slot, and chooses a build and one of the ten base-game starting classes. Host and guest tokens are stored only in their respective browsers; D1 stores token hashes.
 
 ## Run for your local co-op group
 

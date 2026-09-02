@@ -72,7 +72,7 @@ test("LAN sessions enforce player ownership, revision safety, and serialized per
       mode: "seamless",
       players: [
         { id: "player-1", name: "Tarnished 1", buildId: "quality-knight", color: "#d8ad62" },
-        { id: "player-2", name: "Tarnished 2", buildId: "colossal-hammer", color: "#7db6a8" },
+        { id: "player-2", name: "Tarnished 2", buildId: "colossal-hammer", startingClass: "Hero", color: "#7db6a8" },
       ],
       hostId: "player-1",
       completed: {},
