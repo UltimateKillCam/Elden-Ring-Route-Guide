@@ -256,3 +256,7 @@ and public-session integration tests, not a second physical PC playthrough.
   it validates build IDs and starting classes independently of the Pages client.
 - New regression checks cover route-card skip permissions, funding removal and
   invalid Pages exports. Private local saves and research caches remain ignored.
+- The first Pages release check caught Vinext's root-relative self-hosted font URLs
+  on the Linux runner. A project-owned post-transform now prefixes those injected
+  URLs before bundling, preserving preload/SSR/hydration consistency without changing
+  local development or third-party URLs. The dependency itself was not edited.
