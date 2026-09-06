@@ -245,7 +245,7 @@ function validExpedition(value) {
   if (value === null) return true;
   const plainRecord = (record) => Boolean(record) && typeof record === "object" && !Array.isArray(record);
   const boundedEntries = (record) => plainRecord(record) && Object.keys(record).length <= 20_000;
-  const startingClasses = new Set(["Vagabond", "Warrior", "Hero", "Bandit", "Astrologer", "Prophet", "Samurai", "Prisoner", "Confessor", "Wretch"]);
+  const startingClasses = new Set(["Vagabond", "Warrior", "Hero", "Bandit", "Astrologer", "Prophet", "Samurai", "Prisoner", "Confessor", "Wretch", "Idus Knight", "Heavy Knight"]);
   if (!value || value.schema !== 1 || !["solo", "standard", "seamless"].includes(value.mode) || !Array.isArray(value.players) || value.players.length < 1 || value.players.length > 6) return false;
   const playerIds = value.players.map((player) => player?.id);
   if (new Set(playerIds).size !== playerIds.length || value.players.some((player) => !player || !/^player-[1-6]$/.test(player.id) || typeof player.name !== "string" || typeof player.buildId !== "string" || !player.buildId.trim() || (player.startingClass !== undefined && !startingClasses.has(player.startingClass)))) return false;

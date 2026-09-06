@@ -10,6 +10,7 @@ const maps = [
 ];
 
 const usefulCategory = /weapon|shield|talisman|spell|armor|ash of war|ashes of war|spirit ashes|flask upgrades/i;
+const smithingMaterial = (item) => /^(?:Somber )?(?:Ancient Dragon )?Smithing Stone/i.test(item.name);
 const routeCategory = /^(locations|sites? of grace|bosses|npcs?|maps|key|key items|flask upgrades)$/i;
 
 const plainText = (value = "") => value
@@ -29,7 +30,7 @@ for (const map of maps) {
   if (!match) throw new Error(`Could not find map items in ${map.file}`);
   const items = JSON.parse(match[1]);
   for (const item of items) {
-    if (!usefulCategory.test(item.category) || !item.name?.trim()) continue;
+    if ((!usefulCategory.test(item.category) && !smithingMaterial(item)) || !item.name?.trim()) continue;
     records.push({
       name: item.name.trim(),
       category: item.category,
@@ -54,20 +55,35 @@ for (const map of maps) {
   }
 }
 
+// Separate contextually typed batches avoid TypeScript's huge-literal union limit.
+function typedRecords(name, type, values) {
+  let text = `export const ${name}: ${type}[] = [];\n`;
+  for (let index = 0; index < values.length; index += 250) {
+    text += `${name}.push(\n${JSON.stringify(values.slice(index, index + 250), null, 2).slice(2, -2)}\n);\n`;
+  }
+  return `${text}\n`;
+}
 const output = `// Generated from the Fextralife interactive-map data. Do not hand edit.\n` +
 `export type MapItem = { name: string; category: string; description: string; layer: "surface" | "underground" | "ashen" | "shadow"; x: number; y: number; url: string };\n\n` +
-`export const mapItems: MapItem[] = ${JSON.stringify(records, null, 2)};\n\n` +
+typedRecords("mapItems", "MapItem", records) +
 `export type MapRoutePoint = MapItem;\n\n` +
-`// @ts-expect-error TypeScript cannot represent the union inferred for this generated 1,700+ entry literal.\n` +
-`export const mapRoutePoints: MapRoutePoint[] = ${JSON.stringify(routeRecords, null, 2)};\n\n` +
-`const clean = (value: string) => value.toLowerCase().replace(/＋/g, "+").replace(/[^a-z0-9+' ]/g, " ").replace(/\\s+/g, " ").trim();\n\n` +
+typedRecords("mapRoutePoints", "MapRoutePoint", routeRecords) +
+`const clean = (value: string) => value.normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/[’‘]/g, "\'").replace(/＋/g, "+").replace(/[^a-z0-9+ ]/g, " ").replace(/\\s+/g, " ").trim();\n\n` +
+`const cleanImportedDescription = (value: string) => value.replace(/\\uFFFD+/g, " ").replace(/\\s+([,.;:])/g, "$1").replace(/\\s+/g, " ").trim();\n` +
+`const cleanMapItem = <T extends MapItem>(item: T): T => item.description.includes("\\uFFFD") ? { ...item, description: cleanImportedDescription(item.description) } : item;\n` +
+`const searchableMapItems = mapItems.map((item) => ({ item, name: clean(item.name) })).filter(({ name }) => name.length > 3);\n` +
+`const searchableRoutePoints = mapRoutePoints.map((point) => ({ point, name: clean(point.name) }));\n` +
+`const mapItemSearchCache = new Map<string, MapItem[]>();\n` +
+`const routePointSearchCache = new Map<string, MapRoutePoint | undefined>();\n\n` +
 `export function findMapItems(value: string, preferredLayer?: MapItem["layer"], categoryPattern?: RegExp) {\n` +
 `  const query = clean(value);\n` +
-`  const candidates = mapItems\n` +
-`    .filter((item) => !categoryPattern || categoryPattern.test(item.category))\n` +
-`    .map((item) => ({ item, name: clean(item.name) }))\n` +
+`  const cacheKey = [query, preferredLayer, categoryPattern?.source, categoryPattern?.flags].join("\\u0000");\n` +
+`  const cached = mapItemSearchCache.get(cacheKey);\n` +
+`  if (cached) return cached.slice();\n` +
+`  const candidates = searchableMapItems\n` +
+`    .filter(({ item }) => !categoryPattern || categoryPattern.test(item.category))\n` +
 `    .filter(({ name }) => name.length > 3 && (query.includes(name) || name.includes(query)))\n` +
-`    .sort((a, b) => Number(b.item.layer === preferredLayer) - Number(a.item.layer === preferredLayer) || b.name.length - a.name.length);\n` +
+`    .sort((a, b) => Number(b.name === query) - Number(a.name === query) || b.name.length - a.name.length || Number(b.item.layer === preferredLayer) - Number(a.item.layer === preferredLayer));\n` +
 `  const chosen: MapItem[] = [];\n` +
 `  const occupied: Array<[number, number]> = [];\n` +
 `  const names = new Set<string>();\n` +
@@ -76,11 +92,12 @@ const output = `// Generated from the Fextralife interactive-map data. Do not ha
 `    const start = query.indexOf(candidate.name);\n` +
 `    const end = start + candidate.name.length;\n` +
 `    if (start >= 0 && occupied.some(([from, to]) => start < to && end > from)) continue;\n` +
-`    chosen.push(candidate.item);\n` +
+`    chosen.push(cleanMapItem(candidate.item));\n` +
 `    names.add(candidate.name);\n` +
 `    if (start >= 0) occupied.push([start, end]);\n` +
 `  }\n` +
-`  return chosen;\n` +
+`  mapItemSearchCache.set(cacheKey, chosen);\n` +
+`  return chosen.slice();\n` +
 `}\n\n` +
 `export function findMapItem(value: string, preferredLayer?: MapItem["layer"]) {\n` +
 `  return findMapItems(value, preferredLayer)[0];\n` +
@@ -88,12 +105,17 @@ const output = `// Generated from the Fextralife interactive-map data. Do not ha
 `export function findMapRoutePoint(value: string, preferredLayer?: MapItem["layer"]) {\n` +
 `  const query = clean(value);\n` +
 `  if (query.length < 3) return undefined;\n` +
+`  const cacheKey = [query, preferredLayer].join("\\u0000");\n` +
+`  if (routePointSearchCache.has(cacheKey)) return routePointSearchCache.get(cacheKey);\n` +
 `  const categoryPriority = (category: string) => /locations/i.test(category) ? 0 : /grace/i.test(category) ? 1 : /boss/i.test(category) ? 2 : /npc/i.test(category) ? 3 : 4;\n` +
-`  const ranked = mapRoutePoints\n` +
-`    .map((point) => { const name = clean(point.name); const match = name === query ? 0 : name.startsWith(query) ? 1 : query.startsWith(name) ? 2 : name.includes(query) ? 3 : query.includes(name) ? 4 : 99; return { point, match }; })\n` +
+`  const ranked = searchableRoutePoints\n` +
+`    .map(({ point, name }) => { const match = name === query ? 0 : name.startsWith(query) ? 1 : query.startsWith(name) ? 2 : name.includes(query) ? 3 : query.includes(name) ? 4 : 99; return { point, match }; })\n` +
 `    .filter(({ match }) => match < 99)\n` +
 `    .sort((a, b) => a.match - b.match || categoryPriority(a.point.category) - categoryPriority(b.point.category) || a.point.name.length - b.point.name.length);\n` +
-`  return ranked.find(({ point }) => point.layer === preferredLayer)?.point || ranked[0]?.point;\n` +
+`  const chosen = ranked.find(({ point }) => point.layer === preferredLayer)?.point || ranked[0]?.point;\n` +
+`  const result = chosen ? cleanMapItem(chosen) : undefined;\n` +
+`  routePointSearchCache.set(cacheKey, result);\n` +
+`  return result;\n` +
 `}\n`;
 
 await writeFile(path.join(root, "app/map-items.ts"), output, "utf8");

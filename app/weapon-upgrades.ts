@@ -5421,13 +5421,20 @@ export const DLC_SOMBER_WEAPONS = [
   "Verdigris Greatshield"
 ] as const;
 const normal = (value: string) => value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-const SORTED_WEAPON_UPGRADE_RECORDS = [...WEAPON_UPGRADE_RECORDS].sort((a, b) => b.name.length - a.name.length);
+const SORTED_WEAPON_UPGRADE_RECORDS = [...WEAPON_UPGRADE_RECORDS].sort((a, b) => b.name.length - a.name.length).map((record) => ({ record, key: normal(record.name) }));
+const lookupCache = new Map<string, WeaponUpgradeRecord[]>();
 export function findWeaponUpgradeRecords(value: string): WeaponUpgradeRecord[] {
   const source = ` ${normal(value)} `;
-  const matches = SORTED_WEAPON_UPGRADE_RECORDS.filter((entry) => source.includes(` ${normal(entry.name)} `));
-  return matches
-    .filter((entry) => !matches.some((other) => other !== entry && normal(other.name).includes(normal(entry.name))))
-    .sort((a, b) => source.indexOf(` ${normal(a.name)} `) - source.indexOf(` ${normal(b.name)} `));
+  const cached = lookupCache.get(source);
+  if (cached) return [...cached];
+  const matches = SORTED_WEAPON_UPGRADE_RECORDS.filter((entry) => source.includes(` ${entry.key} `));
+  const result = matches
+    .filter((entry) => !matches.some((other) => other !== entry && other.key.includes(entry.key)))
+    .sort((a, b) => source.indexOf(` ${a.key} `) - source.indexOf(` ${b.key} `))
+    .map((entry) => entry.record);
+  if (lookupCache.size >= 4096) lookupCache.delete(lookupCache.keys().next().value!);
+  lookupCache.set(source, result);
+  return [...result];
 }
 export function findWeaponUpgradeRecord(value: string): WeaponUpgradeRecord | undefined {
   return findWeaponUpgradeRecords(value)[0];

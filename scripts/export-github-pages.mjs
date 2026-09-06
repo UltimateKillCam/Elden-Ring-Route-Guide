@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { validatePagesAssets } from "./validate-pages-export.mjs";
 
 const root = process.cwd();
 const clientDirectory = resolve(root, "dist/client");
@@ -34,10 +35,12 @@ if (basePath && !html.includes(`content="${basePath}/og.png"`)) {
 }
 
 await mkdir(clientDirectory, { recursive: true });
+const assets = await validatePagesAssets(html, clientDirectory, basePath);
 await Promise.all([
   writeFile(resolve(clientDirectory, "index.html"), html, "utf8"),
   writeFile(resolve(clientDirectory, "404.html"), html, "utf8"),
   writeFile(resolve(clientDirectory, ".nojekyll"), "", "utf8"),
+  writeFile(resolve(clientDirectory, "deployment.json"), JSON.stringify({ commit: process.env.GITHUB_SHA || null, builtAt: new Date().toISOString(), basePath, assetCount: assets.length }, null, 2), "utf8"),
 ]);
 
 console.log(`Wrote GitHub Pages export to ${clientDirectory}${basePath ? ` for ${basePath}` : ""}.`);

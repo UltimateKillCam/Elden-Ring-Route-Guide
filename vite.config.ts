@@ -33,7 +33,13 @@ const localBindingConfig = {
     : [],
 };
 
-export default defineConfig(async () => {
+export default defineConfig(async ({ command, mode }) => {
+  // The local planner has no D1 dependency. Keep Node development independent
+  // of the Cloudflare emulator; opt in when working on the hosted session API.
+  if (command === "serve" && mode !== "cloudflare") return {
+    plugins: [vinext()],
+    server: isCodexSeatbeltSandbox ? { watch: { useFsEvents: false, usePolling: true } } : undefined,
+  };
   // Keep Wrangler and Miniflare state project-local. These are non-secret tool
   // settings; application environment belongs in ignored `.env*` files.
   process.env.WRANGLER_WRITE_LOGS ??= "false";

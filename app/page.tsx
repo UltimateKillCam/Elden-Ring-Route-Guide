@@ -3,6 +3,7 @@
 import { Component, useCallback, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from "react";
 import { builds, catalogueNumber, selectableBuilds, chapters, itemGuides, recommendStartingClass, sources, stageLoadout, type Build, type Chapter, type PhaseKey } from "./data";
 import { findMapItem, findMapItems, findMapRoutePoint, type MapItem } from "./map-items";
+import { routeLoadout, isRoutedWeapon, compatibleTalismans, weaponTransitions, sameWeaponUpgradeTrack } from "./build-routing";
 import { deferredPickupGate, literalItemName, PHASE_START, type PickupGate } from "./progression";
 import { splitArmourSpecification } from "./equipment-data";
 import {
@@ -27,6 +28,10 @@ import { findWeaponUpgradeRecords, weaponUpgradePath } from "./weapon-upgrades";
 import { QUEST_STEP_GUIDES } from "./quest-route";
 import { isAccessRequirementTask, missingAccessRequirements } from "./access-graph";
 import { buffForPickup, buffRoutine, buffSupportItems, buffsForLoadout } from "./buffs";
+import { cataloguePage, changeLevelPace, checklistDone, checklistKeys, checklistProgress, matchesSearch, nextChapterTask, normalizeSearch, routePlanningKey, skipRuneBoss } from "./route-state";
+import { validateRunImport } from "./save-validation";
+import { CheckpointInput } from "./checkpoint-input";
+import { MATERIAL_SOURCES, suppliedUpgradeTarget, allocateUpgradeMaterials, type MaterialAllocation, type MaterialUsage } from "./upgrade-materials";
 import {
   ALL_OPTIONAL_QUEST_TRACK_IDS,
   OPTIONAL_QUEST_TRACKS,
@@ -39,7 +44,7 @@ import {
 type Mode = "solo" | "standard" | "seamless";
 type View = "route" | "selected" | "codex" | "party";
 type LanMode = "none" | "controller" | "follower";
-type StartingClass = "Vagabond" | "Warrior" | "Hero" | "Bandit" | "Astrologer" | "Prophet" | "Samurai" | "Prisoner" | "Confessor" | "Wretch";
+type StartingClass = Exclude<Build["startingClass"], "Not specified">;
 type Player = { id: string; name: string; buildId: string; color: string; startingClass?: StartingClass };
 type Expedition = {
   schema: 1;
@@ -87,6 +92,12 @@ type Task = {
   item?: string;
   slot?: string;
   afterObjective?: string;
+  prerequisiteLabels?: string[];
+  prerequisiteIds?: string[];
+  mapMarker?: MapItem;
+  mapLocation?: string;
+  sourceUrl?: string;
+  material?: string;
   optional?: boolean;
   runeBossId?: string;
   mapQuery?: string;
@@ -94,7 +105,7 @@ type Task = {
 };
 
 const PLAYER_COLORS = ["#d8ad62", "#7db6a8", "#b987aa", "#7698c8", "#c5775e", "#a7a36c"];
-const STARTING_CLASSES: StartingClass[] = ["Vagabond", "Warrior", "Hero", "Bandit", "Astrologer", "Prophet", "Samurai", "Prisoner", "Confessor", "Wretch"];
+const STARTING_CLASSES: StartingClass[] = ["Vagabond", "Warrior", "Hero", "Bandit", "Astrologer", "Prophet", "Samurai", "Prisoner", "Confessor", "Wretch", "Idus Knight", "Heavy Knight"];
 const STORAGE_KEY = "tarnished-together-expedition-v1";
 const SAVE_LIBRARY_KEY = "tarnished-together-save-library-v2";
 const PUBLIC_SESSION_STORAGE_KEY = "tarnished-together-public-session-v1";
@@ -158,8 +169,14 @@ function buildClassification(build: Build) {
   };
 }
 
+const startingClassCache = new WeakMap<Build, Build["startingClass"]>();
 function plannerStartingClass(build: Build): Build["startingClass"] {
-  return build.startingClass === "Not specified" ? planBuildStatTarget(build, 170).origin.name as Build["startingClass"] : build.startingClass;
+  if (build.startingClass !== "Not specified") return build.startingClass;
+  const cached = startingClassCache.get(build);
+  if (cached) return cached;
+  const startingClass = planBuildStatTarget(build, 170).origin.name as Build["startingClass"];
+  startingClassCache.set(build, startingClass);
+  return startingClass;
 }
 
 function defaultPlayerStartingClass(build: Build): StartingClass {
@@ -169,15 +186,26 @@ function defaultPlayerStartingClass(build: Build): StartingClass {
   return STARTING_CLASSES.includes(recommended as StartingClass) ? recommended as StartingClass : "Wretch";
 }
 
+const playerBuildCache = new Map<string, Build>();
 function buildForPlayer(player: Player) {
+  // Saved state is parsed on each planning change. Cache by build/class rather
+  // than object identity so a checkbox does not discard every equipment cache.
+  const key = `${player.buildId}:${player.startingClass || "default"}`;
+  const cached = playerBuildCache.get(key);
+  if (cached) return cached;
   const build = builds.find((candidate) => candidate.id === player.buildId) || selectableBuilds[0];
-  return player.startingClass ? { ...build, startingClass: player.startingClass } : build;
+  const selected = player.startingClass ? { ...build, startingClass: player.startingClass } : build;
+  playerBuildCache.set(key, selected);
+  return selected;
 }
 
+const buildSearchCache = new WeakMap<Build, string>();
 function buildSearchText(build: Build) {
+  const cached = buildSearchCache.get(build);
+  if (cached !== undefined) return cached;
   const classification = buildClassification(build);
   const loadouts = PHASE_ORDER.map((phase) => stageLoadout(build, phase));
-  return [
+  const text = normalizeSearch([
     build.name,
     build.stats,
     classification.range,
@@ -186,7 +214,9 @@ function buildSearchText(build: Build) {
     build.playstyle,
     ...Object.values(build.phases),
     ...loadouts.flatMap((loadout) => [loadout.weapon, loadout.offhand, loadout.skill, loadout.armour, loadout.talismans.join(" "), loadout.spells.join(" ")]),
-  ].join(" ").toLowerCase();
+  ].join(" "));
+  buildSearchCache.set(build, text);
+  return text;
 }
 
 function matchesBuildFilter(build: Build, filter: string) {
@@ -213,7 +243,7 @@ function sortBuilds(candidates: Build[], order: string) {
 
 const inferGuide = (item: string, chapter: Chapter) => {
   const buff = buffForPickup(item);
-  if (buff) return `Area: ${chapter.region}. ${buff.acquisition}`;
+  if (buff && (buff.kind !== "ash" || buff.id === "braggarts-roar")) return buff.acquisition;
   const exact = Object.entries(itemGuides).find(([key]) => item.includes(key));
   if (exact) return `Area: ${chapter.region}. ${exact[1]}`;
   const marker = findMapItem(item, mapLayerForChapter(chapter)) || findMapItem(item);
@@ -370,7 +400,7 @@ function equipmentTimeline(build: Build, plannedClass: Build["startingClass"], l
 
   chapters.forEach((chapter, chapterIndex) => {
     const phase = phaseForChapter(chapter);
-    const loadout = stageLoadout(build, phase);
+    const loadout = routeLoadout(build, chapter);
     const timingFor = (value: string, slot?: string) => isEmptyEquipmentValue(value) ? undefined : routeTiming(value, phase, slot);
     const isAvailable = (value: string, allowUngatedAtStart = true, slot?: string) => {
       const timing = timingFor(value, slot);
@@ -385,14 +415,12 @@ function equipmentTimeline(build: Build, plannedClass: Build["startingClass"], l
     const offhand = activeValue(loadout.offhand, previous?.offhand || "None", "off-hand");
     const skillOptions = /\bor\b|&/i.test(loadout.skill) ? loadout.skill.split(/\s+(?:or|&)\s+/i).map((option) => option.trim()).filter(Boolean) : [loadout.skill];
     const matchingSkill = availableWeaponIndex >= 0 && skillOptions[availableWeaponIndex] ? skillOptions[availableWeaponIndex] : skillOptions.find((value) => isAvailable(value, true, "skill")) || loadout.skill;
-    const skill = !previous && chapterIndex === 0
-      ? loadout.skill
-      : availableWeaponIndex < 0 && previous
+    const skill = availableWeaponIndex < 0 && previous
         ? previous.skill
         : activeValue(matchingSkill, previous?.skill || "Use the weapon's default skill", "skill");
     const availableTalismans = loadout.talismans.filter((value) => !isEmptyEquipmentValue(value) && isAvailable(value, false, "talisman"));
     const retainedTalismans = (previous?.talismans || []).filter((value) => !availableTalismans.includes(value));
-    const talismans = [...availableTalismans, ...retainedTalismans].slice(0, talismanSlotsForChapter(chapterIndex));
+    const talismans = compatibleTalismans([...availableTalismans, ...retainedTalismans]).slice(0, talismanSlotsForChapter(chapterIndex));
     const availableArmour = armourNames(loadout.armour).filter((value) => isAvailable(value, false, "armour"));
     const armour = availableArmour.length ? availableArmour : previous?.armour || [`${plannedClass} starting armour`];
     const availableSpells = normalizedSpells(loadout.spells).filter((value) => !isEmptyEquipmentValue(value) && isAvailable(value, false, "spell"));
@@ -412,7 +440,7 @@ function equipmentTimeline(build: Build, plannedClass: Build["startingClass"], l
     const weight = `${(armourWeight + weaponWeight + offhandWeight).toFixed(1)} equipped / ${loadLimit.toFixed(1)} ${loadTier}-load limit at END ${statPlan.attributes.endurance}`;
     const stats = (Object.keys(STAT_LABELS) as StatKey[]).map((stat) => `${STAT_LABELS[stat]} ${statPlan.attributes[stat]}`).join(" · ");
 
-    const activeBuffRoutine = buffRoutine({ spells, skill });
+    const activeBuffRoutine = buffRoutine({ spells, skill }, statPlan.attributes);
     const signature = JSON.stringify({ weapon, offhand, skill, talismans, armour, spells, physick, activeBuffRoutine });
     if (signature === previousSignature) return;
     const activeValues: Array<[string, string]> = [[weapon, "weapon"], [offhand, "off-hand"], [skill, "skill"], ...talismans.map((value) => [value, "talisman"] as [string, string]), ...armour.map((value) => [value, "armour"] as [string, string]), ...spells.map((value) => [value, "spell"] as [string, string]), ...physick.map((value) => [value, "Physick tear"] as [string, string])];
@@ -459,9 +487,10 @@ const PHASE_LABELS: Record<PhaseKey, string> = { early: "Early game", mid: "Mid 
 
 function PhaseProgression({ build }: { build: Build }) {
   return <>
-    <div className="loadout-section-title"><p className="eyebrow">Four-stage plan</p><h3>What to use in each phase</h3><p>These are the build-specific loadouts used by the route. Temporary sourced bridges are identified explicitly.</p></div>
+    <div className="loadout-section-title"><p className="eyebrow">Four-stage summary</p><h3>Equipment by the end of each phase</h3><p>The chapter timeline below shows the exact acquisition points. Keep the current weapon until its replacement appears there.</p></div>
     <div className="loadout-stages">{PHASE_ORDER.map((phase) => {
-      const stage = stageLoadout(build, phase);
+      const phaseChapters = chapters.filter((chapter) => phaseForChapter(chapter) === phase);
+      const stage = routeLoadout(build, phaseChapters.at(-1)!);
       return <article key={phase}>
         <header><span>{PHASE_LABELS[phase]}</span><small>{stage.level}</small></header>
         <div className="loadout-weapon"><small>Main weapon</small><strong>{stage.weapon}</strong></div>
@@ -793,7 +822,7 @@ function phaseForChapter(chapter: Chapter): PhaseKey {
 
 function carriedWeaponCheckpoint(expedition: Expedition, chapterIndex: number, playerId: string, build: Build, activeWeapon: string) {
   for (let index = chapterIndex; index >= 0; index -= 1) {
-    if (stageLoadout(build, phaseForChapter(chapters[index])).weapon !== activeWeapon) break;
+    if (!sameWeaponUpgradeTrack(routeLoadout(build, chapters[index]).weapon, activeWeapon)) break;
     const value = expedition.checkpointWeaponLevels?.[`${chapters[index].id}:${playerId}`];
     if (value !== undefined) return value;
   }
@@ -873,6 +902,7 @@ function affordableLevelAndUpgrade({
   desiredLevel,
   minimumUpgrade,
   desiredUpgrade,
+  ownedUpgrade = 0,
   path,
   availableRunes,
 }: {
@@ -881,17 +911,18 @@ function affordableLevelAndUpgrade({
   desiredLevel: number;
   minimumUpgrade: number;
   desiredUpgrade: number;
+  ownedUpgrade?: number;
   path?: UpgradePath;
   availableRunes: number;
 }) {
   const maximumUpgrade = path === "somber" ? 10 : 25;
   const safeDesiredUpgrade = path ? Math.max(0, Math.min(maximumUpgrade, desiredUpgrade)) : 0;
   const safeMinimumUpgrade = path ? Math.max(0, Math.min(safeDesiredUpgrade, minimumUpgrade)) : 0;
-  for (let level = desiredLevel; level >= Math.max(originLevel, minimumLevel); level -= 1) {
-    const levelGap = desiredLevel - level;
+  for (let level = Math.max(originLevel, minimumLevel, desiredLevel); level >= Math.max(originLevel, minimumLevel); level -= 1) {
+    const levelGap = Math.max(0, desiredLevel - level);
     const upgradeReduction = path === "somber" ? Math.ceil(levelGap / 10) : Math.ceil(levelGap / 5);
     const upgrade = path ? Math.max(safeMinimumUpgrade, safeDesiredUpgrade - upgradeReduction) : 0;
-    const materialRunes = path ? planWeaponUpgrade(path, 0, upgrade).materialPurchaseRunes : 0;
+    const materialRunes = path ? planWeaponUpgrade(path, Math.min(ownedUpgrade, upgrade), upgrade).materialPurchaseRunes : 0;
     const levelRunes = runesBetweenLevels(originLevel, level);
     if (levelRunes + materialRunes <= availableRunes) return { level, upgrade, levelRunes, materialRunes };
   }
@@ -904,6 +935,9 @@ type RuneSupportChapter = {
   cumulativeBossRunes: number;
   levels: Record<string, number>;
   upgrades: Record<string, number>;
+  materials?: Record<string, MaterialAllocation[]>;
+  materialLimited?: Record<string, boolean>;
+  upgradeOrigins?: Record<string, number>;
 };
 
 function runeSupportPlan(expedition: Expedition): Record<string, RuneSupportChapter> {
@@ -914,6 +948,10 @@ function runeSupportPlan(expedition: Expedition): Record<string, RuneSupportChap
   const previousLevels: Record<string, number> = {};
   const previousUpgrades: Record<string, number> = {};
   const previousUpgradePaths: Record<string, UpgradePath | undefined> = {};
+  const previousWeapons: Record<string, string> = {};
+  const usedMaterials: Record<string, MaterialUsage> = {};
+  const sharedMerchantUsage: MaterialUsage = {};
+  const usageFor = (playerId: string) => expedition.mode === "seamless" ? { ...usedMaterials[playerId], ...sharedMerchantUsage } : usedMaterials[playerId];
 
   for (let chapterIndex = 0; chapterIndex < chapters.length; chapterIndex += 1) {
     const chapter = chapters[chapterIndex];
@@ -928,7 +966,7 @@ function runeSupportPlan(expedition: Expedition): Record<string, RuneSupportChap
 
     for (const player of expedition.players) {
       const selected = buildForPlayer(player);
-      const loadout = stageLoadout(selected, phaseForChapter(chapter));
+      const loadout = routeLoadout(selected, chapter);
       const plannedClass = selected.startingClass === "Not specified" ? planBuildStatTarget(selected, 170).origin.name : selected.startingClass;
       const plan = planBuildStatTarget({ ...selected, startingClass: plannedClass }, targets.runeLevel, weaponRequirements(loadout.weapon, loadout.offhand));
       const pathResult = weaponUpgradePath(loadout.weapon);
@@ -940,7 +978,8 @@ function runeSupportPlan(expedition: Expedition): Record<string, RuneSupportChap
       const enteredRunes = expedition.checkpointRunes?.[checkpointKey];
       const playerOverTarget = enteredLevel !== undefined && enteredLevel >= targets.runeLevel;
       const levelRunes = playerOverTarget ? 0 : runesBetweenLevels(enteredLevel ?? plan.origin.level, targets.runeLevel);
-      const materials = path ? planWeaponUpgrade(path, Math.min(enteredWeaponLevel, desiredUpgrade), desiredUpgrade).materialPurchaseRunes : 0;
+      const supplyTarget = path ? suppliedUpgradeTarget(path, enteredWeaponLevel, desiredUpgrade, chapter.id, usageFor(player.id)).target : 0;
+      const materials = path ? planWeaponUpgrade(path, Math.min(enteredWeaponLevel, supplyTarget), supplyTarget).materialPurchaseRunes : 0;
       const required = levelRunes + materials + economy.purchaseReserve;
       const available = enteredRunes ?? (expected.low + cumulativeBossRunes);
       if (!playerOverTarget) maximumShortfall = Math.max(maximumShortfall, required - available);
@@ -961,29 +1000,52 @@ function runeSupportPlan(expedition: Expedition): Record<string, RuneSupportChap
     cumulativeBossRunes += recovery.perPlayerRunes;
     const levels: Record<string, number> = {};
     const upgrades: Record<string, number> = {};
+    const materials: Record<string, MaterialAllocation[]> = {};
+    const materialLimited: Record<string, boolean> = {};
+    const upgradeOrigins: Record<string, number> = {};
     for (const player of expedition.players) {
       const selected = buildForPlayer(player);
-      const loadout = stageLoadout(selected, phaseForChapter(chapter));
+      const loadout = routeLoadout(selected, chapter);
       const plannedClass = selected.startingClass === "Not specified" ? planBuildStatTarget(selected, 170).origin.name : selected.startingClass;
       const plan = planBuildStatTarget({ ...selected, startingClass: plannedClass }, targets.runeLevel, weaponRequirements(loadout.weapon, loadout.offhand));
       const pathResult = weaponUpgradePath(loadout.weapon);
       const path: UpgradePath | undefined = pathResult === "none" ? undefined : pathResult;
       const desiredUpgrade = path === "somber" ? targets.somberUpgrade : targets.standardUpgrade;
-      const spendable = Math.max(0, expected.low + cumulativeBossRunes - economy.purchaseReserve);
+      const enteredLevel = carriedCheckpointNumber(expedition.checkpointLevels, chapterIndex, player.id);
+      const enteredRunes = expedition.checkpointRunes?.[`${chapter.id}:${player.id}`];
+      const hasRecordedBudget = enteredLevel !== undefined && enteredRunes !== undefined;
+      const ownedUpgrade = carriedWeaponCheckpoint(expedition, chapterIndex, player.id, selected, loadout.weapon) ?? 0;
+      // A checkpoint is a fresh budget, not an addition to lifetime projected earnings.
+      const spendable = Math.max(0, (hasRecordedBudget ? enteredRunes + recovery.perPlayerRunes : expected.low + cumulativeBossRunes) - economy.purchaseReserve);
+      const previousWeaponIsSame = previousUpgradePaths[player.id] === path && sameWeaponUpgradeTrack(previousWeapons[player.id] || "", loadout.weapon);
+      const upgradeFrom = expedition.checkpointWeaponLevels?.[`${chapter.id}:${player.id}`] ?? Math.max(ownedUpgrade, previousWeaponIsSame ? previousUpgrades[player.id] ?? 0 : 0);
+      const availableSupply = path ? suppliedUpgradeTarget(path, upgradeFrom, desiredUpgrade, chapter.id, usageFor(player.id)) : undefined;
       const funded = affordableLevelAndUpgrade({
-        originLevel: plan.origin.level,
-        minimumLevel: previousLevels[player.id] ?? plan.origin.level,
+        originLevel: hasRecordedBudget ? Math.max(plan.origin.level, enteredLevel) : plan.origin.level,
+        minimumLevel: hasRecordedBudget ? enteredLevel : Math.max(enteredLevel ?? plan.origin.level, previousLevels[player.id] ?? plan.origin.level),
         desiredLevel: targets.runeLevel,
-        minimumUpgrade: previousUpgradePaths[player.id] === path ? (previousUpgrades[player.id] ?? 0) : 0,
-        desiredUpgrade,
+        minimumUpgrade: hasRecordedBudget ? ownedUpgrade : previousUpgradePaths[player.id] === path && sameWeaponUpgradeTrack(previousWeapons[player.id] || "", loadout.weapon) ? (previousUpgrades[player.id] ?? 0) : 0,
+        desiredUpgrade: availableSupply?.target ?? desiredUpgrade,
+        ownedUpgrade: hasRecordedBudget ? ownedUpgrade : 0,
         path,
         availableRunes: spendable,
       });
+      const supply = path ? suppliedUpgradeTarget(path, upgradeFrom, funded.upgrade, chapter.id, usageFor(player.id)) : undefined;
       levels[player.id] = funded.level;
-      upgrades[player.id] = funded.upgrade;
+      upgrades[player.id] = supply?.target ?? funded.upgrade;
+      materials[player.id] = supply?.allocations ?? [];
+      materialLimited[player.id] = availableSupply?.limited ?? false;
+      upgradeOrigins[player.id] = upgradeFrom;
+      if (supply) {
+        usedMaterials[player.id] = supply.usage;
+        if (expedition.mode === "seamless") for (const source of MATERIAL_SOURCES) {
+          if (source.unitCost && Number.isFinite(source.capacity) && supply.usage[source.id]) sharedMerchantUsage[source.id] = supply.usage[source.id];
+        }
+      }
       previousLevels[player.id] = funded.level;
-      previousUpgrades[player.id] = funded.upgrade;
+      previousUpgrades[player.id] = upgrades[player.id];
       previousUpgradePaths[player.id] = path;
+      previousWeapons[player.id] = loadout.weapon;
     }
     result[chapter.id] = {
       bosses: recovery.bosses,
@@ -991,6 +1053,9 @@ function runeSupportPlan(expedition: Expedition): Record<string, RuneSupportChap
       cumulativeBossRunes,
       levels,
       upgrades,
+      materials,
+      materialLimited,
+      upgradeOrigins,
     };
   }
   return result;
@@ -1002,7 +1067,7 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition, su
   const chapterIndex = chapters.indexOf(chapter);
   const previousEconomy = CHAPTER_ECONOMY[chapterIndex - 1];
   const phase = phaseForChapter(chapter);
-  const previousPhase = chapterIndex > 0 ? phaseForChapter(chapters[chapterIndex - 1]) : phase;
+
   const expected = expectedRunesBeforeBoss(chapterIndex, expedition);
   const lossRate = expedition.lossRate ?? 20;
   const chapterSupport = support[chapter.id];
@@ -1018,11 +1083,16 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition, su
     optional: false,
     runeBossId: boss.id,
     mapQuery: boss.mapQuery || `${boss.name} ${boss.location}`,
+    mapMarker: findMapRoutePoint(boss.mapQuery || `${boss.name} ${boss.location}`, boss.mapLayer ?? "surface"),
+    sourceUrl: boss.source,
+    prerequisiteLabels: boss.prerequisiteLabel ? [boss.prerequisiteLabel] : undefined,
+    afterObjective: boss.prerequisiteLabel,
   }));
+  const runeBossTaskIds = result.map((task) => task.id);
 
   for (const player of expedition.players) {
     const selected = buildForPlayer(player);
-    const currentLoadout = stageLoadout(selected, phase);
+    const currentLoadout = routeLoadout(selected, chapter);
     const plannedClass = selected.startingClass === "Not specified"
       ? planBuildStatTarget(selected, 170).origin.name
       : selected.startingClass;
@@ -1032,7 +1102,7 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition, su
     const previousTargetLevel = previousEconomy
       ? (support[chapters[chapterIndex - 1]?.id]?.levels[player.id] ?? guideTargets(previousEconomy, levelOffset).runeLevel)
       : currentPlan.origin.level;
-    const previousLoadout = stageLoadout(selected, previousPhase);
+    const previousLoadout = routeLoadout(selected, chapters[Math.max(0, chapterIndex - 1)]);
     const enteredLevel = carriedCheckpointNumber(expedition.checkpointLevels, chapterIndex, player.id);
     const levelingFrom = Math.min(fundedTargetLevel, Math.max(currentPlan.origin.level, enteredLevel ?? previousTargetLevel));
     const enteredStats = completeCheckpointStats(carriedCheckpointStats(expedition.checkpointStats, chapterIndex, player.id));
@@ -1048,15 +1118,20 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition, su
     const currentUpgrade = chapterSupport?.upgrades[player.id] ?? (upgradePath === "somber" ? targets.somberUpgrade : targets.standardUpgrade);
     const previousPathResult = weaponUpgradePath(previousLoadout.weapon);
     const previousUpgradePath: UpgradePath | undefined = previousPathResult === "none" ? undefined : previousPathResult;
-    const plannedPreviousUpgrade = previousEconomy && previousUpgradePath === upgradePath
+    const plannedPreviousUpgrade = previousEconomy && previousUpgradePath === upgradePath && sameWeaponUpgradeTrack(previousLoadout.weapon, currentLoadout.weapon)
       ? (support[chapters[chapterIndex - 1]?.id]?.upgrades[player.id] ?? 0)
       : 0;
     const enteredWeaponLevel = carriedWeaponCheckpoint(expedition, chapterIndex, player.id, selected, currentLoadout.weapon);
-    const previousUpgrade = enteredWeaponLevel === undefined
+    const previousUpgrade = chapterSupport?.upgradeOrigins?.[player.id] ?? (enteredWeaponLevel === undefined
       ? plannedPreviousUpgrade
-      : Math.min(currentUpgrade, enteredWeaponLevel);
+      : Math.min(currentUpgrade, enteredWeaponLevel));
     const cumulativeMaterials = upgradePath ? planWeaponUpgrade(upgradePath, 0, currentUpgrade).materialPurchaseRunes : 0;
     const supplementalRunes = chapterSupport?.cumulativeBossRunes ?? 0;
+    const enteredRunes = expedition.checkpointRunes?.[`${chapter.id}:${player.id}`];
+    const hasRecordedBudget = enteredLevel !== undefined && enteredRunes !== undefined;
+    const checkpointBossRunes = chapterSupport?.chapterBossRunes ?? 0;
+    const checkpointMaterialRunes = upgradePath ? planWeaponUpgrade(upgradePath, Math.min(previousUpgrade, currentUpgrade), currentUpgrade).materialPurchaseRunes : 0;
+    const checkpointBalance = (enteredRunes ?? 0) + checkpointBossRunes - levelRunes - checkpointMaterialRunes - economy.purchaseReserve;
     const projectedLow = expected.low + supplementalRunes - cumulativeLevelRunes - cumulativeMaterials - economy.purchaseReserve;
     const projectedHigh = expected.high + supplementalRunes - cumulativeLevelRunes - cumulativeMaterials - economy.purchaseReserve;
     const changes = statScheduleText(enteredStats ?? previousPlan.attributes, currentPlan.attributes, levelingFrom, currentPlan.priorities, weaponRequirements(currentLoadout.weapon, currentLoadout.offhand), fundedTargetLevel - levelingFrom);
@@ -1070,16 +1145,24 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition, su
       targetLevel: fundedTargetLevel,
       phase,
     });
-    const targetNote = fundedTargetLevel < targets.runeLevel
+    const targetNote = enteredLevel !== undefined && enteredLevel >= targets.runeLevel
+      ? `The character already meets the RL${targets.runeLevel} guide target; no rune top-up fights are needed for this player.`
+      : fundedTargetLevel < targets.runeLevel
       ? `The published guide target is RL${economy.targetRuneLevel}${levelOffset ? ` and this run is set ${levelOffset} levels below it` : ""}; the conservative income available here funds RL${fundedTargetLevel}, so that is the recommendation instead of displaying an unaffordable level.`
       : `This fully funds the ${levelOffset ? `RL${targets.runeLevel} target (${levelOffset} below the published guide)` : `published RL${targets.runeLevel} target`}.`;
-    const budgetStatus = `After the assigned levels, reinforcement-material ceiling and ${formatRunes(economy.purchaseReserve)} reserve, the conservative projected balance is ${formatRunes(Math.max(0, projectedLow))} runes (${formatRunes(Math.max(0, projectedHigh))} on the comfortable estimate). ${targetNote}`;
+    const budgetStatus = hasRecordedBudget
+      ? `${checkpointBalance >= 0 ? `After these levels, the remaining stone purchase ceiling and the reserve, ${formatRunes(checkpointBalance)} runes remain before any reinforcement service fees.` : "Hold the current level and weapon; the recorded budget does not cover the reserve. No extra levels are funded."} ${targetNote}`
+      : `After the assigned levels, reinforcement-material ceiling and ${formatRunes(economy.purchaseReserve)} reserve, the conservative projected balance is ${formatRunes(Math.max(0, projectedLow))} runes (${formatRunes(Math.max(0, projectedHigh))} on the comfortable estimate). ${targetNote}`;
+    const incomeDescription = hasRecordedBudget
+      ? `This recommendation uses the checkpoint's ${formatRunes(enteredRunes)} held runes${checkpointBossRunes ? ` plus ${formatRunes(checkpointBossRunes)} after completing this chapter's assigned rune top-up fights` : ""}, not estimated lifetime income.`
+      : `Conservative cumulative income is ${formatRunes(expected.low + supplementalRunes)} runes after the ${lossRate}% field-loss allowance, completed-boss rotation and ${formatRunes(supplementalRunes)} from assigned rune top-up bosses.`;
 
     result.push({
       id: `${chapter.id}-level-${player.id}`,
       label: enteredLevel !== undefined && enteredLevel >= fundedTargetLevel ? `${player.name}: remain at RL${enteredLevel}` : `${player.name}: level from RL${levelingFrom} to RL${fundedTargetLevel}`,
-      detail: `Rest at ${chapter.grace}. ${enteredLevel !== undefined ? `The checkpoint records RL${enteredLevel}. ` : ""}${levelingFrom < fundedTargetLevel ? `Buy ${fundedTargetLevel - levelingFrom} levels for ${formatRunes(levelRunes)} runes. Apply them exactly as follows: ${changes}.` : `Do not buy levels in this chapter; the recorded level already meets or exceeds the RL${fundedTargetLevel} route target.`} Planned class: ${currentPlan.origin.name}.${requirementText} Conservative cumulative income is ${formatRunes(expected.low + supplementalRunes)} runes after the ${lossRate}% field-loss allowance, completed-boss rotation and ${formatRunes(supplementalRunes)} from assigned rune top-up bosses. Keep ${formatRunes(economy.purchaseReserve)} unspent for merchants, arrows and consumables. ${budgetStatus}${soreseal.recommended ? ` Radagon's Soreseal can temporarily bridge ${soreseal.bridgedRequirements.map((stat) => STAT_LABELS[stat]).join("/")}; it also makes you take 15% more damage, so remove it once natural requirements are met.` : ""}`,
+      detail: `Rest at ${chapter.grace}. ${enteredLevel !== undefined ? `The checkpoint records RL${enteredLevel}. ` : ""}${levelingFrom < fundedTargetLevel ? `Buy ${fundedTargetLevel - levelingFrom} levels for ${formatRunes(levelRunes)} runes. Apply them exactly as follows: ${changes}.` : `Keep your current level; no additional levels are recommended from this budget.`} Planned class: ${currentPlan.origin.name}.${requirementText} ${incomeDescription} Keep ${formatRunes(economy.purchaseReserve)} unspent for merchants, arrows and consumables. ${budgetStatus}${soreseal.recommended ? ` Radagon's Soreseal can temporarily bridge ${soreseal.bridgedRequirements.map((stat) => STAT_LABELS[stat]).join("/")}; it also makes you take 15% more damage, so remove it once natural requirements are met.` : ""}`,
       kind: "level",
+      prerequisiteIds: runeBossTaskIds,
       playerId: player.id,
       perPlayer: false,
       scope: player.name,
@@ -1087,6 +1170,23 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition, su
 
     if (upgradePath && currentUpgrade > previousUpgrade) {
       const upgrade = planWeaponUpgrade(upgradePath, previousUpgrade, currentUpgrade);
+      const supply = chapterSupport?.materials?.[player.id] ?? allocateUpgradeMaterials(upgradePath, previousUpgrade, currentUpgrade, chapter.id).allocations;
+      const materialTaskIds: string[] = [];
+      for (const allocation of supply) {
+        const { source, quantity, material } = allocation;
+        const id = `${chapter.id}-material-${player.id}-${source.id}`;
+        materialTaskIds.push(id);
+        result.push({ id, label: `${source.unitCost ? "Buy" : "Collect"} ${quantity}× ${material} — ${player.name}`,
+          detail: `For ${player.name}'s ${currentLoadout.weapon} upgrade from +${previousUpgrade} to +${currentUpgrade}. Area: ${source.location}. ${source.directions} ${source.unitCost ? `Price: ${formatRunes(source.unitCost)} each; at most ${formatRunes(quantity * source.unitCost)} runes for this stop.` : "No rune purchase cost."} ${Number.isFinite(source.capacity) ? `Finite stock: ${source.capacity} here per playthrough; these pickups or shop items do not respawn.` : "Unlimited shop stock after the named unlock."} Check the character's inventory first: only collect or buy the missing quantity, and mark this complete if you already hold it. Keep regular and Somber stones separate. ${expedition.mode === "standard" ? "Collect this character's supplies in their own world." : expedition.mode === "seamless" && source.unitCost && Number.isFinite(source.capacity) ? "In Seamless Co-op check the shared merchant stock before buying; do not assume each player receives a separate shop allocation." : ""}`,
+          kind: "gear", playerId: player.id, perPlayer: false, scope: player.name,
+          material, item: source.marker?.name, mapQuery: source.mapQuery,
+          mapMarker: source.marker ? { ...source.marker, name: `${material} — ${source.location}` } : undefined,
+          mapLocation: source.location === "Twin Maiden Husks" ? "Roundtable Hold · Twin Maiden Husks" : source.location,
+          sourceUrl: source.source,
+          prerequisiteLabels: source.unlockLabel ? [source.unlockLabel] : undefined,
+          afterObjective: source.chapterId === chapter.id ? source.unlockLabel : undefined,
+        });
+      }
       const materials = upgrade.materials.map((material) => `${material.quantity}× ${material.name}`).join(", ");
       const smith = chapter.id === "first-steps"
         ? "At the Church of Elleh smithing table"
@@ -1097,11 +1197,14 @@ function progressionTasksForChapter(chapter: Chapter, expedition: Expedition, su
       result.push({
         id: `${chapter.id}-upgrade-${player.id}-${upgradePath}`,
         label: `${player.name}: ${currentLoadout.weapon} to +${currentUpgrade}`,
-        detail: `${smith}, take the active ${upgradePath === "somber" ? "Somber" : "regular"} weapon from +${previousUpgrade} to +${currentUpgrade}: ${materials}.${smithLimit} Buying every purchasable stone in this step would cost at most ${formatRunes(upgrade.materialPurchaseRunes)} runes; stones collected from this route reduce that amount. The reinforcement service price is weapon-specific and is shown before confirmation, so pay it only after keeping the ${formatRunes(economy.purchaseReserve)} merchant reserve. If ${currentLoadout.weapon} is still behind a later route card, reinforce the currently equipped bridge weapon to this cap and save enough stones to catch the named weapon up when collected. Do not exceed +${currentUpgrade} in this chapter.`,
+        detail: `${smith}, after completing the material stops, reinforce ${currentLoadout.weapon} from +${previousUpgrade} to +${currentUpgrade}: ${materials}.${smithLimit} Check the stone quantities in inventory, choose Strengthen Armament and select this exact weapon. Buying all required purchasable stones costs at most ${formatRunes(upgrade.materialPurchaseRunes)} runes; the free pickups above reduce that amount. The smith's service fee is additional: check the confirmation screen and retain the ${formatRunes(economy.purchaseReserve)} reserve. Do not spend these stones on an earlier weapon that this route has replaced.`,
         kind: "upgrade",
         playerId: player.id,
         perPlayer: false,
         scope: player.name,
+        prerequisiteLabels: supply.flatMap(({ source }) => source.unlockLabel ? [source.unlockLabel] : []),
+        prerequisiteIds: [...runeBossTaskIds, ...materialTaskIds],
+        afterObjective: supply.find(({ source }) => source.chapterId === chapter.id && source.unlockLabel)?.source.unlockLabel,
       });
     }
 
@@ -1192,7 +1295,7 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition, support?: Rec
       const playerPickupTasks: Task[] = [];
       const phaseIndex = PHASE_ORDER.indexOf(chapter.phase!);
       const earlierItems = new Set(PHASE_ORDER.slice(0, phaseIndex).flatMap((phase) => loadoutPickups(stageLoadout(selected, phase), chapter)).map((pickup) => pickupItemIdentity(pickup.item)));
-      const newPickups = loadoutPickups(loadout, chapter).filter((pickup) => !earlierItems.has(pickupItemIdentity(pickup.item)) && !deferredPickupGate(pickup.item, { preferredLayer: mapLayerForChapter(chapter), categoryPattern: mapCategoriesForSlot(pickup.slot) }));
+      const newPickups = loadoutPickups(loadout, chapter).filter((pickup) => (pickup.slot !== "weapon" || isRoutedWeapon(selected, pickup.item)) && !earlierItems.has(pickupItemIdentity(pickup.item)) && !deferredPickupGate(pickup.item, { preferredLayer: mapLayerForChapter(chapter), categoryPattern: mapCategoriesForSlot(pickup.slot) }));
       newPickups.forEach((pickup, pickupIndex) => {
         const buff = buffForPickup(pickup.item, pickup.slot);
         const itemKey = pickupTaskKey(pickup.item);
@@ -1233,9 +1336,15 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition, support?: Rec
   expedition.players.forEach((player) => {
     const selected = buildForPlayer(player);
     const seen = new Set<string>();
+    const phase = phaseForChapter(chapter);
+    const legacyPrimary = PHASE_START[phase] === chapter.id
+      ? loadoutPickups(stageLoadout(selected, phase), chapter).find((pickup) => pickup.slot === "weapon")?.item
+      : undefined;
     PHASE_ORDER.forEach((phase) => {
       const loadout = stageLoadout(selected, phase);
       loadoutPickups(loadout, chapter).forEach((pickup) => {
+        if (selected.startingClass === "Idus Knight" && pickupItemIdentity(pickup.item) === pickupItemIdentity("Idus Sword")) return;
+        if (pickup.slot === "weapon" && !isRoutedWeapon(selected, pickup.item)) return;
         const itemKey = pickupItemIdentity(pickup.item);
         if (seen.has(itemKey)) return;
         seen.add(itemKey);
@@ -1250,7 +1359,9 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition, support?: Rec
               : "This reward is boss-gated and cannot be rushed as a harmless pickup.";
         const buff = buffForPickup(pickup.item, pickup.slot);
         deferredTasks.push({
-          id: `${chapter.id}-loadout-item-${player.id}-${selected.id}-${pickupTaskKey(pickup.item)}`,
+          id: pickup.slot === "weapon" && legacyPrimary && pickupItemIdentity(legacyPrimary) === itemKey
+            ? `${chapter.id}-gear-${player.id}`
+            : `${chapter.id}-loadout-item-${player.id}-${selected.id}-${pickupTaskKey(pickup.item)}`,
           label: pickup.item,
           detail: `For ${player.name}'s ${selected.name} setup. ${pickupGate.requires ? `Prerequisite: ${pickupGate.requires}. ` : ""}${acquisitionNote} ${inferGuide(pickup.item, chapter)} ${buff ? `${buff.effect} Requires ${buff.requirements || "no attribute beyond the equipped armament"}${buff.memorySlots ? ` and ${buff.memorySlots} memory slot${buff.memorySlots === 1 ? "" : "s"}` : ""}. ${buff.activation}` : `Once collected, equip it in the ${pickup.slot} slot when the build stage calls for it.`} If this optional fight is not comfortable yet, skip the card and return before leaving this chapter.`,
           kind: "gear",
@@ -1272,7 +1383,11 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition, support?: Rec
   const planningTasks = progressionTasksForChapter(chapter, expedition, support);
   if (planningTasks.length) {
     const lastBossIndex = tasks.reduce((found, task, index) => task.kind === "boss" ? index : found, -1);
-    tasks.splice(lastBossIndex >= 0 ? lastBossIndex : tasks.length, 0, ...planningTasks);
+    // Keep the supply/upgrade block together, after any same-chapter shop or
+    // area unlock. In particular, a Godskin Duo reward cannot fund that fight.
+    const requiredLabels = new Set(planningTasks.flatMap((task) => task.prerequisiteLabels ?? []));
+    const unlockIndex = tasks.reduce((found, task, index) => requiredLabels.has(task.label) ? Math.max(found, index + 1) : found, 0);
+    tasks.splice(Math.max(lastBossIndex >= 0 ? lastBossIndex : tasks.length, unlockIndex), 0, ...planningTasks);
   }
 
   if (chapter.boss && !chapter.essentials.some((entry) => entry.includes(chapter.boss!.split(",")[0]))) {
@@ -1288,11 +1403,8 @@ function tasksForChapter(chapter: Chapter, expedition: Expedition, support?: Rec
   return tasks;
 }
 
-const taskKeys = (task: Task, expedition: Expedition) =>
-  task.perPlayer ? expedition.players.map((player) => `${task.id}:${player.id}`) : [task.id];
-
-const taskDone = (task: Task, expedition: Expedition) =>
-  Boolean(expedition.completed[`${task.id}:skipped`]) || taskKeys(task, expedition).every((key) => expedition.completed[key]);
+const taskKeys = checklistKeys;
+const taskDone = checklistDone;
 
 function nextIncompleteTask(expedition: Expedition, tasksByChapter?: Record<string, Task[]>) {
   for (const chapter of chapters) {
@@ -1305,9 +1417,22 @@ function nextIncompleteTask(expedition: Expedition, tasksByChapter?: Record<stri
 function FullBuildDetails({ build, onClose, assignLabel, onAssign }: { build: Build; onClose: () => void; assignLabel?: string; onAssign?: () => void }) {
   const classification = buildClassification(build);
   const plannedClass = plannerStartingClass(build);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    dialog?.showModal();
+    document.body.style.overflow = "hidden";
+    return () => {
+      dialog?.close();
+      document.body.style.overflow = previousOverflow;
+      previousFocus?.focus();
+    };
+  }, []);
   return (
-    <div className="drawer-backdrop" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
-      <section className="loadout-dialog" role="dialog" aria-modal="true" aria-label={`${build.name} full build`}>
+    <dialog ref={dialogRef} className="drawer-backdrop build-modal" onCancel={onClose} onClick={(event) => { if (event.currentTarget === event.target) onClose(); }} aria-label={`${build.name} full build`}>
+      <section className="loadout-dialog">
         <button className="drawer-close" onClick={onClose} aria-label="Close build detail">×</button>
         <div className="loadout-title">
           <div><p className="eyebrow">Build {catalogueNumber(build)} of {selectableBuilds.length}</p><h2>{build.name}</h2><p className="drawer-playstyle">{build.playstyle}</p></div>
@@ -1320,8 +1445,28 @@ function FullBuildDetails({ build, onClose, assignLabel, onAssign }: { build: Bu
         <EquipmentTimeline build={build} plannedClass={plannedClass} />
         {onAssign && <button type="button" className="assign-build-button" onClick={onAssign}>{assignLabel || "Choose this build"}</button>}
       </section>
-    </div>
+    </dialog>
   );
+}
+
+function CataloguePagination({ page, pages, from, to, total, onPage }: { page: number; pages: number; from: number; to: number; total: number; onPage: (page: number) => void }) {
+  return <nav className="catalogue-pagination" aria-label="Build pages"><span role="status">{from}–{to} of {total} builds</span><div><button type="button" disabled={page === 0} onClick={() => onPage(page - 1)}>Previous</button><span>Page {page + 1} of {pages}</span><button type="button" disabled={page + 1 >= pages} onClick={() => onPage(page + 1)}>Next</button></div></nav>;
+}
+
+function useBuildResults(query: string, filter: string, collection: string, mechanic: string, fextraCategory: string, sort: string) {
+  const [pagination, setPagination] = useState({ key: "", page: 0 });
+  const key = JSON.stringify([query, filter, collection, mechanic, fextraCategory, sort]);
+  const matches = useMemo(() => sortBuilds(selectableBuilds.filter((candidate) =>
+    matchesSearch(buildSearchText(candidate), query) && matchesBuildFilter(candidate, filter) && matchesCollection(candidate, collection)
+    && (mechanic === "All focuses" || candidate.mechanic === mechanic)
+    && (fextraCategory === "All Fextralife groups" || candidate.guideCategories?.includes(fextraCategory)),
+  ), sort), [query, filter, collection, mechanic, fextraCategory, sort]);
+  const page = cataloguePage(matches, pagination.key === key ? pagination.page : 0);
+  return { ...page, total: matches.length, onPage: (next: number) => setPagination({ key, page: next }) };
+}
+
+function WeaponRoutePreview({ build }: { build: Build }) {
+  return <ol className="weapon-route-preview" aria-label={`${build.name} weapon route`}>{weaponTransitions(build).map(({ chapter, weapon }) => <li key={chapter.id}><small>{chapter.title}</small><span>{weapon}</span></li>)}</ol>;
 }
 
 function Setup({ onCreate, imported, initialMode = "solo", initialPlayerCount = 1, publicCode, publicBusy, publicError, onCoopSettings, onJoinCode }: { onCreate: (expedition: Expedition) => void; imported: (event: React.ChangeEvent<HTMLInputElement>) => void; initialMode?: Mode; initialPlayerCount?: number; publicCode?: string; publicBusy?: boolean; publicError?: string; onCoopSettings?: (mode: Mode, playerCount: number) => void; onJoinCode?: (code: string) => void }) {
@@ -1352,9 +1497,8 @@ function Setup({ onCreate, imported, initialMode = "solo", initialPlayerCount = 
   ), [players]);
   const activeQuestTracks = new Set(expandQuestTrackIds([...optionalQuestTracks, ...requiredQuestTracks]));
 
-  const visibleBuilds = sortBuilds(selectableBuilds.filter((candidate) => {
-    return buildSearchText(candidate).includes(query.toLowerCase()) && matchesBuildFilter(candidate, filter) && matchesCollection(candidate, collection) && (mechanic === "All focuses" || candidate.mechanic === mechanic) && (fextraCategory === "All Fextralife groups" || candidate.guideCategories?.includes(fextraCategory));
-  }), sort);
+  const buildResults = useBuildResults(query, filter, collection, mechanic, fextraCategory, sort);
+  const visibleBuilds = buildResults.items;
 
   const changeCount = (value: number) => {
     setCount(value);
@@ -1397,14 +1541,16 @@ function Setup({ onCreate, imported, initialMode = "solo", initialPlayerCount = 
         <div className="player-setup-list">
           {players.map((player, index) => {
             const selected = buildForPlayer(player);
-            return <div className={activePlayer === index ? "active" : ""} key={player.id} style={{ "--player": player.color } as React.CSSProperties}><button type="button" onClick={() => setActivePlayer(index)}><i>{index + 1}</i><span><strong>{player.name}</strong><small>{selected.name}</small></span><b>{activePlayer === index ? "Choosing now" : "Edit build"}</b></button><div className="player-identity-fields"><input aria-label={`Player ${index + 1} name`} value={player.name} onChange={(event) => updatePlayer(index, { name: event.target.value })} /><select aria-label={`Player ${index + 1} starting class`} value={player.startingClass || defaultPlayerStartingClass(selected)} onChange={(event) => updatePlayer(index, { startingClass: event.target.value as StartingClass })}>{STARTING_CLASSES.map((startingClass) => <option key={startingClass}>{startingClass}</option>)}</select></div></div>;
+            return <div className={activePlayer === index ? "active" : ""} key={player.id} style={{ "--player": player.color } as React.CSSProperties}><button type="button" onClick={() => setActivePlayer(index)}><i>{index + 1}</i><span><strong>{player.name}</strong><small>{selected.name}</small></span><b>{activePlayer === index ? "Choosing now" : "Edit build"}</b></button><div className="player-identity-fields"><input aria-label={`Player ${index + 1} name`} value={player.name} onChange={(event) => updatePlayer(index, { name: event.target.value })} /><select aria-label={`Player ${index + 1} starting class`} value={player.startingClass || defaultPlayerStartingClass(selected)} onChange={(event) => updatePlayer(index, { startingClass: event.target.value as StartingClass })}>{STARTING_CLASSES.map((startingClass) => <option key={startingClass} value={startingClass}>{startingClass}{/Idus|Heavy Knight/.test(startingClass) ? " (Tarnished Pack)" : ""}</option>)}</select></div></div>;
           })}
         </div>
       </section>
 
       <section className="build-picker">
         <div className="picker-heading"><div className="settings-title"><span>2</span><div><h2>Choose a build for {players[activePlayer].name}</h2><p>Open any build to see the complete equipment plan before assigning it.</p></div></div><div className="selected-build-summary"><small>Currently selected</small><strong>{builds.find((candidate) => candidate.id === players[activePlayer].buildId)?.name}</strong></div></div>
-        <div className="picker-tools extended"><label><span>Search builds</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Weapon, damage type or playstyle" /></label><label><span>Source category</span><select value={collection} onChange={(event) => setCollection(event.target.value)}>{COLLECTION_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Fextralife group</span><select value={fextraCategory} onChange={(event) => setFextraCategory(event.target.value)}>{FEXTRA_CATEGORY_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Build type</span><select value={filter} onChange={(event) => setFilter(event.target.value)}>{ATTRIBUTE_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Combat focus</span><select value={mechanic} onChange={(event) => setMechanic(event.target.value)}>{MECHANIC_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Sort by</span><select value={sort} onChange={(event) => setSort(event.target.value)}>{SORT_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select></label><p>{visibleBuilds.length} of {selectableBuilds.length} source-audited builds</p></div>
+        <div className="picker-tools extended"><label><span>Search builds</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Weapon, damage type or playstyle" /></label><label><span>Source category</span><select value={collection} onChange={(event) => setCollection(event.target.value)}>{COLLECTION_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Fextralife group</span><select value={fextraCategory} onChange={(event) => setFextraCategory(event.target.value)}>{FEXTRA_CATEGORY_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Build type</span><select value={filter} onChange={(event) => setFilter(event.target.value)}>{ATTRIBUTE_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Combat focus</span><select value={mechanic} onChange={(event) => setMechanic(event.target.value)}>{MECHANIC_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Sort by</span><select value={sort} onChange={(event) => setSort(event.target.value)}>{SORT_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select></label><p>{buildResults.total} matching builds</p></div>
+        <CataloguePagination {...buildResults} />
+        {buildResults.total === 0 && <p className="empty-results" role="status">No builds match these filters. Try a weapon name or choose All builds and All sources.</p>}
         <div className="setup-build-grid">
           {visibleBuilds.map((candidate) => {
             const selected = candidate.id === players[activePlayer].buildId;
@@ -1413,11 +1559,12 @@ function Setup({ onCreate, imported, initialMode = "solo", initialPlayerCount = 
               <header><div><span>{String(catalogueNumber(candidate)).padStart(3, "0")}</span><small>{candidate.complexity}</small></div><h3>{candidate.name}</h3><p>{classification.attributes} · {classification.range}</p><b className="collection-pill">{candidate.collection}</b>{candidate.guideCategories?.length ? <p className="guide-groups">{candidate.guideCategories.join(" · ")}</p> : null}</header>
               <p className="setup-playstyle build-summary">{candidate.playstyle}</p>
               <div className="build-facts"><span><small>Starting class</small>{plannerStartingClass(candidate)}{candidate.startingClass === "Not specified" ? " (calculated)" : ""}</span><span><small>Combat focus</small>{candidate.mechanic}</span></div>
-              <div className="weapon-timeline">{(["early", "mid", "late", "dlc"] as PhaseKey[]).map((phase) => { const stage = stageLoadout(candidate, phase); return <div key={phase}><small>{phase}{stage.borrowedFrom ? " · sourced bridge" : ""}</small><span>{stage.weapon}</span><em>{stage.skill}</em></div>; })}</div>
+              <WeaponRoutePreview build={candidate} />
               <footer><button type="button" onClick={() => setDetail(candidate)}>Full loadout</button><button type="button" className={selected ? "assigned" : ""} onClick={() => chooseBuild(candidate)}>{selected ? "Assigned" : `Assign to ${players[activePlayer].name}`}</button></footer>
             </article>;
           })}
         </div>
+        <CataloguePagination {...buildResults} />
       </section>
 
       <section className="quest-picker" aria-label="Optional questlines">
@@ -1470,13 +1617,19 @@ function mapLayerForChapter(chapter: Chapter): MapLayer {
   return "surface";
 }
 
-function MapPanel({ chapter, expedition, chapterTasks, tasksByChapter, onSelect }: { chapter: Chapter; expedition: Expedition; chapterTasks: Task[]; tasksByChapter: Record<string, Task[]>; onSelect: (id: string) => void }) {
+function MapPanel({ chapter, expedition, chapterTasks, tasksByChapter, onSelect, selectedTask }: { chapter: Chapter; expedition: Expedition; chapterTasks: Task[]; tasksByChapter: Record<string, Task[]>; onSelect: (id: string) => void; selectedTask?: Task }) {
   const chapterMapLayer = mapLayerForChapter(chapter);
-  const currentTask = chapterTasks.find((task) => !taskDone(task, expedition));
+  const currentTask = selectedTask || nextChapterTask(chapterTasks, expedition)?.task;
   const objectiveLayer = currentTask ? mapLayerForObjective(chapter, currentTask.label) : chapterMapLayer;
-  const mappedItem = currentTask?.item ? findMapItem(currentTask.item, objectiveLayer) : undefined;
+  const mappedItem = currentTask?.mapMarker ?? (currentTask?.item ? findMapItem(currentTask.item, objectiveLayer) : undefined);
   const mappedObjective = !mappedItem && currentTask ? findMapRoutePoint(currentTask.mapQuery || objectiveMapQuery(currentTask.label), objectiveLayer) : undefined;
-  const mappedPoint = mappedItem || mappedObjective || findMapRoutePoint(chapter.grace, objectiveLayer);
+  const objectivePoint = mappedItem || mappedObjective;
+  if (currentTask?.material && !objectivePoint) return <section id="route-map" className="material-location-panel">
+    <p className="eyebrow">Supply stop</p><h3>{currentTask.mapLocation}</h3>
+    <p>{currentTask.mapLocation?.includes("Roundtable Hold") ? "Fast-travel to the Table of Lost Grace. Take the north-west corridor to the Twin Maiden Husks, offer the required bell bearing, then choose Purchase. Roundtable Hold has no overworld position on this map." : "Use this supply card's directions. An exact marker is not available for this shop, so no unrelated location is pinned."}</p>
+    {currentTask.sourceUrl && <a href={currentTask.sourceUrl} target="_blank" rel="noreferrer">Material and shop reference ↗</a>}
+  </section>;
+  const mappedPoint = objectivePoint || findMapRoutePoint(chapter.grace, objectiveLayer);
   const mapLayer = mappedPoint?.layer || objectiveLayer;
   const mapChapters = chapters.filter((candidate) => mapLayerForChapter(candidate) === mapLayer);
   const isDlc = mapLayer === "shadow";
@@ -1504,8 +1657,8 @@ function MapPanel({ chapter, expedition, chapterTasks, tasksByChapter, onSelect 
     top: `${50 + (y - focusY) * zoom}%`,
   });
   return (
-    <div className={`route-map map-layer-${mapLayer}`}>
-      <div className="map-title"><span>{mapTitle}</span><small>Maximum-detail Fextralife tiles · active stage</small></div>
+    <div id="route-map" className={`route-map map-layer-${mapLayer}`}>
+      <div className="map-title"><span>{mapTitle}</span><small>{objectivePoint ? "Objective location" : "Area reference · no exact marker for this step"}</small></div>
       <div className="map-art">
         <div className="map-tiles" aria-hidden="true" style={{ left: `${50 - focusX * zoom}%`, top: `${50 - focusY * zoom}%`, width: `${zoom * 100}%`, height: `${zoom * 100}%` }}>
           {visibleTiles.map(({ tileX, tileY }) => <span className="map-tile" key={`tile-${tileX}-${tileY}`} style={{ left: `${(tileX / tileCount) * 100}%`, top: `${(tileY / tileCount) * 100}%`, width: `${100 / tileCount}%`, height: `${100 / tileCount}%`, backgroundImage: `url(${MAP_TILE_ROOTS[mapLayer]}/${tileLevel}/${tileX}/${tileY}.jpg)` }} />)}
@@ -1531,14 +1684,14 @@ function MapPanel({ chapter, expedition, chapterTasks, tasksByChapter, onSelect 
         {mappedPoint?.layer === mapLayer && <a className="map-item-pin" href={mappedPoint.url} target="_blank" rel="noreferrer" title={mappedPoint.name} style={viewPosition(mappedPoint.x, mappedPoint.y)}><i /> <span>{mappedPoint.name}</span></a>}
       </div>
       <div className="map-compass" aria-hidden="true">N<span>✦</span></div>
-      <div className="map-current"><span>{mappedPoint?.layer === mapLayer ? "Current objective" : "Current region"}</span><strong>{mappedPoint?.layer === mapLayer ? mappedPoint.name : chapter.region}</strong><small>{currentTask ? currentTask.label : `from ${chapter.grace}`}</small></div>
+      <div className="map-current" role="status"><span>{objectivePoint ? "Showing objective" : "Area reference"}</span><strong>{mappedPoint?.layer === mapLayer ? mappedPoint.name : chapter.region}</strong><small>{currentTask ? currentTask.label : "Chapter finished"}</small></div>
       <div className="map-sources"><a href={fextraMap} target="_blank" rel="noreferrer">Open Fextralife map ↗</a><a href={mapGenie} target="_blank" rel="noreferrer">Open MapGenie ↗</a></div>
     </div>
   );
 }
 
 function BossMapThumbnail({ boss }: { boss: OptionalRuneBoss }) {
-  const marker = findMapItem(boss.name, "surface") || findMapRoutePoint(`${boss.name} ${boss.location}`, "surface") || findMapRoutePoint(boss.location, "surface");
+  const marker = findMapRoutePoint(boss.mapQuery || `${boss.name} ${boss.location}`, boss.mapLayer ?? "surface");
   const layer = marker?.layer || "surface";
   const level = MAP_TILE_LEVELS[layer];
   const count = 2 ** level;
@@ -1546,6 +1699,18 @@ function BossMapThumbnail({ boss }: { boss: OptionalRuneBoss }) {
   const tileY = marker ? Math.max(0, Math.min(count - 1, Math.floor(marker.y / 100 * count))) : 0;
   const imageUrl = `${MAP_TILE_ROOTS[layer]}/${level}/${tileX}/${tileY}.jpg`;
   return <div className="rune-boss-picture" style={{ backgroundImage: `url(${imageUrl})` }}><span>{marker ? boss.location : boss.name}</span></div>;
+}
+
+function missingTaskPrerequisites(task: Task, allTasks: Task[], expedition: Expedition): { id?: string; label: string }[] {
+  const required = [
+    ...(task.prerequisiteLabels ?? []).map((label) => ({ label, task: allTasks.find((candidate) => candidate.label === label) })),
+    ...(task.prerequisiteIds ?? []).map((id) => { const found = allTasks.find((candidate) => candidate.id === id); return { label: found?.label ?? "Required supply step", task: found }; }),
+  ];
+  return required.filter(({ task: requirement }) => {
+    if (!requirement) return true;
+    const keys = requirement.perPlayer && task.playerId ? [`${requirement.id}:${task.playerId}`] : taskKeys(requirement, expedition);
+    return !keys.every((key) => expedition.completed[key]);
+  }).map(({ label, task: requirement }) => ({ id: requirement?.id, label }));
 }
 
 function RuneCheckpointPanel({
@@ -1650,20 +1815,21 @@ function RuneCheckpointPanel({
 
   return <section className="rune-checkpoint">
     <header><div><p className="eyebrow">Start-of-chapter checkpoint</p><h3>Fill this in before spending anything</h3><p><strong>Complete this once when you arrive in the chapter, before levelling or reinforcing a weapon.</strong> Rune level, attributes and the same active weapon&apos;s reinforcement level carry forward from the latest earlier checkpoint, so only change values that have increased. Enter held runes again because that balance does not carry forward. These values drive the chapter&apos;s level, weapon and optional-boss recommendations; do not wait until the end of the chapter. <a href="https://eldenring.wiki.gg/wiki/Recommended_Level_by_Location" target="_blank" rel="noreferrer">Level basis ↗</a></p></div>{!viewerPlayerId && !everyPlayerIsOverTarget && expedition.runeBossSelections?.[chapter.id] && <button type="button" disabled={locked} onClick={resetBosses}>Restore recommended bosses</button>}</header>
+    <p className="checkpoint-help">Press Enter or leave a field to save it. Escape cancels an edit. Use base stats with stat-boosting equipment and Great Rune effects removed.</p>
     <div className="rune-balance-grid">
       {expedition.players.map((player) => {
         const build = buildForPlayer(player);
-        const loadout = stageLoadout(build, phaseForChapter(chapter));
+        const loadout = routeLoadout(build, chapter);
         const pathResult = weaponUpgradePath(loadout.weapon);
         const path: UpgradePath | undefined = pathResult === "none" ? undefined : pathResult;
         const level = currentSupport?.levels[player.id] ?? guideTargets(economy, expedition.levelOffset ?? 0).runeLevel;
         const previousLevel = previousSupport?.levels[player.id] ?? planBuildStatTarget(build, level).origin.level;
         const upgrade = currentSupport?.upgrades[player.id] ?? 0;
         const previousChapter = chapterIndex > 0 ? chapters[chapterIndex - 1] : undefined;
-        const previousLoadout = previousChapter ? stageLoadout(build, phaseForChapter(previousChapter)) : undefined;
+        const previousLoadout = previousChapter ? routeLoadout(build, previousChapter) : undefined;
         const previousPathResult = previousLoadout ? weaponUpgradePath(previousLoadout.weapon) : "none";
         const previousPath: UpgradePath | undefined = previousPathResult === "none" ? undefined : previousPathResult;
-        const previousUpgrade = previousPath === path ? (previousSupport?.upgrades[player.id] ?? 0) : 0;
+        const previousUpgrade = previousPath === path && previousLoadout && sameWeaponUpgradeTrack(previousLoadout.weapon, loadout.weapon) ? (previousSupport?.upgrades[player.id] ?? 0) : 0;
         const key = `${chapter.id}:${player.id}`;
         const held = expedition.checkpointRunes?.[key];
         const currentLevel = carriedCheckpointNumber(expedition.checkpointLevels, chapterIndex, player.id);
@@ -1671,11 +1837,12 @@ function RuneCheckpointPanel({
         const savedWeaponLevel = carriedWeaponCheckpoint(expedition, chapterIndex, player.id, build, loadout.weapon);
         const maximumWeaponLevel = path === "somber" ? 10 : 25;
         const enteredWeaponLevel = path && savedWeaponLevel !== undefined ? Math.min(maximumWeaponLevel, savedWeaponLevel) : undefined;
-        const upgradeFrom = enteredWeaponLevel ?? previousUpgrade;
+        const upgradeFrom = currentSupport?.upgradeOrigins?.[player.id] ?? enteredWeaponLevel ?? previousUpgrade;
         const materialCost = path ? planWeaponUpgrade(path, Math.min(upgradeFrom, upgrade), upgrade).materialPurchaseRunes : 0;
         const actualStats = completeCheckpointStats(savedStats);
         const levelingFrom = Math.min(level, Math.max(planBuildStatTarget(build, level).origin.level, currentLevel ?? previousLevel));
-        const playerIsOverTarget = currentLevel !== undefined && currentLevel >= level;
+        const guideLevel = guideTargets(economy, expedition.levelOffset ?? 0).runeLevel;
+        const playerIsOverTarget = currentLevel !== undefined && currentLevel >= guideLevel;
         const levelCost = playerIsOverTarget ? 0 : runesBetweenLevels(levelingFrom, level);
         const required = playerIsOverTarget ? 0 : levelCost + materialCost + economy.purchaseReserve;
         const exactLevelPlan = planBuildStatTarget(build, level, weaponRequirements(loadout.weapon, loadout.offhand));
@@ -1696,37 +1863,64 @@ function RuneCheckpointPanel({
         const editable = !locked && (!viewerPlayerId || viewerPlayerId === player.id);
         return <article key={player.id} style={{ "--player": player.color } as React.CSSProperties}>
           <div><strong>{player.name}</strong><span>RL{previousLevel} → RL{level}</span></div>
-          <div className="checkpoint-inputs"><label>Current RL<input type="number" min="1" max="713" step="1" disabled={!editable} value={currentLevel ?? ""} placeholder={`Expected ${previousLevel}`} onChange={(event) => setLevel(player.id, Number(event.target.value))} /></label><label>Runes held<input type="number" min="0" step="100" disabled={!editable} value={held ?? ""} placeholder="Enter current runes" onChange={(event) => setRunes(player.id, Math.max(0, Number(event.target.value) || 0))} /></label></div>
-          <div className="checkpoint-stats"><div className="stat-grid-heading"><span>Stat</span><span>Current</span><span>At this RL</span><span>Chapter target</span></div>{(Object.keys(STAT_LABELS) as StatKey[]).map((stat) => { const actual = savedStats[stat]; const now = recommendedNow.attributes[stat]; const target = exactLevelPlan.attributes[stat]; return <label key={stat}><span>{STAT_LABELS[stat]}</span><input aria-label={`${player.name} ${STAT_LABELS[stat]}`} type="number" min="1" max="99" disabled={!editable} value={actual ?? ""} placeholder={String(now)} onChange={(event) => setStat(player.id, stat, Number(event.target.value))} /><b className={actual === undefined ? "" : actual < now ? "behind" : actual > now ? "ahead" : "matched"}>{now}</b><b>{target}</b></label>; })}</div>
-          {path && <div className="weapon-checkpoint"><div><span>Active weapon</span><strong>{loadout.weapon}</strong><small>{path === "somber" ? "Somber" : "Regular"} reinforcement</small></div><label>Current +<input aria-label={`${player.name} current weapon level`} type="number" min="0" max={maximumWeaponLevel} disabled={!editable} value={enteredWeaponLevel ?? ""} placeholder={String(recommendedWeaponNow)} onChange={(event) => setWeaponLevel(player.id, Number(event.target.value), maximumWeaponLevel)} /></label><div><span>At this RL</span><b className={enteredWeaponLevel === undefined ? "" : enteredWeaponLevel < recommendedWeaponNow ? "behind" : enteredWeaponLevel > recommendedWeaponNow ? "ahead" : "matched"}>+{recommendedWeaponNow}</b></div><div><span>Chapter target</span><b>+{upgrade}</b></div></div>}
+          <div className="checkpoint-inputs"><label>Current RL<CheckpointInput min={1} max={713} disabled={!editable} value={currentLevel} placeholder={`Expected ${previousLevel}`} onCommit={(value) => setLevel(player.id, value)} /></label><label>Runes held<CheckpointInput min={0} max={Number.MAX_SAFE_INTEGER} disabled={!editable} value={held} placeholder="Enter current runes" onCommit={(value) => setRunes(player.id, value)} /></label></div>
+          <div className="checkpoint-stats"><div className="stat-grid-heading"><span>Stat</span><span>Current</span><span>At this RL</span><span>Chapter target</span></div>{(Object.keys(STAT_LABELS) as StatKey[]).map((stat) => { const actual = savedStats[stat]; const now = recommendedNow.attributes[stat]; const target = exactLevelPlan.attributes[stat]; return <label key={stat}><span>{STAT_LABELS[stat]}</span><CheckpointInput aria-label={`${player.name} ${STAT_LABELS[stat]}`} min={1} max={99} disabled={!editable} value={actual} placeholder={String(now)} onCommit={(value) => setStat(player.id, stat, value)} /><b className={actual === undefined ? "" : actual < now ? "behind" : actual > now ? "ahead" : "matched"}>{now}</b><b>{target}</b></label>; })}</div>
+          {path && <div className="weapon-checkpoint"><div><span>Active weapon</span><strong>{loadout.weapon}</strong><small>{path === "somber" ? "Somber" : "Regular"} reinforcement</small></div><label>Current +<CheckpointInput aria-label={`${player.name} current weapon level`} min={0} max={maximumWeaponLevel} disabled={!editable} value={enteredWeaponLevel} placeholder={String(recommendedWeaponNow)} onCommit={(value) => setWeaponLevel(player.id, value, maximumWeaponLevel)} /></label><div><span>At this RL</span><b className={enteredWeaponLevel === undefined ? "" : enteredWeaponLevel < recommendedWeaponNow ? "behind" : enteredWeaponLevel > recommendedWeaponNow ? "ahead" : "matched"}>+{recommendedWeaponNow}</b></div><div><span>Chapter target</span><b>+{upgrade}</b></div></div>}
           {currentLevel === undefined ? <p className="stat-check waiting">Enter the current RL and all eight stats from the Status screen.</p> : !actualStats ? <p className="stat-check waiting">Enter all eight current stats to base the level plan on the real character.</p> : enteredPointTotal !== expectedPointTotal ? <p className="stat-check warning">The entered stats account for {enteredPointTotal} allocated levels, but RL{currentLevel} should account for {expectedPointTotal}. Recheck the character Status screen.</p> : <p className="stat-check ready">Current stats match the number of levels available at RL{currentLevel}.</p>}
-          <p className="level-instruction">{playerIsOverTarget ? `No levels recommended; RL${currentLevel} already exceeds the RL${level} route target. Keep held runes for later chapters, merchants and upgrades.` : `Next: buy ${Math.max(0, level - levelingFrom)} levels to reach RL${level}. ${exactChanges}.`}</p>
+          <p className="level-instruction">{playerIsOverTarget ? `No levels recommended; RL${currentLevel} already meets or exceeds the RL${guideLevel} guide target. Keep held runes for later chapters, merchants and upgrades.` : level <= levelingFrom ? `Keep RL${levelingFrom}; this budget does not fund another level. The guide target is RL${guideLevel}.` : `Next: buy ${level - levelingFrom} levels to reach RL${level}. ${exactChanges}.`}</p>
           {path && <p className="weapon-instruction">{upgradeFrom >= upgrade ? `${loadout.weapon} is already at or above this chapter's +${upgrade} ceiling. Do not reinforce it further yet.` : `Reinforce ${loadout.weapon} from +${upgradeFrom} to +${upgrade}. The stone budget below now starts from the entered +${upgradeFrom} level.`}</p>}
+          {currentSupport?.materialLimited?.[player.id] && <p className="stat-check waiting">The route currently supplies up to +{upgrade} for this weapon. Higher tiers need later supplies or an unlocked shop; extra rune fights cannot replace missing stones. Follow the collection and purchase cards before upgrading.</p>}
           <dl><div><dt>Levels</dt><dd>{formatRunes(levelCost)}</dd></div><div><dt>Stone ceiling</dt><dd>{formatRunes(materialCost)}</dd></div><div><dt>Reserve</dt><dd>{formatRunes(economy.purchaseReserve)}</dd></div><div><dt>Boss top-up</dt><dd>+{formatRunes(currentSupport?.chapterBossRunes ?? 0)}</dd></div></dl>
-          {playerIsOverTarget ? <p className="rune-status ready">No rune top-up is needed. Optional rune bosses have been removed because this character is already above the chapter target.</p> : held === undefined ? <p className="rune-status waiting">Enter the current counter for an exact check.</p> : gap > 0 ? <p className="rune-status short">Need {formatRunes(gap)} more. Choose a higher-value replacement below, or skip optional fights and accept the planner’s lower funded target.</p> : <p className="rune-status ready">Funded with {formatRunes(withBosses - required)} left after the reserve.</p>}
+          {playerIsOverTarget ? <p className="rune-status ready">No rune top-up is needed for this player.{everyPlayerIsOverTarget ? " Optional rune bosses have been removed because everyone meets the chapter target." : " Any listed rune fights are for the other players."}</p> : held === undefined || currentLevel === undefined ? <p className="rune-status waiting">Enter both current RL and held runes to replace the income estimate with your checkpoint budget.</p> : gap > 0 ? <p className="rune-status short">Keep the current level and weapon. The budget is {formatRunes(gap)} below the reserve; choose another optional fight only if you want to build that reserve.</p> : <p className="rune-status ready">{currentSupport?.chapterBossRunes ? "After the assigned rune fights: " : ""}{formatRunes(withBosses - required)} left after planned levels, stones and the reserve, before reinforcement service fees.</p>}
         </article>;
       })}
     </div>
-      {selectedBosses.length > 0 && <div className="rune-boss-manager"><div className="objectives-heading"><div><p className="eyebrow">Optional rune fights</p><h3>Recommended top-up bosses</h3></div><span>{selectedBosses.length} selected</span></div><div className="rune-boss-grid">{selectedBosses.map((boss, index) => <article key={`${boss.id}-${index}`}><BossMapThumbnail boss={boss} /><div className="rune-boss-copy"><strong>{boss.name}</strong><span>{boss.location}</span><dl><div><dt>Recommended</dt><dd>RL {recommendedOptionalBossLevel(boss)}+</dd></div><div><dt>Solo reward</dt><dd>{formatRunes(boss.runes)}</dd></div></dl>{!viewerPlayerId && <div className="rune-boss-actions"><label>Replace with<select disabled={locked} value={boss.id} onChange={(event) => replaceBoss(index, event.target.value)}>{alternatives.filter((candidate) => candidate.id === boss.id || !selectedBosses.some((selected) => selected.id === candidate.id)).map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name} · RL {recommendedOptionalBossLevel(candidate)} · {formatRunes(candidate.runes)}</option>)}</select></label><button type="button" disabled={locked} onClick={() => setBosses(selectedBosses.filter((_, bossIndex) => bossIndex !== index).map((candidate) => candidate.id))}>Skip this boss</button></div>}</div></article>)}</div></div>}
+    {selectedBosses.length > 0 && <div className="rune-boss-manager">
+      <div className="objectives-heading"><div><p className="eyebrow">Optional rune fights</p><h3>Selected top-up bosses</h3></div><span>{selectedBosses.length} selected</span></div>
+      <div className="rune-boss-grid">{selectedBosses.map((boss, index) => <article key={boss.id}>
+        <BossMapThumbnail boss={boss} /><div className="rune-boss-copy"><strong>{boss.name}</strong><span>{boss.location}</span>
+          <dl><div><dt>Suggested level</dt><dd>RL {recommendedOptionalBossLevel(boss)}+</dd></div><div><dt>Solo reward</dt><dd>{formatRunes(boss.runes)}</dd></div><div><dt>Difficulty</dt><dd>{["", "Lower", "Moderate", "Harder alternative"][boss.difficulty]}</dd></div></dl>
+          <p>{boss.directions}</p>{boss.source && <a href={boss.source} target="_blank" rel="noreferrer">Encounter guide ↗</a>}
+          {!viewerPlayerId && <div className="rune-boss-actions"><label>Replace with<select disabled={locked} value={boss.id} onChange={(event) => replaceBoss(index, event.target.value)}>{alternatives.filter((candidate) => candidate.id === boss.id || !selectedBosses.some((selected) => selected.id === candidate.id)).map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name} · RL {recommendedOptionalBossLevel(candidate)} · {formatRunes(candidate.runes)}</option>)}</select></label><button type="button" disabled={locked} onClick={() => setBosses(selectedBosses.filter((_, bossIndex) => bossIndex !== index).map((candidate) => candidate.id))}>Skip this boss</button></div>}
+        </div></article>)}</div>
+    </div>}
+    {!viewerPlayerId && !everyPlayerIsOverTarget && alternatives.some((boss) => !selectedBosses.some((selected) => selected.id === boss.id)) && <details className="rune-boss-options">
+      <summary>Add another rune boss ({alternatives.filter((boss) => !selectedBosses.some((selected) => selected.id === boss.id)).length} available)</summary>
+      <p>Choose a fight you have not already cleared. Rewards are New Game solo values; the budget applies this run&apos;s co-op rules. Levels are planning estimates, not access requirements. Harder alternatives are never added automatically.</p>
+      <div className="rune-boss-grid">{alternatives.filter((boss) => !selectedBosses.some((selected) => selected.id === boss.id)).map((boss) => <article key={boss.id}>
+        <BossMapThumbnail boss={boss} /><div className="rune-boss-copy"><strong>{boss.name}</strong><span>{boss.location}</span>
+          <dl><div><dt>Suggested level</dt><dd>RL {recommendedOptionalBossLevel(boss)}+</dd></div><div><dt>Solo reward</dt><dd>{formatRunes(boss.runes)}</dd></div><div><dt>Difficulty</dt><dd>{["", "Lower", "Moderate", "Harder alternative"][boss.difficulty]}</dd></div></dl>
+          <p>{boss.directions}</p>{boss.prerequisiteLabel && <p>Requires: {boss.prerequisiteLabel}.</p>}
+          <div className="rune-boss-actions"><button type="button" disabled={locked} onClick={() => setBosses([...selectedBosses.map((selected) => selected.id), boss.id])}>Add {boss.name}</button>{boss.source && <a href={boss.source} target="_blank" rel="noreferrer">Encounter guide ↗</a>}</div>
+        </div></article>)}</div>
+    </details>}
     {!selectedBosses.length && alternatives.length > 0 && !viewerPlayerId && (everyPlayerIsOverTarget
       ? <div className="empty-rune-bosses"><p>Optional rune bosses are disabled because every recorded player already meets or exceeds this chapter&apos;s level target.</p></div>
-      : <div className="empty-rune-bosses"><p>No optional rune boss is selected. The planner has lowered the funded level to match that choice.</p><button type="button" disabled={locked} onClick={resetBosses}>Use recommended bosses</button></div>)}
+      : <div className="empty-rune-bosses"><p>No optional rune boss is selected. Recommendations use the available rune budget.</p><button type="button" disabled={locked} onClick={resetBosses}>Use recommended bosses</button></div>)}
   </section>;
 }
 
 function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, activeId, setActiveId, readOnly = false, viewerPlayerId, onViewerUpdate }: { expedition: Expedition; setExpedition: React.Dispatch<React.SetStateAction<Expedition | null>>; tasksByChapter: Record<string, Task[]>; runeSupport: Record<string, RuneSupportChapter>; activeId: string; setActiveId: (id: string) => void; readOnly?: boolean; viewerPlayerId?: string; onViewerUpdate?: (kind: "completed" | "runes" | "levels" | "stats" | "weapons", key: string, value: boolean | number | Partial<AttributeBlock>) => void }) {
+  const [hideFinished, setHideFinished] = useState(false);
+  const [checkpointOpen, setCheckpointOpen] = useState(false);
+  const [inspected, setInspected] = useState<{ taskId: string; nextId?: string } | null>(null);
   const chapter = chapters.find((candidate) => candidate.id === activeId) || chapters[0];
   const tasks = tasksByChapter[chapter.id] ?? [];
   const completedTasks = tasks.filter((task) => taskDone(task, expedition)).length;
   const chapterIndex = chapters.indexOf(chapter);
-  const nextStep = nextIncompleteTask(expedition, tasksByChapter);
-  const taskForLabel = (label: string) => Object.values(tasksByChapter).flat().find((task) => task.label === label);
+  const chapterNext = nextChapterTask(tasks, expedition);
+  const nextStep = chapterNext ? { chapter, ...chapterNext } : null;
+  const routeNext = nextIncompleteTask(expedition, tasksByChapter);
+  const selectedTask = inspected?.nextId === chapterNext?.task.id ? tasks.find((task) => task.id === inspected?.taskId) : undefined;
+  const taskByLabel = new Map(Object.values(tasksByChapter).flat().map((task) => [task.label, task]));
+  const taskForLabel = (label: string) => taskByLabel.get(label);
   const accessGates = new Map(chapters.map((candidate) => [candidate.id, missingAccessRequirements(candidate.id, (label) => {
     const task = taskForLabel(label);
     return Boolean(task && taskKeys(task, expedition).every((key) => expedition.completed[key]));
   })]));
   const accessGate = accessGates.get(chapter.id);
-  const taskAccessBlocked = (task: Task, chapterId = chapter.id) => Boolean(accessGates.get(chapterId) && !isAccessRequirementTask(chapterId, task.label));
+  const allTasks = Object.values(tasksByChapter).flat();
+  const taskAccessBlocked = (task: Task, chapterId = chapter.id) => Boolean(accessGates.get(chapterId) && !isAccessRequirementTask(chapterId, task.label)) || missingTaskPrerequisites(task, allTasks, expedition).length > 0;
   const taskSkipBlocked = (task: Task, chapterId = chapter.id) => taskAccessBlocked(task, chapterId) || isAccessRequirementTask(chapterId, task.label);
   const accessBlocked = Boolean(nextStep && taskAccessBlocked(nextStep.task, nextStep.chapter.id));
   const activeQuestTracks = Array.from(new Set(tasks.map((task) => task.questTrack).filter((track): track is QuestTrackId => Boolean(track))))
@@ -1758,8 +1952,7 @@ function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, act
     taskKeys(nextStep.task, expedition).forEach((key) => { completed[key] = true; });
     const updated = { ...expedition, completed };
     setExpedition(updated);
-    const following = nextIncompleteTask(updated, tasksByChapter);
-    if (following) setActiveId(following.chapter.id);
+    if (!nextChapterTask(tasks, updated)) goNextIncomplete();
   };
 
   const skipAndContinue = () => {
@@ -1767,8 +1960,12 @@ function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, act
     const completed = { ...expedition.completed, [`${nextStep.task.id}:skipped`]: true };
     const updated = { ...expedition, completed };
     setExpedition(updated);
-    const following = nextIncompleteTask(updated, tasksByChapter);
-    if (following) setActiveId(following.chapter.id);
+    if (!nextChapterTask(tasks, updated)) goNextIncomplete();
+  };
+
+  const skipFundingFight = (task: Task) => {
+    if (readOnly || !task.runeBossId || taskDone(task, expedition) || accessGate) return;
+    setExpedition((current) => current ? skipRuneBoss(current, chapter.id, task.runeBossId!, (runeSupport[chapter.id]?.bosses ?? []).map((boss) => boss.id)) : current);
   };
 
   const toggleSkipped = (task: Task) => {
@@ -1799,7 +1996,7 @@ function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, act
               const candidateTasks = tasksByChapter[candidate.id] ?? [];
               const done = candidateTasks.every((task) => taskDone(task, expedition));
               const current = candidate.id === chapter.id;
-              return <button type="button" onClick={() => setActiveId(candidate.id)} className={`${current ? "active" : ""} ${done ? "done" : ""}`} key={candidate.id}><i>{done ? "✓" : chapters.indexOf(candidate) + 1}</i><span><strong>{candidate.title}</strong><small>{candidate.region}</small></span></button>;
+              return <button type="button" onClick={() => setActiveId(candidate.id)} aria-current={current ? "step" : undefined} className={`${current ? "active" : ""} ${done ? "done" : ""}`} key={candidate.id}><i>{done ? "✓" : chapters.indexOf(candidate) + 1}</i><span><strong>{candidate.title}</strong><small>{candidate.region}{accessGates.get(candidate.id) ? " · Locked" : ""}</small></span></button>;
             })}
           </div>
         ))}
@@ -1817,21 +2014,25 @@ function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, act
 
         {nextStep ? (
           <section className="next-step-panel" aria-label="Current objective">
-            <div className="next-step-number"><span>Next</span><strong>{String(chapters.indexOf(nextStep.chapter) + 1).padStart(2, "0")}</strong></div>
+            <div className="next-step-number"><span>Step</span><strong>{String(nextStep.index + 1).padStart(2, "0")}</strong></div>
             <div className="next-step-copy">
               <p>{nextStep.chapter.region} · from {nextStep.chapter.grace}</p>
               <h3>{nextStep.task.label}</h3>
               <span>{nextStep.task.detail}</span>
+              {missingTaskPrerequisites(nextStep.task, allTasks, expedition).length > 0 && <small>First complete: {missingTaskPrerequisites(nextStep.task, allTasks, expedition).map((requirement) => requirement.label).join("; ")}.</small>}
               <small>Target {nextStep.chapter.level} · {nextStep.chapter.upgrade}{nextStep.task.scope ? ` · ${nextStep.task.scope}` : ""}</small>
             </div>
             <div className="next-step-actions">
               {activeId !== nextStep.chapter.id && <button type="button" onClick={() => setActiveId(nextStep.chapter.id)}>Show area</button>}
-              {(!readOnly || (viewerPlayerId && (nextStep.task.perPlayer || nextStep.task.playerId === viewerPlayerId))) && <button type="button" className="primary" disabled={accessBlocked} onClick={completeAndContinue}>{readOnly ? "Mark my step complete" : "Complete and continue"}</button>}
+              {(!readOnly || (viewerPlayerId && (nextStep.task.perPlayer || nextStep.task.playerId === viewerPlayerId))) && <button type="button" className="primary" disabled={accessBlocked || (readOnly && Boolean(expedition.completed[nextStep.task.perPlayer ? `${nextStep.task.id}:${viewerPlayerId}` : nextStep.task.id]))} onClick={completeAndContinue}>{readOnly ? "Mark my step complete" : "Complete and continue"}</button>}
               {!readOnly && nextStep.task.optional && <button type="button" disabled={taskSkipBlocked(nextStep.task, nextStep.chapter.id)} onClick={skipAndContinue}>Skip this item</button>}
+              {!readOnly && nextStep.task.runeBossId && <button type="button" disabled={Boolean(accessGate)} onClick={() => skipFundingFight(nextStep.task)}>Skip rune boss</button>}
               {readOnly && <span>{viewerPlayerId ? `Following as ${expedition.players.find((player) => player.id === viewerPlayerId)?.name}` : "Updates from the host"}</span>}
             </div>
           </section>
-        ) : <section className="next-step-panel route-finished"><div><p>Route complete</p><h3>All objectives have been checked off.</h3></div></section>}
+        ) : <section className="next-step-panel route-finished"><div><p>{routeNext ? "Chapter finished" : "Route finished"}</p><h3>{routeNext ? "All steps here are complete or skipped." : "All route steps are complete or skipped."}</h3></div>{routeNext && <button type="button" onClick={() => setActiveId(routeNext.chapter.id)}>Go to next unfinished chapter</button>}</section>}
+
+        <nav className="route-tools" aria-label="Chapter tools"><a href="#ordered-stops">Steps</a><a href="#route-map">Map</a><a href="#chapter-checkpoint" onClick={() => setCheckpointOpen(true)}>Levels &amp; runes</a>{routeNext && routeNext.chapter.id !== chapter.id && <button type="button" onClick={() => setActiveId(routeNext.chapter.id)}>Return to first unfinished chapter</button>}</nav>
 
         <div className="balance-bar">
           <div><span>Rune level</span><strong>{chapter.level}</strong></div>
@@ -1842,39 +2043,54 @@ function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, act
 
         {(chapter.quest || activeQuestTracks.length > 0) && <div className="quest-callout"><strong>Quest safety</strong><span>{activeQuestTracks.length > 0 ? `Optional tracks active here: ${activeQuestTracks.join(", ")}. ` : ""}{chapter.quest || "Follow the cards in order; excluded optional questlines do not appear in this chapter."} Mutually exclusive rewards are called out on the affected card.</span></div>}
 
-        {accessGate && <div className="access-lock"><strong>Area access not yet unlocked</strong><span>Finish {accessGate.requirements.join("; ")} before following this chapter. You can inspect the route, but its objectives are deliberately held behind these game-state requirements.</span><a href={accessGate.evidence} target="_blank" rel="noreferrer">Access reference ↗</a></div>}
+        {accessGate && <div className="access-lock"><strong>Finish these prerequisites</strong><span>You can browse this chapter, but its later steps cannot be checked off yet.</span><ul className="access-requirements">{accessGate.requirements.map((label) => {
+          const requirement = taskForLabel(label);
+          const destination = chapters.find((candidate) => tasksByChapter[candidate.id]?.some((task) => task.id === requirement?.id));
+          return <li key={label}>{requirement && destination ? <button type="button" onClick={() => {
+            setActiveId(destination.id);
+            requestAnimationFrame(() => document.getElementById(`task-${requirement.id}`)?.focus());
+          }}>{label}<small>{destination.title} · Open this step</small></button> : <span>{label}</span>}</li>;
+        })}</ul><a href={accessGate.evidence} target="_blank" rel="noreferrer">Access reference ↗</a></div>}
 
-        <MapPanel chapter={chapter} expedition={expedition} chapterTasks={tasks} tasksByChapter={tasksByChapter} onSelect={setActiveId} />
+        <details id="chapter-checkpoint" className="checkpoint-disclosure" open={checkpointOpen} onToggle={(event) => setCheckpointOpen(event.currentTarget.open)}><summary><strong>Start-of-chapter checkpoint</strong><span>Update current stats, weapon level and held runes before spending.</span></summary>{checkpointOpen && <RuneCheckpointPanel key={`${chapter.id}:${expedition.saveId || expedition.createdAt}`} chapter={chapter} expedition={expedition} support={runeSupport} setExpedition={setExpedition} locked={Boolean(accessGate) || (readOnly && !viewerPlayerId)} viewerPlayerId={viewerPlayerId} onViewerUpdate={onViewerUpdate} />}</details>
 
-        <RuneCheckpointPanel chapter={chapter} expedition={expedition} support={runeSupport} setExpedition={setExpedition} locked={Boolean(accessGate)} viewerPlayerId={viewerPlayerId} onViewerUpdate={onViewerUpdate} />
+        {selectedTask && selectedTask.id !== chapterNext?.task.id && <div className="map-preview-notice"><span>Previewing: {selectedTask.label}</span><button type="button" onClick={() => setInspected(null)}>Follow next step</button></div>}
+        <MapPanel chapter={chapter} expedition={expedition} chapterTasks={tasks} tasksByChapter={tasksByChapter} onSelect={setActiveId} selectedTask={selectedTask} />
 
-        <div className="objectives-heading"><div><p className="eyebrow">Ordered stops</p><h3>Do these before moving on</h3></div><span>{Math.round((completedTasks / Math.max(tasks.length, 1)) * 100)}% complete</span></div>
+        <div id="ordered-stops" className="objectives-heading"><div><p className="eyebrow">Ordered stops</p><h3>Chapter steps</h3></div><label className="hide-finished"><input type="checkbox" checked={hideFinished} onChange={(event) => setHideFinished(event.target.checked)} />Hide finished ({completedTasks})</label><span>{Math.round((completedTasks / Math.max(tasks.length, 1)) * 100)}% resolved</span></div>
         <div className="task-list">
           {tasks.map((task, index) => {
             const owner = task.playerId ? expedition.players.find((player) => player.id === task.playerId) : undefined;
             const done = taskDone(task, expedition);
             const skipped = Boolean(expedition.completed[`${task.id}:skipped`]);
+            if (hideFinished && done) return null;
             const taskBlocked = taskAccessBlocked(task);
-            const mapItem = task.item ? findMapItem(task.item, mapLayerForObjective(chapter, task.label)) : undefined;
+            const mapItem = task.mapMarker ?? (task.item ? findMapItem(task.item, mapLayerForObjective(chapter, task.label)) : undefined);
             return (
-              <article className={`task-card ${done ? "complete" : ""} ${skipped ? "skipped" : ""}`} key={task.id} style={owner ? { "--player": owner.color } as React.CSSProperties : undefined}>
+              <article id={`task-${task.id}`} tabIndex={-1} className={`task-card ${done ? "complete" : ""} ${skipped ? "skipped" : ""} ${task.id === chapterNext?.task.id ? "next-task" : ""}`} key={task.id} aria-current={task.id === chapterNext?.task.id ? "step" : undefined} style={owner ? { "--player": owner.color } as React.CSSProperties : undefined}>
                 <div className="task-index">{skipped ? "—" : done ? "✓" : String(index + 1).padStart(2, "0")}</div>
                 <div className="task-body">
-                  <div className="task-meta"><span className={`kind ${task.kind}`}>{task.kind}</span><span className="scope">{task.scope}</span>{task.optional && <span className="scope">Optional</span>}{skipped && <span className="scope">Skipped</span>}</div>
+                  <div className="task-meta"><span className={`kind ${task.kind}`}>{task.kind}</span><span className="scope">{task.scope}</span>{(task.optional || task.runeBossId) && <span className="scope">Optional</span>}{skipped && <span className="scope">Skipped</span>}</div>
                   <h4>{task.label}</h4>
                   <p>{task.detail}</p>
-                  {task.item && <div className="task-links"><a href={wikiUrl(task.item)} target="_blank" rel="noreferrer">Item reference ↗</a>{mapItem && <a href={mapItem.url} target="_blank" rel="noreferrer">Exact Fextralife marker ↗</a>}<a href={chapter.act === "Shadow of the Erdtree" ? "https://mapgenie.io/elden-ring/maps/the-shadow-realm" : "https://mapgenie.io/elden-ring/maps/the-lands-between"} target="_blank" rel="noreferrer">Search on MapGenie ↗</a></div>}
+                  {task.runeBossId && !done && !readOnly && <p className="rune-skip-note">Skipping removes this fight&apos;s reward from the budget and recalculates the recommended levels and upgrades.</p>}
+                  {missingTaskPrerequisites(task, allTasks, expedition).length > 0 && <div className="material-prerequisites"><strong>First complete:</strong>{missingTaskPrerequisites(task, allTasks, expedition).map((requirement, requiredIndex) => <span key={`${requirement.id}-${requiredIndex}`}>{requirement.id ? <a href={`#task-${requirement.id}`} onClick={() => { const target = chapters.find((candidate) => tasksByChapter[candidate.id]?.some((entry) => entry.id === requirement.id)); if (target) setActiveId(target.id); }}>{requirement.label}</a> : requirement.label}</span>)}</div>}
+                  <a className="show-task-map" href="#route-map" onClick={() => setInspected({ taskId: task.id, nextId: chapterNext?.task.id })}>Show on map</a>
+                  {(task.item || task.sourceUrl) && <div className="task-links"><a href={task.sourceUrl || wikiUrl(task.item!)} target="_blank" rel="noreferrer">{task.material ? "Material source" : task.runeBossId ? "Encounter guide" : "Item reference"} ↗</a>{mapItem && <a href={mapItem.url} target="_blank" rel="noreferrer">Exact Fextralife marker ↗</a>}<a href={mapItem?.layer === "shadow" || (!mapItem && chapter.act === "Shadow of the Erdtree") ? "https://mapgenie.io/elden-ring/maps/the-shadow-realm" : "https://mapgenie.io/elden-ring/maps/the-lands-between"} target="_blank" rel="noreferrer">Search on MapGenie ↗</a></div>}
                   {task.perPlayer ? (
                     <div className="player-checks">
                       {expedition.players.map((player) => {
                         const key = `${task.id}:${player.id}`;
                         return <button type="button" disabled={taskBlocked || (readOnly && viewerPlayerId !== player.id)} key={key} className={expedition.completed[key] ? "checked" : ""} onClick={() => toggle(key, task)} style={{ "--player": player.color } as React.CSSProperties}><i>{expedition.completed[key] ? "✓" : ""}</i>{player.name}</button>;
                       })}
+                      {task.optional && !readOnly && <button type="button" disabled={taskSkipBlocked(task)} onClick={() => toggleSkipped(task)}>{skipped ? "Restore item" : "Skip item"}</button>}
+                      {task.runeBossId && !done && !readOnly && <button type="button" disabled={Boolean(accessGate)} onClick={() => skipFundingFight(task)}>Skip rune boss</button>}
                     </div>
                   ) : (!readOnly || task.playerId === viewerPlayerId) ? (
                     <div className="task-actions">
                       {!skipped && <button type="button" className="complete-button" disabled={taskBlocked} onClick={() => toggle(task.id, task)}><i>{done ? "✓" : ""}</i>{done ? "Completed" : "Mark complete"}</button>}
                       {task.optional && !readOnly && <button type="button" className="complete-button skip-button" disabled={taskSkipBlocked(task)} onClick={() => toggleSkipped(task)}><i>{skipped ? "↶" : "—"}</i>{skipped ? "Restore item" : "Skip item"}</button>}
+                      {task.runeBossId && !done && !readOnly && <button type="button" className="complete-button skip-button" disabled={Boolean(accessGate)} onClick={() => skipFundingFight(task)}>Skip rune boss</button>}
                     </div>
                   ) : null}
                 </div>
@@ -1892,7 +2108,7 @@ function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, act
         <p className="eyebrow">Your company</p>
         {expedition.players.map((player) => {
           const selected = buildForPlayer(player);
-          const loadout = stageLoadout(selected, phaseForChapter(chapter));
+          const loadout = routeLoadout(selected, chapter);
           return <div className="company-member" key={player.id} style={{ "--player": player.color } as React.CSSProperties}><span>{player.name.slice(0, 1).toUpperCase()}</span><div><strong>{player.name}</strong><small>{selected.name}</small><p>{loadout.weapon}</p></div></div>;
         })}
         <div className="mode-note"><strong>{expedition.mode === "solo" ? "Solo route" : expedition.mode === "standard" ? "Standard co-op rules" : "Seamless rules"}</strong><p>{expedition.mode === "solo" ? "Boss rewards use the full solo payout and every pickup belongs to this character." : expedition.mode === "standard" ? "World-state steps are tracked for every player. Rotate hosts and tick each copy." : "The route follows host progression. Individual pickups remain assigned separately."}</p></div>
@@ -1930,30 +2146,32 @@ function CodexView({ expedition, catalogueOnly = false }: { expedition?: Expedit
   const [fextraCategory, setFextraCategory] = useState("All Fextralife groups");
   const [sort, setSort] = useState("Catalogue order");
   const [selected, setSelected] = useState<Build | null>(null);
-  const filtered = sortBuilds(selectableBuilds.filter((candidate) => {
-    return buildSearchText(candidate).includes(query.toLowerCase()) && matchesBuildFilter(candidate, filter) && matchesCollection(candidate, collection) && (mechanic === "All focuses" || candidate.mechanic === mechanic) && (fextraCategory === "All Fextralife groups" || candidate.guideCategories?.includes(fextraCategory));
-  }), sort);
+  const buildResults = useBuildResults(query, filter, collection, mechanic, fextraCategory, sort);
+  const filtered = buildResults.items;
 
   return (
     <section className="codex-page">
-      <div className="page-heading"><div><p className="eyebrow">{selectableBuilds.length} source-audited builds</p><h2>{catalogueOnly ? "Build catalogue" : "Build codex"}</h2><p>{catalogueOnly ? "Compare every selectable build before the run controller assigns them. Search includes weapons, off-hands, skills, armour, talismans and spells." : "Published guides retain their documented loadouts. The two existing local-run builds remain available; unaudited experiments are hidden from new selection."}</p></div><div className="codex-count"><strong>{filtered.length}</strong><span>builds shown</span></div></div>
+      <div className="page-heading"><div><p className="eyebrow">{selectableBuilds.length} source-audited builds</p><h2>{catalogueOnly ? "Build catalogue" : "Build codex"}</h2><p>{catalogueOnly ? "Compare every selectable build before the run controller assigns them. Search includes weapons, off-hands, skills, armour, talismans and spells." : "Compare sourced builds and their chapter-by-chapter weapon paths. Open a loadout for equipment, stats and sources."}</p></div><div className="codex-count"><strong>{buildResults.total}</strong><span>matching builds</span></div></div>
       <div className="codex-tools extended"><label><span>Search</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Frost, bow, faith…" /></label><label><span>Source category</span><select value={collection} onChange={(event) => setCollection(event.target.value)}>{COLLECTION_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Fextralife group</span><select value={fextraCategory} onChange={(event) => setFextraCategory(event.target.value)}>{FEXTRA_CATEGORY_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Build type</span><select value={filter} onChange={(event) => setFilter(event.target.value)}>{ATTRIBUTE_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Combat focus</span><select value={mechanic} onChange={(event) => setMechanic(event.target.value)}>{MECHANIC_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Sort by</span><select value={sort} onChange={(event) => setSort(event.target.value)}>{SORT_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select></label></div>
+      <CataloguePagination {...buildResults} />
+      {buildResults.total === 0 && <p className="empty-results" role="status">No builds match these filters. Try a weapon name or choose All builds and All sources.</p>}
       <div className="build-grid">
         {filtered.map((candidate) => {
           const owners = expedition?.players.filter((player) => player.buildId === candidate.id) || [];
           const classification = buildClassification(candidate);
-          return <article className="build-card" key={candidate.id} onClick={() => setSelected(candidate)} tabIndex={0} onKeyDown={(event) => { if (event.key === "Enter") setSelected(candidate); }}>
+          return <article className="build-card" key={candidate.id}>
             <div className="build-card-top"><span className="build-number">{String(catalogueNumber(candidate)).padStart(3, "0")}</span><div className="difficulty"><i />{candidate.complexity}</div></div>
             <h3>{candidate.name}</h3><p className="stats">{classification.attributes} · {classification.range}</p><b className="collection-pill">{candidate.collection}</b>{candidate.guideCategories?.length ? <p className="guide-groups">{candidate.guideCategories.join(" · ")}</p> : null}<p className="build-summary">{candidate.playstyle}</p>
             <div className="build-facts"><span><small>Starting class</small>{plannerStartingClass(candidate)}{candidate.startingClass === "Not specified" ? " (calculated)" : ""}</span><span><small>Combat focus</small>{candidate.mechanic}</span></div>
-            <div className="mini-phases"><span>{stageLoadout(candidate, "early").weapon}</span><i>→</i><span>{stageLoadout(candidate, "dlc").weapon}</span></div>
+            <WeaponRoutePreview build={candidate} />
             <div className="tag-row">{candidate.tags.slice(0, 3).map((tag) => <span key={tag}>{tag}</span>)}</div>
             {owners.length > 0 && <div className="owners">Chosen by {owners.map((owner) => owner.name).join(", ")}</div>}
-            <button type="button">Full loadout <span>↗</span></button>
+            <button type="button" aria-label={`Full loadout: ${candidate.name}`} onClick={() => setSelected(candidate)}>Full loadout <span>↗</span></button>
           </article>;
         })}
       </div>
 
+      <CataloguePagination {...buildResults} />
       {selected && <FullBuildDetails build={selected} onClose={() => setSelected(null)} />}
     </section>
   );
@@ -1971,16 +2189,14 @@ function ReadOnlyBuildCatalogue({ lanAvailable }: { lanAvailable: boolean }) {
   );
 }
 
-function PartyView({ expedition, setExpedition, saveLibrary, activeSaveId, onSelectSave, onNewSave, onDuplicateSave, onDeleteSave, onExport, onImport }: { expedition: Expedition; setExpedition: React.Dispatch<React.SetStateAction<Expedition | null>>; saveLibrary: SaveLibrary; activeSaveId: string | null; onSelectSave: (id: string) => void; onNewSave: () => void; onDuplicateSave: () => void; onDeleteSave: () => void; onExport: () => void; onImport: (event: React.ChangeEvent<HTMLInputElement>) => void }) {
-  const totalKeys = chapters.flatMap((chapter) => tasksForChapter(chapter, expedition)).flatMap((task) => taskKeys(task, expedition));
-  const completed = totalKeys.filter((key) => expedition.completed[key]).length;
+function PartyView({ expedition, progress, setExpedition, saveLibrary, activeSaveId, onSelectSave, onNewSave, onDuplicateSave, onDeleteSave, onExport, onImport }: { expedition: Expedition; progress: number; setExpedition: React.Dispatch<React.SetStateAction<Expedition | null>>; saveLibrary: SaveLibrary; activeSaveId: string | null; onSelectSave: (id: string) => void; onNewSave: () => void; onDuplicateSave: () => void; onDeleteSave: () => void; onExport: () => void; onImport: (event: React.ChangeEvent<HTMLInputElement>) => void }) {
   const requiredTracks = requiredQuestTracksForParty(expedition.players.map(buildForPlayer));
   const selectedTracks = new Set(expandQuestTrackIds(expedition.optionalQuestTracks === undefined ? ALL_OPTIONAL_QUEST_TRACK_IDS : expedition.optionalQuestTracks));
   requiredTracks.forEach((track) => selectedTracks.add(track));
   const updatePlayer = (id: string, patch: Partial<Player>) => setExpedition((current) => current ? { ...current, players: current.players.map((player) => player.id === id ? { ...player, ...patch } : player) } : current);
-  return <section className="party-page"><div className="page-heading"><div><p className="eyebrow">Run settings</p><h2>{expedition.name}</h2><p>{expedition.mode === "solo" ? "Solo playthrough" : expedition.mode === "standard" ? "Standard co-op across independent worlds" : "Seamless Co-op with host-led progression"}</p></div><div className="progress-medallion"><strong>{Math.round((completed / Math.max(totalKeys.length, 1)) * 100)}%</strong><span>route complete</span></div></div>
-    <div className="party-cards">{expedition.players.map((player, index) => { const selected = buildForPlayer(player); const choices = selectableBuilds.some((candidate) => candidate.id === selected.id) ? selectableBuilds : [selected, ...selectableBuilds]; const classification = buildClassification(selected); return <article key={player.id} style={{ "--player": player.color } as React.CSSProperties}><div className="portrait">{player.name.slice(0, 1).toUpperCase()}</div><div className="party-card-head"><input value={player.name} onChange={(event) => updatePlayer(player.id, { name: event.target.value })} /><span>Player {index + 1}</span></div><select value={player.buildId} onChange={(event) => { const build = builds.find((candidate) => candidate.id === event.target.value)!; updatePlayer(player.id, { buildId: build.id, startingClass: defaultPlayerStartingClass(build) }); }}>{choices.map((candidate) => <option value={candidate.id} key={candidate.id}>{candidate.name}</option>)}</select><select aria-label={`${player.name} starting class`} value={player.startingClass || defaultPlayerStartingClass(selected)} onChange={(event) => updatePlayer(player.id, { startingClass: event.target.value as StartingClass })}>{STARTING_CLASSES.map((startingClass) => <option key={startingClass}>{startingClass}</option>)}</select><p>{selected.playstyle}</p><div className="party-stats"><span><small>Attributes</small>{classification.attributes}</span><span><small>Range</small>{classification.range}</span></div><label className="host-radio"><input type="radio" name="host" checked={expedition.hostId === player.id} onChange={() => setExpedition((current) => current ? { ...current, hostId: player.id } : current)} /> {expedition.hostId === player.id ? "Current host" : "Make host"}</label></article>; })}</div>
-    <div className="save-panel"><div><p className="eyebrow">Rune plan</p><h3>Level and loss allowances</h3><p>Expected field income is reduced before levels are assigned. If the conservative balance cannot pay for the selected pace, the route inserts easier optional bosses and only recommends a fully funded level. Golden Rune items remain emergency reserves.</p></div><div className="loss-setting"><label>Allow for <select value={expedition.lossRate ?? 20} onChange={(event) => setExpedition((current) => current ? { ...current, lossRate: Number(event.target.value) } : current)}><option value={10}>10% lost</option><option value={20}>20% lost</option><option value={30}>30% lost</option></select></label><label>Run <select value={expedition.levelOffset ?? 0} onChange={(event) => setExpedition((current) => current ? { ...current, levelOffset: Number(event.target.value), completed: {} } : current)}><option value={0}>at guide level</option><option value={5}>5 levels below</option><option value={10}>10 levels below</option><option value={15}>15 levels below</option><option value={20}>20 levels below</option></select></label></div></div>
+  return <section className="party-page"><div className="page-heading"><div><p className="eyebrow">Run settings</p><h2>{expedition.name}</h2><p>{expedition.mode === "solo" ? "Solo playthrough" : expedition.mode === "standard" ? "Standard co-op across independent worlds" : "Seamless Co-op with host-led progression"}</p></div><div className="progress-medallion"><strong>{progress}%</strong><span>route complete</span></div></div>
+    <div className="party-cards">{expedition.players.map((player, index) => { const selected = buildForPlayer(player); const choices = selectableBuilds.some((candidate) => candidate.id === selected.id) ? selectableBuilds : [selected, ...selectableBuilds]; const classification = buildClassification(selected); return <article key={player.id} style={{ "--player": player.color } as React.CSSProperties}><div className="portrait">{player.name.slice(0, 1).toUpperCase()}</div><div className="party-card-head"><input value={player.name} onChange={(event) => updatePlayer(player.id, { name: event.target.value })} /><span>Player {index + 1}</span></div><select value={player.buildId} onChange={(event) => { const build = builds.find((candidate) => candidate.id === event.target.value)!; updatePlayer(player.id, { buildId: build.id, startingClass: defaultPlayerStartingClass(build) }); }}>{choices.map((candidate) => <option value={candidate.id} key={candidate.id}>{candidate.name}</option>)}</select><select aria-label={`${player.name} starting class`} value={player.startingClass || defaultPlayerStartingClass(selected)} onChange={(event) => updatePlayer(player.id, { startingClass: event.target.value as StartingClass })}>{STARTING_CLASSES.map((startingClass) => <option key={startingClass} value={startingClass}>{startingClass}{/Idus|Heavy Knight/.test(startingClass) ? " (Tarnished Pack)" : ""}</option>)}</select><p>{selected.playstyle}</p><div className="party-stats"><span><small>Attributes</small>{classification.attributes}</span><span><small>Range</small>{classification.range}</span></div><label className="host-radio"><input type="radio" name="host" checked={expedition.hostId === player.id} onChange={() => setExpedition((current) => current ? { ...current, hostId: player.id } : current)} /> {expedition.hostId === player.id ? "Current host" : "Make host"}</label></article>; })}</div>
+    <div className="save-panel"><div><p className="eyebrow">Rune plan</p><h3>Level and loss allowances</h3><p>Expected field income is reduced before levels are assigned. If the conservative balance cannot pay for the selected pace, the route inserts easier optional bosses and only recommends a fully funded level. Golden Rune items remain emergency reserves.</p></div><div className="loss-setting"><label>Allow for <select value={expedition.lossRate ?? 20} onChange={(event) => setExpedition((current) => current ? { ...current, lossRate: Number(event.target.value) } : current)}><option value={10}>10% lost</option><option value={20}>20% lost</option><option value={30}>30% lost</option></select></label><label>Run <select value={expedition.levelOffset ?? 0} onChange={(event) => setExpedition((current) => current ? changeLevelPace(current, Number(event.target.value)) : current)}><option value={0}>at guide level</option><option value={5}>5 levels below</option><option value={10}>10 levels below</option><option value={15}>15 levels below</option><option value={20}>20 levels below</option></select></label></div></div>
     <div className="quest-settings-panel"><div><p className="eyebrow">Questlines</p><h3>Included in this run</h3><p>Core progression and all-Remembrance requirements cannot be removed. Changing this list removes or restores only optional cards; completed progress remains saved.</p></div><div className="quest-settings-actions"><button type="button" onClick={() => setExpedition((current) => current ? { ...current, optionalQuestTracks: [...requiredTracks] } : current)}>Build-required only</button><button type="button" onClick={() => setExpedition((current) => current ? { ...current, optionalQuestTracks: [...ALL_OPTIONAL_QUEST_TRACK_IDS] } : current)}>Select all</button></div><div className="quest-settings-grid">{OPTIONAL_QUEST_TRACKS.map((track) => { const required = requiredTracks.includes(track.id); return <label key={track.id}><input type="checkbox" checked={selectedTracks.has(track.id)} disabled={required} onChange={(event) => setExpedition((current) => { if (!current) return current; const values = new Set(current.optionalQuestTracks === undefined ? ALL_OPTIONAL_QUEST_TRACK_IDS : current.optionalQuestTracks); if (event.target.checked) values.add(track.id); else values.delete(track.id); return { ...current, optionalQuestTracks: [...values] }; })} /><span><strong>{track.name}</strong><small>{required ? "Required by selected build" : track.act}</small></span></label>; })}</div></div>
     <div className="save-panel save-library-panel"><div><p className="eyebrow">Saved runs</p><h3>Switch without moving files</h3><p>Every run is stored in this browser. Export is still available for backups and moving a run to another device.</p><div className="save-library-list">{Object.values(saveLibrary.saves).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map((save) => <button type="button" className={save.saveId === activeSaveId ? "active" : ""} key={save.saveId} onClick={() => onSelectSave(save.saveId!)}><strong>{save.name}</strong><span>{save.players.length === 1 ? "Solo" : `${save.players.length} players`} · {new Date(save.createdAt).toLocaleDateString()}</span></button>)}</div></div><div className="save-actions"><button type="button" className="primary" onClick={onNewSave}>New run</button><button type="button" onClick={onDuplicateSave}>Duplicate current</button><button type="button" onClick={onExport}>Export current</button><label>Import file<input type="file" accept="application/json" onChange={onImport} /></label><button type="button" className="danger" onClick={onDeleteSave}>Delete current</button></div></div>
     <div className="source-panel"><p className="eyebrow">Reference shelf</p><h3>Sources and version</h3><p>Locally verified numeric data: App/Regulation 1.17, checked 1 September 2026. The Tarnished Pack origins, eight armaments, four armour sets, and two altered armour variants are included. External references open in a new tab.</p><div>{sources.map(([label, url]) => <a key={url} href={url} target="_blank" rel="noreferrer">{label}<span>↗</span></a>)}</div></div>
@@ -1996,14 +2212,17 @@ function PublicJoinSetup({ snapshot, error, onJoin, onBack }: { snapshot: Public
   const [startingClass, setStartingClass] = useState<StartingClass>(defaultPlayerStartingClass(selectedBuild));
   const selectedPlayerId = availableSlots.some((slot) => slot.playerId === playerId) ? playerId : availableSlots[0]?.playerId || "";
 
-  return <main className="public-join-screen"><section><button type="button" className="back-link" onClick={onBack}>Back to planner</button><p className="eyebrow">Online co-op room {snapshot.code}</p><h1>Choose your character</h1><p>Select an open player slot, your build, and the Elden Ring class you are starting with. The host will see these choices automatically.</p>{availableSlots.length ? <form onSubmit={(event) => { event.preventDefault(); onJoin({ playerId: selectedPlayerId, name, buildId, startingClass }); }}><label>Player slot<select value={selectedPlayerId} onChange={(event) => setPlayerId(event.target.value)}>{availableSlots.map((slot) => <option value={slot.playerId} key={slot.playerId}>{slot.playerId.replace("player-", "Player ")}</option>)}</select></label><label>Character name<input maxLength={40} value={name} onChange={(event) => setName(event.target.value)} /></label><label>Build<select value={buildId} onChange={(event) => { const nextBuild = selectableBuilds.find((build) => build.id === event.target.value)!; setBuildId(nextBuild.id); setStartingClass(defaultPlayerStartingClass(nextBuild)); }}>{selectableBuilds.map((build) => <option value={build.id} key={build.id}>{String(catalogueNumber(build)).padStart(3, "0")} · {build.name}</option>)}</select></label><label>Starting class<select value={startingClass} onChange={(event) => setStartingClass(event.target.value as StartingClass)}>{STARTING_CLASSES.map((value) => <option key={value}>{value}</option>)}</select></label><div className="join-build-summary"><strong>{selectedBuild.name}</strong><span>Recommended: {defaultPlayerStartingClass(selectedBuild)} · {buildClassification(selectedBuild).attributes} · {buildClassification(selectedBuild).range}</span><p>{selectedBuild.playstyle}</p></div>{error && <span role="alert">{error}</span>}<button type="submit" disabled={!selectedPlayerId || !name.trim()}>Join as player two</button></form> : <div className="room-full"><strong>This room is full</strong><p>Ask the host to increase the player count or share a different room code.</p></div>}</section></main>;
+  return <main className="public-join-screen"><section><button type="button" className="back-link" onClick={onBack}>Back to planner</button><p className="eyebrow">Online co-op room {snapshot.code}</p><h1>Choose your character</h1><p>Select an open player slot, your build, and the Elden Ring class you are starting with. The host will see these choices automatically.</p>{availableSlots.length ? <form onSubmit={(event) => { event.preventDefault(); onJoin({ playerId: selectedPlayerId, name, buildId, startingClass }); }}><label>Player slot<select value={selectedPlayerId} onChange={(event) => setPlayerId(event.target.value)}>{availableSlots.map((slot) => <option value={slot.playerId} key={slot.playerId}>{slot.playerId.replace("player-", "Player ")}</option>)}</select></label><label>Character name<input maxLength={40} value={name} onChange={(event) => setName(event.target.value)} /></label><label>Build<select value={buildId} onChange={(event) => { const nextBuild = selectableBuilds.find((build) => build.id === event.target.value)!; setBuildId(nextBuild.id); setStartingClass(defaultPlayerStartingClass(nextBuild)); }}>{selectableBuilds.map((build) => <option value={build.id} key={build.id}>{String(catalogueNumber(build)).padStart(3, "0")} · {build.name}</option>)}</select></label><label>Starting class<select value={startingClass} onChange={(event) => setStartingClass(event.target.value as StartingClass)}>{STARTING_CLASSES.map((value) => <option key={value} value={value}>{value}{/Idus|Heavy Knight/.test(value) ? " (Tarnished Pack)" : ""}</option>)}</select></label><div className="join-build-summary"><strong>{selectedBuild.name}</strong><span>Recommended: {defaultPlayerStartingClass(selectedBuild)} · {buildClassification(selectedBuild).attributes} · {buildClassification(selectedBuild).range}</span><p>{selectedBuild.playstyle}</p></div>{error && <span role="alert">{error}</span>}<button type="submit" disabled={!selectedPlayerId || !name.trim()}>Join as player two</button></form> : <div className="room-full"><strong>This room is full</strong><p>Ask the host to increase the player count or share a different room code.</p></div>}</section></main>;
 }
 
 function Home() {
   const [expedition, setExpedition] = useState<Expedition | null>(null);
   const [saveLibrary, setSaveLibrary] = useState<SaveLibrary>({ activeId: null, saves: {} });
   const [activeSaveId, setActiveSaveId] = useState<string | null>(null);
+  const [storageError, setStorageError] = useState("");
   const [viewerPlayerId, setViewerPlayerId] = useState("");
+  const [followHost, setFollowHost] = useState(true);
+  const followHostRef = useRef(true);
   const [hydrated, setHydrated] = useState(false);
   const [lanMode, setLanMode] = useState<LanMode | null>(null);
   const [sessionChannel, setSessionChannel] = useState<SessionChannel>("none");
@@ -2048,11 +2267,14 @@ function Home() {
         const libraryText = localStorage.getItem(SAVE_LIBRARY_KEY);
         if (libraryText) {
           const parsed = JSON.parse(libraryText) as SaveLibrary;
-          if (parsed && typeof parsed.saves === "object") localLibrary = parsed;
+          if (!parsed || !parsed.saves || typeof parsed.saves !== "object" || Array.isArray(parsed.saves)) throw new Error("Invalid save library");
+          Object.values(parsed.saves).forEach(validateRunImport);
+          localLibrary = parsed;
         }
         const legacyText = localStorage.getItem(STORAGE_KEY);
-        if (!Object.keys(localLibrary.saves).length && legacyText) {
+        if (!libraryText && legacyText) {
           const legacy = JSON.parse(legacyText) as Expedition;
+          validateRunImport(legacy);
           const id = legacy.saveId || newSaveId();
           legacy.saveId = id;
           localLibrary = { activeId: id, saves: { [id]: legacy } };
@@ -2061,7 +2283,11 @@ function Home() {
         if (localExpedition && !localExpedition.saveId) {
           const id = newSaveId(); localExpedition = { ...localExpedition, saveId: id }; localLibrary = { activeId: id, saves: { ...localLibrary.saves, [id]: localExpedition } };
         }
-      } catch { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(SAVE_LIBRARY_KEY); }
+      } catch {
+        localLibrary = { activeId: null, saves: {} };
+        localExpedition = null;
+        if (!cancelled) setStorageError("The browser save could not be read. It has not been deleted or overwritten. Download a backup before importing a valid exported run.");
+      }
       if (!cancelled) { setSaveLibrary(localLibrary); setActiveSaveId(localLibrary.activeId); }
 
       if (PUBLIC_SESSION_API) {
@@ -2236,7 +2462,7 @@ function Home() {
     if (!hydrated || lanMode === null || lanMode === "follower") return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      if (expedition?.saveId) {
+      if (expedition?.saveId && !storageError) {
         setSaveLibrary((current) => ({ activeId: expedition.saveId!, saves: { ...current.saves, [expedition.saveId!]: expedition } }));
         setActiveSaveId(expedition.saveId);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(expedition));
@@ -2284,12 +2510,12 @@ function Home() {
       }
     }, 180);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
-  }, [expedition, hydrated, lanMode, lanSaveRetry, sessionChannel]);
+  }, [expedition, hydrated, lanMode, lanSaveRetry, sessionChannel, storageError]);
 
   useEffect(() => {
-    if (!hydrated || lanMode === "follower") return;
+    if (!hydrated || lanMode === "follower" || storageError) return;
     localStorage.setItem(SAVE_LIBRARY_KEY, JSON.stringify(saveLibrary));
-  }, [saveLibrary, hydrated, lanMode]);
+  }, [saveLibrary, hydrated, lanMode, storageError]);
 
   const lanPlayerSignature = expedition?.players.map((player) => `${player.id}:${player.name}`).join("|") || "";
 
@@ -2313,9 +2539,8 @@ function Home() {
       }
       lanRevision.current = nextRevision;
       if (sessionChannel === "public" && remote.code && remote.mode && remote.playerCount && remote.slots) setPublicSnapshot(remote as PublicSessionSnapshot);
-      if (lanMode === "follower" && remote.expedition?.activeChapterId && chapters.some((chapter) => chapter.id === remote.expedition!.activeChapterId)) {
+      if (lanMode === "follower" && followHostRef.current && remote.expedition?.activeChapterId && chapters.some((chapter) => chapter.id === remote.expedition!.activeChapterId)) {
         setActiveId(remote.expedition.activeChapterId);
-        setView("route");
       }
       setExpedition(remote.expedition || null);
     };
@@ -2358,19 +2583,25 @@ function Home() {
     };
   }, [hydrated, joinRequired, lanMode, publicSession, sessionChannel]);
 
+  const planningKey = routePlanningKey(expedition);
   const routeModel = useMemo(() => {
-    if (!expedition) return { runeSupport: {} as Record<string, RuneSupportChapter>, tasksByChapter: {} as Record<string, Task[]>, progress: 0 };
+    if (!planningKey) return { runeSupport: {} as Record<string, RuneSupportChapter>, tasksByChapter: {} as Record<string, Task[]>, progress: 0 };
+    const expedition: Expedition = JSON.parse(planningKey);
     const runeSupport = runeSupportPlan(expedition);
     const tasksByChapter = Object.fromEntries(chapters.map((chapter) => [chapter.id, tasksForChapter(chapter, expedition, runeSupport)]));
-    const keys = Object.values(tasksByChapter).flatMap((tasks) => tasks.flatMap((task) => taskKeys(task, expedition)));
-    const progress = Math.round((keys.filter((key) => expedition.completed[key]).length / Math.max(keys.length, 1)) * 100);
+    const progress = checklistProgress(Object.values(tasksByChapter).flat(), expedition);
     return { runeSupport, tasksByChapter, progress };
-  }, [expedition]);
+  }, [planningKey]);
   const progress = routeModel.progress;
 
   const selectRouteChapter = (id: string) => {
     if (!chapters.some((chapter) => chapter.id === id)) return;
     setActiveId(id);
+    window.scrollTo({ top: 0, behavior: "instant" });
+    if (lanMode === "follower") {
+      followHostRef.current = false;
+      setFollowHost(false);
+    }
     if (lanMode !== "follower") {
       setExpedition((current) => current && current.activeChapterId !== id ? { ...current, activeChapterId: id } : current);
     }
@@ -2393,20 +2624,25 @@ function Home() {
     if (!activeSaveId || !window.confirm(`Delete “${expedition?.name || "this run"}” from this browser?`)) return;
     const remaining = { ...saveLibrary.saves }; delete remaining[activeSaveId];
     const nextId = Object.keys(remaining)[0] || null;
+    if (!nextId) localStorage.removeItem(STORAGE_KEY);
     setSaveLibrary({ activeId: nextId, saves: remaining }); setActiveSaveId(nextId); setExpedition(nextId ? remaining[nextId] : null); setView("route"); setActiveId(chapters[0].id);
   };
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { notify("Run files must be smaller than 2 MB"); event.target.value = ""; return; }
     const reader = new FileReader();
     reader.onload = () => {
       try {
         const parsed = JSON.parse(String(reader.result));
-        if (parsed.schema !== 1 || !Array.isArray(parsed.players) || parsed.players.length < 1 || parsed.players.length > 6) throw new Error();
+        validateRunImport(parsed);
         parsed.saveId = newSaveId();
+        setStorageError("");
+        setActiveId(chapters.some((chapter) => chapter.id === parsed.activeChapterId) ? parsed.activeChapterId : chapters[0].id);
         setExpedition(parsed); setActiveSaveId(parsed.saveId); setSaveLibrary((current) => ({ activeId: parsed.saveId, saves: { ...current.saves, [parsed.saveId]: parsed } })); setView("route"); notify("Run imported as a new save");
-      } catch { notify("That expedition file is not valid"); }
+      } catch (error) { notify(error instanceof Error ? error.message : "That expedition file is not valid"); }
     };
+    reader.onerror = () => notify("The selected run file could not be read");
     reader.readAsText(file);
     event.target.value = "";
   };
@@ -2511,7 +2747,12 @@ function Home() {
     }
   };
 
-  if (!hydrated) return <main className="loading-screen"><span>✦</span><p>Reading the guidance of grace…</p></main>;
+  if (!hydrated) return <main className="loading-screen"><span>✦</span><p>Loading saved run…</p></main>;
+  if (storageError && lanMode !== "follower") return <main className="route-error"><div><h1>Saved run needs attention</h1><p role="alert">{storageError}</p><button type="button" onClick={() => {
+    const blob = new Blob([JSON.stringify({ library: localStorage.getItem(SAVE_LIBRARY_KEY), legacy: localStorage.getItem(STORAGE_KEY) }, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a"); link.href = url; link.download = "tarnished-together-recovery.json"; link.click(); window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }}>Download recovery backup</button><label className="plain-import">Import a valid exported run<input type="file" accept="application/json" onChange={handleImport} /></label><p>The recovery backup keeps the original data for repair; it is not a normal run export.</p>{toast && <p role="status">{toast}</p>}</div></main>;
   if (catalogueOnly) return <ReadOnlyBuildCatalogue lanAvailable={lanMode !== "none"} />;
   if (sessionChannel === "public" && publicSession?.role === "follower" && !publicSession.token && publicSnapshot) return <PublicJoinSetup snapshot={publicSnapshot} error={publicSessionError} onJoin={(choice) => { void joinPublicRoom(choice); }} onBack={leavePublicSession} />;
   if (joinRequired) return <main className="join-screen"><form onSubmit={joinLanRun}><strong>Tarnished Together</strong><h1>Join a run</h1><p>Enter the six-digit code shown on the host. You only need to do this once on this computer.</p><label>Join code<input inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={joinCode} onChange={(event) => setJoinCode(event.target.value.replace(/\D/g, "").slice(0, 6))} autoFocus /></label>{joinError && <span role="alert">{joinError}</span>}<button type="submit" disabled={joinCode.length !== 6}>Join route</button><button type="button" className="secondary" onClick={() => { window.location.href = "/?catalog=1"; }}>Browse builds without joining</button></form></main>;
@@ -2530,10 +2771,11 @@ function Home() {
       </header>
       {!readOnly && sessionChannel === "public" && publicSession?.code && <div className="lan-share-strip public"><span>Other players open the GitHub Pages app</span><span>Online join code <b>{publicSession.code}</b></span><span>They choose their own build and starting class</span></div>}
       {!readOnly && sessionChannel === "lan" && lanInfo && <div className="lan-share-strip"><span>Other players open <strong>{lanInfo.address}</strong></span><span>Join code <b>{lanInfo.joinCode}</b></span>{lanInfo.players.map((player) => <span key={player.id}>{player.name} code <b>{player.code}</b></span>)}</div>}
-      {view === "route" && <RouteView expedition={expedition} setExpedition={setExpedition} tasksByChapter={routeModel.tasksByChapter} runeSupport={routeModel.runeSupport} activeId={activeId} setActiveId={selectRouteChapter} readOnly={readOnly} viewerPlayerId={viewerPlayerId} onViewerUpdate={viewerUpdate} />}
+      {readOnly && <div className="follow-controls"><label><input type="checkbox" checked={followHost} onChange={(event) => { followHostRef.current = event.target.checked; setFollowHost(event.target.checked); if (event.target.checked && expedition.activeChapterId) { setActiveId(expedition.activeChapterId); setView("route"); } }} />Follow host’s chapter</label><span>{followHost ? "Progress updates automatically." : "Browsing independently. Progress still updates."}</span></div>}
+      {view === "route" && <RouteView key={`${expedition.saveId || expedition.createdAt}:${activeId}`} expedition={expedition} setExpedition={setExpedition} tasksByChapter={routeModel.tasksByChapter} runeSupport={routeModel.runeSupport} activeId={activeId} setActiveId={selectRouteChapter} readOnly={readOnly} viewerPlayerId={viewerPlayerId} onViewerUpdate={viewerUpdate} />}
       {view === "selected" && <SelectedBuildsView expedition={expedition} viewerPlayerId={readOnly ? viewerPlayerId : undefined} />}
       {!readOnly && view === "codex" && <CodexView expedition={expedition} />}
-      {!readOnly && view === "party" && <PartyView expedition={expedition} setExpedition={setExpedition} saveLibrary={saveLibrary} activeSaveId={activeSaveId} onSelectSave={openSave} onNewSave={newRun} onDuplicateSave={duplicateRun} onDeleteSave={deleteRun} onExport={handleExport} onImport={handleImport} />}
+      {!readOnly && view === "party" && <PartyView expedition={expedition} progress={progress} setExpedition={setExpedition} saveLibrary={saveLibrary} activeSaveId={activeSaveId} onSelectSave={openSave} onNewSave={newRun} onDuplicateSave={duplicateRun} onDeleteSave={deleteRun} onExport={handleExport} onImport={handleImport} />}
       {toast && <div className="toast" role="status">{toast}</div>}
     </main>
   );

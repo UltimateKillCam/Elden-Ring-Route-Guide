@@ -24,12 +24,68 @@ function loadCatalogue() {
     const buffs = await catalogueServer.ssrLoadModule("/app/buffs.ts");
     const progression = await catalogueServer.ssrLoadModule("/app/progression.ts");
     const resolutions = await catalogueServer.ssrLoadModule("/app/weapon-resolutions.ts");
-    return { ...data, ...weapons, ...questRoute, ...mapItems, ...planner, ...questTracks, ...access, ...buffs, ...progression, ...resolutions, close: async () => undefined };
+    const routing = await catalogueServer.ssrLoadModule("/app/build-routing.ts");
+    return { ...data, ...weapons, ...questRoute, ...mapItems, ...planner, ...questTracks, ...access, ...buffs, ...progression, ...resolutions, ...routing, close: async () => undefined };
   })();
   return cataloguePromise;
 }
 
 after(async () => { if (catalogueServer) await catalogueServer.close(); });
+
+test("every armament in every selectable phase has an explicit acquisition gate", async () => {
+  const c = await loadCatalogue();
+  for (const build of c.selectableBuilds) for (const phase of PHASES) {
+    for (const weapon of c.findWeaponUpgradeRecords(c.stageLoadout(build, phase).weapon)) {
+      const gate = c.pickupGate(weapon.name, { categoryPattern: /weapon|shield/i, preferredLayer: phase === "dlc" ? "shadow" : undefined });
+      assert.ok(gate && c.chapters.some((chapter) => chapter.id === gate.chapterId), `${build.id}: ${weapon.name} lacks a real acquisition chapter`);
+    }
+  }
+});
+
+test("chapter schedules do not introduce a weapon ahead of its acquisition gate", async () => {
+  const c = await loadCatalogue();
+  const starters = { Vagabond: "Longsword", Warrior: "Scimitar", Hero: "Battle Axe", Bandit: "Great Knife", Astrologer: "Astrologer's Staff", Prophet: "Finger Seal", Samurai: "Uchigatana", Prisoner: "Estoc", Confessor: "Broadsword", Wretch: "Club", "Idus Knight": "Idus Sword", "Heavy Knight": "Hefty Scimitar" };
+  for (const build of c.selectableBuilds) {
+    const origin = build.startingClass === "Not specified" ? c.recommendStartingClass(build.stats, build.tags) : build.startingClass;
+    for (const [index, chapter] of c.chapters.entries()) {
+      const stage = c.routeLoadout(build, chapter);
+      assert.ok(stage.weapon && stage.skill, `${build.id} ${chapter.id} lacks a working loadout`);
+      for (const weapon of c.findWeaponUpgradeRecords(stage.weapon)) {
+        const gate = c.pickupGate(weapon.name, { categoryPattern: /weapon|shield/i, preferredLayer: c.phaseAtChapter(chapter) === "dlc" ? "shadow" : undefined });
+        if (weapon.name === starters[origin]) continue;
+        assert.ok(gate && c.chapters.findIndex((candidate) => candidate.id === gate.chapterId) <= index, `${build.id} ${chapter.id}: ${weapon.name} is not yet obtainable`);
+      }
+    }
+  }
+  const route = (id) => [...new Set(c.chapters.map((chapter) => c.routeLoadout(c.builds.find((build) => build.id === id), chapter).weapon))];
+  assert.deepEqual(route("fextra-stormblessed"), ["Halberd", "Messmer Soldier's Spear"]);
+  assert.deepEqual(route("eip-bleed-brawler"), ["Club", "Caestus", "Heavy Star Fist"]);
+  assert.deepEqual(route("eip-winterlion-bloodfiend"), ["Large Club", "Blood Bloodfiend's Arm"]);
+  assert.deepEqual(route("fextra-idusknightstarter"), ["Idus Sword"]);
+  assert.equal(c.isRoutedWeapon(c.builds.find((build) => build.id === "fextra-stormblessed"), "Dragon Halberd"), false);
+});
+
+test("punctuation, map suffixes and talisman families cannot bypass progression", async () => {
+  const c = await loadCatalogue();
+  for (const [name, chapter] of [["Godslayer’s Greatsword", "leyndell"], ["Anvil Hammer - Ruined Forge Lava Intake", "gravesite"], ["Magma Blade", "gelmir"], ["Albinauric Bow", "haligtree"], ["Guardian’s Swordspear", "weeping"]]) assert.equal(c.pickupGate(name)?.chapterId, chapter);
+  assert.deepEqual(c.findMapItems("Lordsworn’s Greatsword"), c.findMapItems("Lordsworn's Greatsword"));
+  assert.deepEqual(c.compatibleTalismans(["Rotten Winged Sword Insignia", "Winged Sword Insignia", "Two-Headed Turtle Talisman", "Green Turtle Talisman", "Dragoncrest Greatshield Talisman", "Dragoncrest Shield Talisman +2"]), ["Rotten Winged Sword Insignia", "Two-Headed Turtle Talisman", "Dragoncrest Greatshield Talisman"]);
+  assert.deepEqual(c.compatibleTalismans(["Green Turtle Talisman", "Two-Headed Turtle Talisman", "Winged Sword Insignia", "Rotten Winged Sword Insignia"]), ["Two-Headed Turtle Talisman", "Rotten Winged Sword Insignia"], "an available upgrade must win regardless of source ordering");
+  const milady = c.builds.find((build) => build.id === "game8-wing-stance-milady");
+  assert.ok(milady);
+  assert.equal(milady.publishedLoadout.talismans.includes("Winged Sword Insignia"), false);
+  assert.doesNotMatch(c.stageLoadout(c.builds.find((build) => build.id === "mobalytics-blasphemous-blade"), "early").skill, /Square Off/);
+});
+
+test("cached weapon lookups preserve exact matches, order and caller isolation", async () => {
+  const c = await loadCatalogue();
+  const expected = ["Giant-Crusher", "Highland Axe"];
+  const first = c.findWeaponUpgradeRecords("Heavy Giant-Crusher & Highland Axe");
+  assert.deepEqual(first.map((weapon) => weapon.name), expected);
+  first.pop();
+  assert.deepEqual(c.findWeaponUpgradeRecords("Heavy Giant-Crusher & Highland Axe").map((weapon) => weapon.name), expected);
+  assert.deepEqual(c.findWeaponUpgradeRecords("Lordsworn’s Greatsword").map((weapon) => weapon.name), ["Lordsworn's Greatsword"]);
+});
 
 test("optional quest dependencies and core access gates remain explicit", async () => {
   const catalogue = await loadCatalogue();
@@ -123,9 +179,9 @@ const statCodes = (build) => DAMAGE_STATS.filter((stat) => build.stats.toUpperCa
 test("the full build catalogue has explicit classifications and selectable guidance", async () => {
   const catalogue = await loadCatalogue();
   try {
-    assert.equal(catalogue.builds.length, 282);
-    assert.equal(catalogue.selectableBuilds.length, 200);
-    assert.deepEqual(catalogue.selectableBuilds.map((build) => catalogue.catalogueNumber(build)), Array.from({ length: 200 }, (_, index) => index + 1));
+    assert.equal(catalogue.builds.length, 285);
+    assert.equal(catalogue.selectableBuilds.length, 203);
+    assert.deepEqual(catalogue.selectableBuilds.map((build) => catalogue.catalogueNumber(build)), Array.from({ length: 203 }, (_, index) => index + 1));
     const curatedIds = catalogue.builds.filter((build) => build.collection === "Curated").map((build) => build.id).sort();
     assert.deepEqual([...catalogue.curatedCombatStyles.keys()].sort(), curatedIds, "curated combat-style metadata must cover exactly every curated build");
     for (const build of catalogue.builds) {
@@ -162,20 +218,20 @@ test("the full build catalogue has explicit classifications and selectable guida
       melee: styleCount(undefined, "Melee"),
       ranged: styleCount(undefined, "Ranged"),
       hybrid: styleCount(undefined, "Melee/Ranged"),
-    }, { melee: 112, ranged: 21, hybrid: 67 });
+    }, { melee: 114, ranged: 21, hybrid: 68 });
     assert.deepEqual({
       melee: styleCount("Fextralife", "Melee"),
       ranged: styleCount("Fextralife", "Ranged"),
       hybrid: styleCount("Fextralife", "Melee/Ranged"),
-    }, { melee: 92, ranged: 18, hybrid: 61 });
+    }, { melee: 92, ranged: 18, hybrid: 62 });
     const styleManifest = catalogue.builds.map((build) => `${build.id}:${build.combatStyles.join("+")}`).join("\n");
-    assert.equal(createHash("sha256").update(styleManifest).digest("hex"), "18893e8f73a85cb62ac2655100d736299f9f4864dad427383ae01da9be195867", "a researched per-build combat style changed");
+    assert.equal(createHash("sha256").update(styleManifest).digest("hex"), "98d130c4b127eefef0d9f7bad37bbfec1234a0a6e89bd5122836931cb352a06b", "a researched per-build combat style changed");
     const fullStyleCount = (styles) => catalogue.builds.filter((build) => build.combatStyles.join("/") === styles).length;
     assert.deepEqual({
       melee: fullStyleCount("Melee"),
       ranged: fullStyleCount("Ranged"),
       hybrid: fullStyleCount("Melee/Ranged"),
-    }, { melee: 162, ranged: 35, hybrid: 85 });
+    }, { melee: 164, ranged: 35, hybrid: 86 });
     for (const [id, styles, phase, phasePattern, playstylePattern] of [
       ["compact-axe", ["Melee", "Ranged"], "dlc", /Smithscript Axe/, /throwable steel/],
       ["great-spear-paladin", ["Melee", "Ranged"], "late", /Siluria's Tree/, /ranged holy pressure/],
@@ -215,8 +271,8 @@ test("the full build catalogue has explicit classifications and selectable guida
     assert.deepEqual(catalogue.selectableBuilds.find((build) => build.id === "fextra-cipherprophet").attributes, ["Faith"]);
     assert.deepEqual(catalogue.selectableBuilds.find((build) => build.id === "fextra-knightofthorns").attributes, ["Arcane", "Intelligence"]);
     assert.deepEqual(catalogue.selectableBuilds.find((build) => build.id === "fextra-level8090sorcererduelist").attributes, ["Intelligence"]);
-    assert.equal(new Set(catalogue.selectableBuilds.map((build) => build.playstyle.toLowerCase())).size, 200, "build descriptions must be unique");
-    assert.equal(catalogue.catalogueNumber("meme-jar-jar"), 200);
+    assert.equal(new Set(catalogue.selectableBuilds.map((build) => build.playstyle.toLowerCase())).size, 203, "build descriptions must be unique");
+    assert.equal(catalogue.catalogueNumber("meme-jar-jar"), 203);
   } finally {
     await catalogue.close();
   }
@@ -225,7 +281,7 @@ test("the full build catalogue has explicit classifications and selectable guida
 test("every generated progression bridge is source-backed, timely and stat-compatible", async () => {
   const catalogue = await loadCatalogue();
   try {
-    assert.equal(catalogue.builds.length, 282);
+    assert.equal(catalogue.builds.length, 285);
     for (const build of catalogue.builds) {
       for (const phase of PHASES) {
         const stage = catalogue.stageLoadout(build, phase);
@@ -318,8 +374,14 @@ test("curated paths avoid respec pivots and severe off-path weapon requirements"
     }
     const quality = catalogue.builds.find((build) => build.id === "quality-knight");
     const colossal = catalogue.builds.find((build) => build.id === "colossal-hammer");
-    assert.deepEqual(PHASES.map((phase) => quality.phases[phase]), ["Longsword", "Claymore", "Quality Great Épée", "Milady + Wing Stance"]);
-    assert.deepEqual(PHASES.map((phase) => colossal.phases[phase]), ["Large Club", "Great Club", "Giant-Crusher", "Anvil Hammer"]);
+    assert.deepEqual(PHASES.map((phase) => quality.phases[phase]), ["Claymore", "Claymore", "Claymore", "Claymore"]);
+    assert.deepEqual(PHASES.map((phase) => colossal.phases[phase]), ["Large Club", "Large Club", "Giant-Crusher", "Giant-Crusher"]);
+    assert.deepEqual(catalogue.weaponTransitions(quality).map((step) => step.weapon), ["Longsword", "Claymore"]);
+    assert.deepEqual(catalogue.weaponTransitions(colossal).map((step) => step.weapon), ["Large Club", "Giant-Crusher"]);
+    assert.equal(catalogue.weaponTransitions(quality)[1].chapter.id, "weeping");
+    assert.match(quality.source.url, /samurai-gamers/);
+    assert.match(colossal.source.url, /mobalytics/);
+    for (const phase of PHASES) assert.doesNotMatch(catalogue.stageLoadout(quality, phase).skill, /Square Off|Prayerful Strike/);
   } finally {
     await catalogue.close();
   }
@@ -330,7 +392,7 @@ test("every optional rune boss resolves to its own encounter marker", async () =
   try {
     for (const boss of catalogue.OPTIONAL_RUNE_BOSSES) {
       const query = boss.mapQuery || `${boss.name} ${boss.location}`;
-      const marker = catalogue.findMapRoutePoint(query, "surface");
+      const marker = catalogue.findMapRoutePoint(query, boss.mapLayer ?? "surface");
       assert.ok(marker, `${boss.name} has no map marker`);
     }
     const markerFor = (id) => {
@@ -354,9 +416,9 @@ test("Storm Blessed follows one quality polearm lane into its published DLC buil
     const stages = PHASES.map((phase) => catalogue.stageLoadout(build, phase));
     assert.equal(stages[0].weapon, "Halberd");
     assert.equal(stages[1].weapon, "Dragon Halberd");
-    assert.match(stages[2].weapon, /spear|gransax/i);
+    assert.equal(stages[2].weapon, "Dragon Halberd", "do not add a late-game detour solely for another temporary weapon");
     assert.equal(stages[3].weapon, "Messmer Soldier's Spear");
-    assert.deepEqual(stages.slice(0, 3).map((stage) => stage.borrowedFrom?.buildName), ["Vanquisher", "Vanquisher", "Lightning Dragoon"]);
+    assert.deepEqual(stages.slice(0, 3).map((stage) => stage.borrowedFrom?.buildName), ["Vanquisher", "Vanquisher", "Vanquisher"]);
   } finally {
     await catalogue.close();
   }
@@ -432,7 +494,7 @@ test("phase-specific resolutions and corrected route cards stay progression-safe
   const catalogue = await loadCatalogue();
   try {
     const fextra = catalogue.builds.filter((build) => build.collection === "Fextralife");
-    assert.equal(fextra.length, 171);
+    assert.equal(fextra.length, 172);
     for (const name of ["Knight of Thorns", "Champion of Rot", "Acolyte", "Black Blade Slicer", "Cipher Prophet", "Flying Mantis", "Ghostflame Warrior", "Roundtable Assassin", "Silent Spellblade", "Zealous Fury Templar", "Level 30 Poison/Bleed Wretch", "Level 60 St. Trina's Confessor", "Level 75 Sanguine Lightning Assassin", "Level 80/90 Sorcerer Duelist"]) {
       assert.ok(fextra.some((build) => build.name === name), `canonical Fextralife build is missing: ${name}`);
     }

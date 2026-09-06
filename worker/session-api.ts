@@ -2,7 +2,7 @@ import { selectableBuilds } from "../app/data";
 
 const SESSION_LIFETIME = 86_400_000;
 const BUILD_IDS = new Set(selectableBuilds.map((build) => build.id));
-const STARTING_CLASSES = new Set(["Vagabond", "Warrior", "Hero", "Bandit", "Astrologer", "Prophet", "Samurai", "Prisoner", "Confessor", "Wretch"]);
+const STARTING_CLASSES = new Set(["Vagabond", "Warrior", "Hero", "Bandit", "Astrologer", "Prophet", "Samurai", "Prisoner", "Confessor", "Wretch", "Idus Knight", "Heavy Knight"]);
 export const SESSION_CORS_HEADERS = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET, POST, PUT, PATCH, OPTIONS",

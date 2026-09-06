@@ -25,6 +25,85 @@ export const literalItemName = (value: string) => value.normalize("NFKD").replac
 const gate = (chapterId: string, after?: string, requires?: string, difficulty: PickupGate["difficulty"] = after ? "boss" : "pickup"): PickupGate => ({ chapterId, after, requires, difficulty });
 
 const EXACT_GATES = new Map<string, PickupGate>(([
+  // Acquisition sections of the dedicated Fextralife item pages, checked
+  // 2026-09-06. Explicit identities beat the map's optional location suffixes.
+  ["Lordsworn's Greatsword", gate("first-steps", undefined, "opening the carriage chest on the western edge of Gatefront Ruins")],
+  ["Uchigatana", gate("first-steps", undefined, "looting the corpse on the upper ledge inside Deathtouched Catacombs; no boss kill is required")],
+  ["Longbow", gate("first-steps", undefined, "buying it from the Twin Maiden Husks for 1,200 runes after the Roundtable invitation; Samurai already starts with it")],
+  ["Longsword", gate("first-steps", undefined, "buying it from the Twin Maiden Husks for 1,000 runes after the Roundtable invitation; Vagabond already starts with it")],
+  ["Scimitar", gate("first-steps", undefined, "buying it from the Twin Maiden Husks for 600 runes; Warrior already starts with two")],
+  ["Broadsword", gate("first-steps", undefined, "buying it for 1,800 runes from the coastal merchant south-east of Coastal Cave; Confessor starts with it")],
+  ["Shortbow", gate("first-steps", undefined, "buying it for 600 runes from the coastal merchant south-east of Coastal Cave")],
+  ["Halberd", gate("first-steps", undefined, "buying it for 1,200 runes from the merchant beside the northern Limgrave bridge; Vagabond starts with it")],
+  ["Short Spear", gate("first-steps", undefined, "buying it for 600 runes from the Twin Maiden Husks; Prophet starts with it")],
+  ["Short Sword", gate("first-steps", undefined, "buying it for 600 runes from the northern Limgrave merchant; Astrologer starts with it")],
+  ["Dagger", gate("first-steps", undefined, "buying it for 400 runes from the Twin Maiden Husks")],
+  ["Rapier", gate("first-steps", undefined, "buying it for 1,000 runes from the Twin Maiden Husks")],
+  ["Twinblade", gate("first-steps", undefined, "using Torrent to jump into the enclosed south-east building at Dragon-Burnt Ruins, then opening its cellar chest; avoid the separate trapped chest")],
+  ["Glintstone Staff", gate("first-steps", undefined, "defeating the lone Noble Sorcerer south of Waypoint Ruins, west of the small graveyard; Prisoner starts with it", "enemy")],
+  ["Astrologer's Staff", gate("liurnia-south", undefined, "buying it for 800 runes from the Liurnia Lake Shore merchant; Astrologer starts with it")],
+  ["Estoc", gate("liurnia-south", undefined, "buying it for 3,000 runes from the southern Liurnia merchant or Patches at Scenic Isle; Prisoner starts with it")],
+  ["Dragon Communion Seal", gate("stormveil", undefined, "returning to Stranded Graveyard with two Stonesword Keys, dodging the Fringefolk Hero's Grave chariot and defeating the Banished Knight at the upper tunnel's end; the Ulcerated Tree Spirit is not required", "enemy")],
+  ["Clawmark Seal", gate("first-steps", undefined, "giving Gurranq one Deathroot, following the Summonwater Village Tibia Mariner and Bestial Sanctum steps", "quest")],
+  ["Grave Scythe", gate("first-steps", undefined, "farming the scythe skeletons between Saintsbridge and Summonwater Village; destroy the reviving bones", "enemy")],
+  ["Bandit's Curved Sword", gate("weeping", undefined, "farming the curved-sword skeleton immediately beside Church of Pilgrimage; destroy its reviving bones", "enemy")],
+  ["Clayman's Harpoon", gate("first-steps", undefined, "taking the Siofra River Well lift in Mistwood and farming spear-wielding Claymen in the entrance ruins; no underground boss is required", "enemy")],
+  ["Guardian's Swordspear", gate("weeping", undefined, "farming Guardians around the Weeping Peninsula Minor Erdtree; stay clear of the Avatar if it is not on the current route", "enemy")],
+  ["Rogier's Rapier", gate("stormveil", "Defeat Godrick", "speaking to Rogier on the Roundtable balcony after Godrick; the reward is already +8, so do not spend stones reinforcing a second rapier", "quest")],
+  ["Noble's Slender Sword", gate("first-steps", undefined, "farming sword-bearing Wandering Nobles in the caravan west of Waypoint Ruins; the drop is rare", "enemy")],
+  ["Reduvia", gate("first-steps", "Defeat Bloody Finger Nerijus with Yura at Murkwater", "defeating Nerijus during the Murkwater ravine invasion; let Yura help", "enemy")],
+  ["Warpick", gate("first-steps", undefined, "farming warpick-bearing Godrick Soldiers at Gatefront Ruins", "enemy")],
+  ["Halo Scythe", gate("caelid", undefined, "farming scythe-bearing Cleanrot Knights south of Inner Aeonia; the spear-bearing knights cannot drop it", "enemy")],
+  ["Cleanrot Spear", gate("caelid", undefined, "farming spear-bearing Cleanrot Knights south of Inner Aeonia; avoid the central O'Neil arena unless that boss is on the route", "enemy")],
+  ["Cleanrot Knight's Sword", gate("caelid", undefined, "farming the Cleanrot Knights near Inner Aeonia; there is no need to wait for Elphael", "enemy")],
+  ["Staff of the Guilty", gate("liurnia-south", undefined, "farming the Thorn Sorcerer with the blazing staff north-west of the Artist's Shack; this avoids a later Mt. Gelmir farm", "enemy")],
+  ["Cipher Pata", gate("first-steps", undefined, "dropping from the Roundtable balcony and running through the left-hand rooms to the corpse on the bed; Alberich need not be defeated")],
+  ["Ripple Blade", gate("caria", "Defeat Royal Knight Loretta", "dropping from Three Sisters onto Caria Manor's roof and buying the weapon from Pidia")],
+  ["Lazuli Glintstone Sword", gate("academy", undefined, "farming the Lazuli Sorcerer just south of the Schoolhouse Classroom grace inside Raya Lucaria", "enemy")],
+  ["Albinauric Bow", gate("haligtree", undefined, "farming Albinauric archers south-west of Ordina after obtaining both Haligtree medallion halves", "enemy")],
+  ["Pickaxe", gate("first-steps", undefined, "farming pickaxe-bearing Miners inside Limgrave Tunnels, then resting at the grace to reset them", "enemy")],
+  ["Messmer Soldier's Spear", gate("ensiss", "Defeat Rellana", "farming spear-bearing Messmer Soldiers at the camp west of Moorth Ruins in Scadu Altus", "enemy")],
+  ["Spear", gate("stormveil", "Defeat Margit", "farming spear-bearing Exile Soldiers near Rampart Tower; do not kill Patches for his upgraded spear", "enemy")],
+  ["Lordsworn's Straight Sword", gate("first-steps", undefined, "farming sword-bearing Godrick Soldiers at Gatefront Ruins", "enemy")],
+  ["Clinging Bone", gate("liurnia-south", undefined, "receiving the Haligtree Secret Medallion (Right) from Albus, then defeating Ensha's invasion on returning to Roundtable Hold", "enemy")],
+  ["Erdsteel Dagger", gate("first-steps", "Return to Kenneth for the Erdsteel Dagger", "clearing Fort Haight, then returning to Kenneth above the Mistwood road", "quest")],
+  ["Crescent Moon Axe", gate("stormveil", "Defeat Margit", "farming axe-bearing Exile Soldiers in Stormveil's courtyard", "enemy")],
+  ["Chainlink Flail", gate("liurnia-south", undefined, "farming the flail-bearing Pumpkin Head in the camp north of Foot of the Four Belfries", "enemy")],
+  ["Glaive", gate("liurnia-south", undefined, "farming the glaive skeleton on the road immediately east of Church of Vows", "enemy")],
+  ["Ornamental Straight Sword", gate("liurnia-south", undefined, "taking the Imbued Sword Key from the Four Belfries summit chest, opening the Precipice of Anticipation waygate and defeating the Grafted Scion", "boss")],
+  ["Golem's Halberd", gate("stormveil", "Defeat Margit", "farming the weapon-bearing golems on Limgrave Tower Bridge; this is an enemy fight, not a free pickup", "enemy")],
+  ["Warhawk's Talon", gate("stormveil", "Defeat Margit", "farming Warhawks outside the Rampart Tower grace in Stormveil", "enemy")],
+  ["Treespear", gate("liurnia-south", undefined, "following the road south-east from Liurnia Highway South to the carriage beside the broken bridge and opening its chest")],
+  ["Glintstone Kris", gate("gelmir", undefined, "completing Sellen's Azur, Lusat and body-transfer steps, then using her assistance sign outside Raya Lucaria's Grand Library and defeating Jerren", "quest")],
+  ["Envoy's Long Horn", gate("leyndell", undefined, "farming the Large Oracle Envoy beyond East Capital Rampart before the capital becomes ash", "enemy")],
+  ["Envoy's Greathorn", gate("haligtree", undefined, "farming the Giant Oracle Envoys on the Haligtree canopy; this is a dangerous late-game farm", "enemy")],
+  ["Shamshir", gate("first-steps", undefined, "descending Highroad Cave's waterfall section and looting the bat-covered platform; the boss is not required")],
+  ["Lizard Greatsword", gate("gravesite", undefined, "farming the greatsword-bearing imp near the entrance to Fog Rift Catacombs; the Death Knight is not required", "enemy")],
+  ["Sword of Darkness", gate("shadow-keep", undefined, "taking the Stone-Sheathed Sword from Fog Rift Catacombs first, then raising it at the Darkness altar in Ruins of Unte; the initial altar becomes inert")],
+  ["Golden Halberd", gate("weeping", undefined, "returning to the First Step to defeat the Tree Sentinel after the early Weeping Peninsula levels and upgrades", "boss")],
+  ["Bloodfiend's Fork", gate("gravesite", undefined, "farming fork-bearing Bloodfiends in Prospect Town or near Ruined Forge Lava Intake", "enemy")],
+  ["Backhand Blade", gate("gravesite", undefined, "looting beside the coffin north-east of Scorched Ruins; the nearby enemies can be bypassed")],
+  ["Magma Blade", gate("gelmir", "Defeat Godskin Noble", "farming orange-blade Man-Serpents beyond Temple of Eiglay; the weapon is a rare drop, not a guaranteed boss reward", "enemy")],
+  ["Firespark Perfume Bottle", gate("gravesite", undefined, "opening the camp chest south of Castle Front grace; Rellana is not required")],
+  ["Smithscript Dagger", gate("gravesite", undefined, "inside Ruined Forge Lava Intake, take the first ladder down and turn right after the fire blob; loot the corpse by the golem in the back of the room")],
+  ["Caestus", gate("stormveil", "Defeat Margit", "progressing through Stormveil's side entrance to the Rusty Key, then returning to Gostoc and buying the fists for 800 runes")],
+  ["Idus Sword", gate("liurnia-south", undefined, "with the Tarnished Pack installed, loot the corpse beneath the tree north-west of Liurnia Lake Shore, below the Malefactor's Evergaol cliff; Idus Knights already start with this weapon")],
+  ["Large Club", gate("first-steps", undefined, "riding to the corpse below the cliff east of Forlorn Hound Evergaol; the demi-humans can be bypassed")],
+  ["Bloodhound's Fang", gate("weeping", undefined, "defeating Bloodhound Knight Darriwil at Forlorn Hound Evergaol in southern Limgrave", "boss")],
+  ["Carian Glintstone Staff", gate("academy", undefined, "entering Raya Lucaria with the Academy Glintstone Key and looting the corpse in the Church of the Cuckoo")],
+  ["Academy Glintstone Staff", gate("liurnia-south", undefined, "farming the staff-wielding Academy sorcerers; Thops's later quest reward is an alternative, not a required detour", "enemy")],
+  ["Ordovis' Greatsword", gate("leyndell", undefined, "defeating the two Crucible Knights at Auriza Hero's Grave in the Capital Outskirts", "boss")],
+  ["Ordovis's Greatsword", gate("leyndell", undefined, "defeating the two Crucible Knights at Auriza Hero's Grave in the Capital Outskirts", "boss")],
+  ["Gargoyle's Greatsword", gate("deeproot", "Defeat the Valiant Gargoyles", "defeating both Valiant Gargoyles in Siofra Aqueduct", "boss")],
+  ["Gargoyle's Blackblade", gate("leyndell", undefined, "returning to Bestial Sanctum to defeat Black Blade Kindred once the party reaches the capital's level and upgrade range", "boss")],
+  ["Godslayer's Greatsword", gate("leyndell", undefined, "returning to the Divine Tower of Caelid basement to defeat its Godskin Apostle at the capital's level and upgrade range", "boss")],
+  ["Iron Cleaver", gate("weeping", undefined, "farming cleaver-wielding Misbegotten in Castle Morne's courtyard", "enemy")],
+  ["Iron Greatsword", gate("leyndell", undefined, "farming the large red-maned Misbegotten in Leyndell before the capital changes to ash", "enemy")],
+  ["Anvil Hammer", gate("gravesite", undefined, "lowering the pipe in Ruined Forge Lava Intake, climbing the pipe and examining the forge altar; no boss fight is required")],
+  ["Euporia", gate("enir", undefined, "burning the sealing tree to enter Enir-Ilim, then following the hidden drop-down route from Spiral Rise back into Belurat")],
+  ["Bloodfiend's Arm", gate("gravesite", undefined, "defeating the large club-wielding Bloodfiend in Prospect Town", "enemy")],
+  ["Dragon-Hunter's Great Katana", gate("jagged", undefined, "defeating Ancient Dragon-Man at the bottom of Dragon's Pit", "boss")],
+  ["Red Bear's Claw", gate("rauh", undefined, "defeating Red Bear inside the Northern Nameless Mausoleum", "boss")],
   // Active build buffs, catalysts and memory slots. These gates keep the loadout
   // card aligned with the actual acquisition and prerequisite rather than only
   // the broad region in which an imported build happens to mention the buff.
@@ -54,7 +133,7 @@ const EXACT_GATES = new Map<string, PickupGate>(([
   ["Memory Stone - Lenne's Rise", gate("caelid", undefined, "using Torrent's spirit spring to enter Lenne's Rise without a boss fight")],
   ["Memory Stone - Hermit Village", gate("gelmir", undefined, "defeating Demi-Human Queen Maggie at the end of Hermit Village", "boss")],
   ["Ash of War: War Cry", gate("first-steps", undefined, "buying the Ash of War from Knight Bernahl at Warmaster's Shack")],
-  ["Ash of War: Braggart's Roar", gate("liurnia-south", undefined, "buying the Iron Ball from Blackguard Big Boggart after completing his necklace step", "quest")],
+  ["Ash of War: Braggart's Roar", gate("leyndell", undefined, "looting Iron Ball only if Boggart dies in the chosen Dung Eater branch; he never sells it. Skip this pickup if keeping Boggart alive", "quest")],
   ["Ash of War: Endure", gate("first-steps", undefined, "buying the Ash of War from Knight Bernahl at Warmaster's Shack")],
   ["Ash of War: Royal Knight's Resolve", gate("gelmir", "Defeat Godskin Noble", "reaching the hidden room beyond Temple of Eiglay in Volcano Manor", "boss")],
   ["Ash of War: Seppuku", gate("mountaintops", undefined, "killing the invisible Teardrop Scarab on the frozen lake east of Freezing Lake grace", "enemy")],
@@ -245,6 +324,11 @@ function broadCoordinateGate(marker?: MapItem): PickupGate | undefined {
 
 export function pickupGate(item: string, context: PickupContext = {}): PickupGate | undefined {
   const literal = literalItemName(item);
+  // Map markers append a location to an item's name. Gate the item itself,
+  // rather than treating "Anvil Hammer - Ruined Forge Lava Intake" as new gear.
+  const baseName = item.split(/\s+[-–—]\s+/)[0];
+  const baseExact = EXACT_GATES.get(literalItemName(baseName));
+  if (baseExact) return baseExact;
   if (literal === literalItemName("Beast Claw")) {
     const wantsWeapon = context.preferredLayer === "shadow" || Boolean(context.categoryPattern?.test("Weapons"));
     const wantsSpell = context.preferredLayer === "surface" || Boolean(context.categoryPattern?.test("Spells"));
@@ -263,8 +347,11 @@ export function pickupGate(item: string, context: PickupContext = {}): PickupGat
     const name = literalItemName(match.name);
     return name.split(" ").length > 1 && literal.includes(name);
   });
+  const locationMatches = mapMatches.filter((match) => literalItemName(match.name.split(/\s+[-–—]\s+/)[0]) === literal);
   const marker = exactMatches.find((match) => match.layer === context.preferredLayer)
     || exactMatches[0]
+    || locationMatches.find((match) => match.layer === context.preferredLayer)
+    || locationMatches[0]
     || containedMatches.find((match) => match.layer === context.preferredLayer)
     || containedMatches[0];
   const byCoordinate = coordinateGate(marker);

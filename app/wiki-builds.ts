@@ -8291,59 +8291,6 @@ export const wikiBuilds: Build[] = [
     }
   },
   {
-    "id": "fextra-starlinedsamurai",
-    "name": "Star-Lined Samurai",
-    "stats": "DEX",
-    "attributes": [
-      "Dexterity"
-    ],
-    "combatStyles": [
-      "Melee"
-    ],
-    "role": "Published build",
-    "playstyle": "One of the features of the Star-Lined Sword's weapon skill, Onze's Line of Stars, is its effectiveness in cleaving through multiple enemies. This skill provides longer reach than the sword itself, allowing you to strike targets that would normally be out of range. Mastering this weapon involves learning to judge when to use a single press of L2 for that extended reach and when to rely on regular attacks. Unlike many weapon skills that lock you into a full combo once initiated, this skill allows for partial execution. The Star-Lined Sword stands out due to its dual damage type, dealing both physical and magic damage. Approximately two-thirds of its damage output is physical, with the remaining one-third being magic. The weapon scales with strength, dexterity, and intelligence, though it notably favors dexterity over the other attributes. The lack of strength benefits makes it more practical to wield this katana one-handed while equipping a shield in the off-hand.",
-    "complexity": "Published guide",
-    "phases": {
-      "early": "Published from 151",
-      "mid": "Published from 151",
-      "late": "Published from 151",
-      "dlc": "Star-Lined Sword"
-    },
-    "tags": [
-      "fextralife",
-      "pve",
-      "dlc",
-      "guard-counters"
-    ],
-    "startingClass": "Not specified",
-    "mechanic": "Guard counters",
-    "collection": "Fextralife",
-    "guideCategories": [
-      "Dexterity Builds",
-      "SOTE Builds"
-    ],
-    "availableFrom": "dlc",
-    "publishedLoadout": {
-      "level": "151",
-      "weapon": "Star-Lined Sword",
-      "offhand": "Wolf Crest Shield",
-      "skill": "Onze's Line of Stars",
-      "talismans": [
-        "Bull-Goat's Talisman",
-        "Shard of Alexander",
-        "Two-Headed Turtle Talisman"
-      ],
-      "armour": "Iron Kasa, Tree Surcoat, White Reed Gauntlets, White Reed Greaves",
-      "spells": [],
-      "flask": "Equal Charges; Physick: Greenburst Crystal Tear, Deflecting Hardtear",
-      "stats": "Dexterity, Vigor; Endurance, Mind"
-    },
-    "source": {
-      "label": "Fextralife: Star-Lined Samurai",
-      "url": "https://eldenring.wiki.fextralife.com/Star-Lined_Samurai_Build"
-    }
-  },
-  {
     "id": "fextra-level75sanguinelightningassassin",
     "name": "Level 75 Sanguine Lightning Assassin",
     "stats": "STR / DEX",
@@ -8580,6 +8527,62 @@ export const wikiBuilds: Build[] = [
     }
   },
   {
+    "id": "fextra-idusknightstarter",
+    "name": "Idus Knight Starter",
+    "stats": "STR / DEX / FAI",
+    "attributes": [
+      "Strength",
+      "Dexterity",
+      "Faith"
+    ],
+    "combatStyles": [
+      "Melee",
+      "Ranged"
+    ],
+    "role": "Published build",
+    "playstyle": "Requires the Tarnished Pack. Use the Idus Sword and its starting shield for quick sword attacks, guard counters and stance pressure. Impaling Thrust is the starting skill; the source recommends Sacred Blade for a ranged opening and a temporary holy coating. Keep Vigor and Endurance ahead of extra damage investment, and choose a physical affinity while building Strength and Dexterity. The Silver Grooved Shield has No Skill, so the sword skill remains accessible without putting the shield away. The Knight Set is the source's heavier armour alternative once equip load permits it. This route omits Warrior Jar Shard because obtaining it would end Alexander's quest; it does not require killing a friendly NPC. If using another origin, collect the Idus Sword north-west of Liurnia Lake Shore and buy the Silver Grooved equipment from the northern Liurnia merchant after confirming the Tarnished Pack is installed.",
+    "complexity": "Published guide",
+    "phases": {
+      "early": "Idus Sword",
+      "mid": "Idus Sword",
+      "late": "Idus Sword",
+      "dlc": "Idus Sword"
+    },
+    "tags": [
+      "fextralife",
+      "tarnished-pack-required",
+      "pve",
+      "early",
+      "skill-damage"
+    ],
+    "startingClass": "Idus Knight",
+    "mechanic": "Skill damage",
+    "collection": "Fextralife",
+    "guideCategories": [
+      "Strength Builds"
+    ],
+    "availableFrom": "early",
+    "publishedLoadout": {
+      "level": "Beginner",
+      "weapon": "Idus Sword",
+      "offhand": "Silver Grooved Shield",
+      "skill": "Sacred Blade",
+      "talismans": [
+        "Axe Talisman",
+        "Curved Sword Talisman",
+        "Green Turtle Talisman"
+      ],
+      "armour": "Silver Grooved Set",
+      "spells": [],
+      "flask": "Mostly HP, some FP; Physick: Opaline Bubbletear, Crimsonburst Crystal Tear",
+      "stats": "Strength, Dexterity; Vigor, Endurance & Faith"
+    },
+    "source": {
+      "label": "Fextralife: Idus Knight Starter",
+      "url": "https://eldenring.wiki.fextralife.com/Idus_Knight_Build"
+    }
+  },
+  {
     "id": "fextra-twinaxedeathknight",
     "name": "Twin Axe Death Knight",
     "stats": "STR / DEX / FAI",
@@ -8635,6 +8638,59 @@ export const wikiBuilds: Build[] = [
     "source": {
       "label": "Fextralife: Twin Axe Death Knight",
       "url": "https://eldenring.wiki.fextralife.com/Twin_Axe_Death_Knight_Build"
+    }
+  },
+  {
+    "id": "fextra-starlinedsamurai",
+    "name": "Star-Lined Samurai",
+    "stats": "DEX",
+    "attributes": [
+      "Dexterity"
+    ],
+    "combatStyles": [
+      "Melee"
+    ],
+    "role": "Published build",
+    "playstyle": "One of the features of the Star-Lined Sword's weapon skill, Onze's Line of Stars, is its effectiveness in cleaving through multiple enemies. This skill provides longer reach than the sword itself, allowing you to strike targets that would normally be out of range. Mastering this weapon involves learning to judge when to use a single press of L2 for that extended reach and when to rely on regular attacks. Unlike many weapon skills that lock you into a full combo once initiated, this skill allows for partial execution. The Star-Lined Sword stands out due to its dual damage type, dealing both physical and magic damage. Approximately two-thirds of its damage output is physical, with the remaining one-third being magic. The weapon scales with strength, dexterity, and intelligence, though it notably favors dexterity over the other attributes. The lack of strength benefits makes it more practical to wield this katana one-handed while equipping a shield in the off-hand.",
+    "complexity": "Published guide",
+    "phases": {
+      "early": "Published from 151",
+      "mid": "Published from 151",
+      "late": "Published from 151",
+      "dlc": "Star-Lined Sword"
+    },
+    "tags": [
+      "fextralife",
+      "pve",
+      "dlc",
+      "guard-counters"
+    ],
+    "startingClass": "Not specified",
+    "mechanic": "Guard counters",
+    "collection": "Fextralife",
+    "guideCategories": [
+      "Dexterity Builds",
+      "SOTE Builds"
+    ],
+    "availableFrom": "dlc",
+    "publishedLoadout": {
+      "level": "151",
+      "weapon": "Star-Lined Sword",
+      "offhand": "Wolf Crest Shield",
+      "skill": "Onze's Line of Stars",
+      "talismans": [
+        "Bull-Goat's Talisman",
+        "Shard of Alexander",
+        "Two-Headed Turtle Talisman"
+      ],
+      "armour": "Iron Kasa, Tree Surcoat, White Reed Gauntlets, White Reed Greaves",
+      "spells": [],
+      "flask": "Equal Charges; Physick: Greenburst Crystal Tear, Deflecting Hardtear",
+      "stats": "Dexterity, Vigor; Endurance, Mind"
+    },
+    "source": {
+      "label": "Fextralife: Star-Lined Samurai",
+      "url": "https://eldenring.wiki.fextralife.com/Star-Lined_Samurai_Build"
     }
   },
   {

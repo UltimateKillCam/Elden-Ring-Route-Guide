@@ -1,6 +1,7 @@
 import { wikiBuilds } from "./wiki-builds";
 import { sourcedMemeBuilds } from "./meme-builds";
 import { additionalSourcedBuilds } from "./sourced-builds";
+import { communityBuilds } from "./community-builds";
 import { weaponResolutions } from "./weapon-resolutions";
 import { findWeaponUpgradeRecord } from "./weapon-upgrades";
 import { applyQuestRoutePatches } from "./quest-route";
@@ -233,12 +234,12 @@ const build = (
 });
 
 const curatedBuilds: Build[] = [
-  build("quality-knight", "Quality Knight", "STR / DEX", "Frontline", "Quality infusion keeps one Strength/Dexterity weapon honest at every stage: the Longsword and Claymore cover Limgrave with poking heavies and Stamp, the Quality Great Épée adds broad heavy sweeps, and Milady with Wing Stance closes the run. The field loop is poke and reset — running thrusts into approach animations, guard counters on shield enemies, single heavies when poise damage matters. Hold Wing Stance before bosses: the three-slash string pressures short recoveries, while the leaping thrust punishes whiffs with the kit's heaviest poise damage. Stonebarb Cracked Tear raises stance buildup behind every heavy, Curved Sword Talisman pays the guard counters the loop already uses, and Golden Vow covers the modest per-hit output of a split-stat weapon. End every string with stamina left to roll, because the leaping thrust commits hard enough to be punished in turn. Splitting levels across two attack stats ramps slower than a focused infusion, there is no native ranged tool, and stagger-immune opponents reduce the plan to plain R1 trading.", ["Longsword", "Claymore", "Quality Great Épée", "Milady + Wing Stance"], ["quality", "sword", "guard"], "Easy", undefined, undefined, "Stance damage"),
+  build("quality-knight", "Quality Knight", "STR / DEX", "Frontline", "A sword-and-shield route based on Samurai Gamers' Quality build. Start as Vagabond with the Longsword, collect the Claymore in Castle Morne and keep it through the DLC. Use its thrusting heavy attacks for openings and the shield for safe blocks; two-hand the sword to use Lion's Claw rather than the shield's skill. Vigor, Endurance, Strength and Dexterity remain the priorities. There is no required Faith investment, late-game thrusting-sword detour or forced DLC weapon replacement. Keep Standard affinity initially and compare physical attack power before changing affinity at your current stats.", ["Claymore", "Claymore", "Claymore", "Claymore"], ["quality", "sword", "guard"], "Easy", undefined, { label: "Samurai Gamers: Quality PvE build — Longsword and Claymore", url: "https://samurai-gamers.com/elden-ring/best-quality-builds-for-pve/" }, "Stance damage", "Vagabond"),
   build("heavy-greatsword", "Heavy Greatsword Knight", "STR", "Frontline", "Measured colossal swings, high poise and reliable stance damage.", ["Lordsworn's Greatsword", "Claymore", "Greatsword", "Greatsword of Solitude"], ["strength", "greatsword", "stance"], "Easy"),
   build("colossal-wanderer", "Colossal Wandering Swordsman", "STR / ARC", "Breaker", "Heavy-infused colossal swords establish the moveset; after Nokron, an Occult affinity adds Arcane scaling without changing the stat plan.", ["Heavy Zweihander", "Heavy Greatsword", "Occult Greatsword", "Ancient Meteoric Ore Greatsword"], ["strength", "arcane", "colossal"], "Advanced"),
   build("lightning-greataxe", "Lightning Greataxe", "STR / FAI", "Bruiser", "Heavy axe blows backed by buffs and late-game lightning mobility.", ["Greataxe", "Axe of Godrick", "Great Stars", "Death Knight's Longhaft Axe"], ["strength", "faith", "lightning"]),
   build("guard-hammer", "Guard-Counter Great Hammer", "STR / FAI", "Tank", "Blocks, counters and heals through pressure without becoming a shield exploit.", ["Morning Star", "Brick Hammer", "Great Stars + Prayerful Strike", "Black Steel Greathammer"], ["strength", "guard", "holy"], "Easy"),
-  build("colossal-hammer", "Colossal Hammer", "STR", "Breaker", "Two or three charged hammer hits collapse most enemies, and the kit banks stance damage until a critical is guaranteed. Barbaric Roar keeps the Large Club and Great Club relevant early by turning heavy attacks into a forward-charging combo, while later weapons diversify: Endure lets the Giant-Crusher armour through a windup to guarantee its charged R2, and the Anvil Hammer's Golden Land detonates a ring of golden spears for burst and stance pressure after the slam. Field play is decisive spacing — walk targets down, swing once into attack recoveries, and never chain a second swing without stamina to roll. Axe Talisman raises charged-attack damage, Stonebarb Cracked Tear raises stance buildup, and Great-Jar's Arsenal pays for the heavy armour that makes trades winnable. Roar Medallion belongs only while Barbaric Roar is equipped, the kind of stage-specific swap this route demands. Whiffed charged R2s are long, punishable animations, fast evasive bosses deny the openings, and ranged enemies stall the walk-down indefinitely.", ["Large Club", "Great Club", "Giant-Crusher", "Anvil Hammer"], ["strength", "hammer", "stance"], "Easy", undefined, undefined, "Stance damage"),
+  build("colossal-hammer", "Colossal Hammer", "STR", "Breaker", "A charged-heavy Strength route based on Mobalytics' Large Club and Giant-Crusher recommendations. Keep the Large Club until Giant-Crusher is available, then keep Giant-Crusher through the DLC. Cragblade improves normal attacks and stance pressure without replacing the heavy-attack moveset. Two-hand the hammer, leave stamina for a roll and use charged attacks only in safe openings. Axe Talisman supports charged attacks; the DLC Two-Handed Sword Talisman improves two-handed attacks. The large weapon's weight and slow recovery are the main trade-offs. No Intelligence or Faith weapon pivot is required.", ["Large Club", "Large Club", "Giant-Crusher", "Giant-Crusher"], ["strength", "hammer", "stance"], "Easy", undefined, { label: "Mobalytics: Strength build — Large Club, Giant-Crusher and Cragblade", url: "https://mobalytics.gg/gamebase/guides/elden-ring-strength-build" }, "Stance damage"),
   build("anchor-bruiser", "Piercing Status Bruiser", "STR / ARC", "Bruiser", "Pierce counters, sustain and a late frost/arcane pivot.", ["Battle Axe", "Rusted Anchor", "Great Stars", "Putrescence Cleaver"], ["strength", "arcane", "status"]),
   build("compact-axe", "Compact Axe Adventurer", "STR / DEX", "Skirmisher", "Fast axes evolve into summoned skeleton attacks and throwable steel.", ["Hand Axe", "Sacrificial Axe", "Rosus' Axe", "Smithscript Axe"], ["axe", "quality", "ranged"]),
   build("halberd-commander", "Halberd Commander", "STR / FAI", "Support", "Reach, charge attacks and a party-wide rally buff.", ["Halberd", "Golden Halberd", "Commander's Standard", "Death Knight's Longhaft Axe"], ["halberd", "support", "faith"], "Easy"),
@@ -337,7 +338,7 @@ const curatedBuilds: Build[] = [
   build("messmer-impaler", "Messmer Impaler", "DEX / FAI", "Ranged", "The Spear of the Impaler is a great spear with two ranges: thrusts control mid-space, charged heavies throw it as a fire-wreathed javelin, and Messmer's Assault unleashes a multi-thrust chain ending in a flame slam, the heaviest punish. The field loop holds thrust range, throws the javelin at mid-range approaches, and sends the tracking Fire Serpent incantation through gaps the spear cannot reach. Bosses open with Golden Vow and Flame, Grant Me Strength, which boosts both the physical thrusts and the fire half; the punish waits for a committed recovery, releases the full Assault chain including the slam only when every input can land, then steps out. Shard of Alexander raises the skill, Fire Scorpion Charm boosts the javelin and slam, and Spear Talisman turns the thrusts into counter-hits, three talismans amplifying one layer each of the same sequence. Heavy Dexterity and Messmer's own drop gate the weapon, so the run starts with ordinary spear stand-ins. Fire-resistant bosses halve the javelin and slam, and mobile targets turn the Assault chain into a suicide animation.", ["Short Spear + Flame Sling", "Cross-Naginata + Black Flame", "Bolt of Gransax", "Spear of the Impaler + Fire Serpent"], ["dexterity", "faith", "spear", "fire", "ranged"], "Advanced", undefined, { label: "wiki.gg: Spear of the Impaler", url: "https://eldenring.wiki.gg/wiki/Spear_of_the_Impaler" }, "Skill damage", "Confessor"),
 ];
 
-export const builds: Build[] = [...curatedBuilds, ...wikiBuilds, ...additionalSourcedBuilds, ...sourcedMemeBuilds];
+export const builds: Build[] = [...curatedBuilds, ...wikiBuilds, ...additionalSourcedBuilds, ...communityBuilds, ...sourcedMemeBuilds];
 
 // Legacy curated experiments stay loadable so an existing save is never broken,
 // but new runs may only choose a published build or one of the two locally-used
@@ -390,7 +391,7 @@ function weaponClass(weapon: string) {
   if (cached) return cached;
   const recorded = findWeaponUpgradeRecord(weapon)?.weaponClass;
   if (recorded) {
-    const result = recorded.toLowerCase();
+    const result = recorded.toLowerCase().replace(/^light bow$/, "bow").replace(/^medium shield$|^small shield$/, "shield");
     weaponClassCache.set(cacheKey, result);
     return result;
   }
@@ -458,6 +459,7 @@ function desiredWeapon(build: Build, phase: PhaseKey) {
 }
 
 function earlyStarterWeapon(build: Build, eventualWeapon: string) {
+  const kind = weaponClass(eventualWeapon);
   const family = weaponFamily(eventualWeapon);
   const stats = statCodes(build);
   const catalystLane = family === "catalyst" || (build.mechanic === "Spell damage" && /\b(?:staff|seal)\b/i.test(eventualWeapon));
@@ -466,7 +468,14 @@ function earlyStarterWeapon(build: Build, eventualWeapon: string) {
     if (build.startingClass === "Prisoner") return "Glintstone Staff + Estoc";
     return build.startingClass === "Astrologer" ? "Astrologer's Staff + Short Sword" : "Astrologer's Staff";
   }
-  if (family === "ranged") return build.startingClass === "Bandit" ? "Shortbow" : "Light Crossbow";
+  if (family === "ranged") return kind === "crossbow" ? "Light Crossbow" : "Shortbow";
+  if (kind === "twinblade") return "Twinblade";
+  if (kind === "katana" || kind === "great katana") return "Uchigatana";
+  if (kind === "curved sword" || kind === "backhand blade") return "Scimitar";
+  if (kind === "thrusting sword") return "Estoc";
+  if (kind === "heavy thrusting sword") return "Great Épée";
+  if (kind === "dagger") return "Dagger";
+  if (kind === "colossal sword" || kind === "greatsword") return "Lordsworn's Greatsword";
   if (family === "polearm") return stats.includes("STR") ? "Halberd" : "Short Spear";
   if (family === "heavy") return stats.includes("STR") ? "Large Club" : "Lordsworn's Greatsword";
   if (family === "rapid") return stats.includes("STR") ? "Caestus" : "Hookclaws";
@@ -485,7 +494,7 @@ function earlyStarterSkill(starter: string) {
   if (weapon.includes("halberd")) return "Charge Forth (default skill)";
   if (weapon.includes("short spear") || weapon.includes("estoc")) return "Impaling Thrust (default skill)";
   if (weapon.includes("large club") || weapon === "club") return "Barbaric Roar (default skill)";
-  if (weapon.includes("lordsworn's greatsword")) return "Stamp (Upward Cut) (default skill)";
+  if (weapon.includes("lordsworn s greatsword")) return "Stamp (Upward Cut) (default skill)";
   if (weapon.includes("dagger")) return "Quickstep (default skill)";
   if (weapon.includes("uchigatana")) return "Unsheathe (default skill)";
   if (weapon.includes("longsword") || weapon.includes("broadsword")) return "Square Off (default skill)";
@@ -505,7 +514,11 @@ function markIntrinsicStarterSkill(phase: PhaseKey, loadout: StageLoadout): Stag
 
 function applyEarlyStarter(build: Build, phase: PhaseKey, loadout: StageLoadout): StageLoadout {
   if (phase !== "early") return loadout;
-  let starter = earlyStarterWeapon(build, loadout.weapon);
+  // The chapter schedule supplies Vagabond's Longsword until Castle Morne.
+  if (build.id === "quality-knight") return markIntrinsicStarterSkill(phase, loadout);
+  if (build.startingClass === "Idus Knight" && /Idus Sword/i.test(loadout.weapon)) return loadout;
+  // A bridge's incidental staff/bow must not change the target build's weapon family.
+  let starter = earlyStarterWeapon(build, desiredWeapon(build, phase));
   if (loadout.spells.length && /\bseal\b/i.test(loadout.weapon) && !/\bseal\b/i.test(`${starter} ${loadout.offhand}`)) starter += " + Finger Seal";
   if (loadout.spells.length && /\bstaff\b/i.test(loadout.weapon) && !/\bstaff\b/i.test(`${starter} ${loadout.offhand}`)) starter += build.startingClass === "Prisoner" ? " + Glintstone Staff" : " + Demi-Human Queen's Staff";
   if (normalWords(loadout.weapon) === normalWords(starter)) return markIntrinsicStarterSkill(phase, loadout);
@@ -619,7 +632,9 @@ function bridgePlan(build: Build) {
   let previous: Build | undefined;
   for (const [index, phase] of PHASES.entries()) {
     if (index >= availableIndex) break;
-    const candidate = closestPublishedStage(build, phase, previous);
+    // Retain the sourced bridge. A new phase is not itself a reason to spend
+    // stones on another temporary weapon before the defining weapon unlocks.
+    const candidate = previous || closestPublishedStage(build, phase);
     if (candidate) {
       plan[phase] = candidate;
       previous = candidate;
@@ -771,7 +786,10 @@ export function stageLoadout(build: Build, phase: PhaseKey): StageLoadout {
     : phase === "mid"
       ? "Cragblade, Lion's Claw, Giant Hunt or War Cry according to weapon class"
       : "Cragblade, Lion's Claw, Giant Hunt or Royal Knight's Resolve according to weapon class";
-  const skill = guard
+  const skill = build.id === "quality-knight" ? "Lion's Claw (default skill)"
+    : build.id === "colossal-hammer"
+    ? phase === "early" ? "Barbaric Roar (default skill)" : "Cragblade"
+    : guard
     ? phase === "early" || phase === "mid"
       ? "No Skill shield; Impaling Thrust or Square Off on the weapon"
       : "No Skill shield; Impaling Thrust, Square Off or Prayerful Strike on the weapon"
@@ -805,7 +823,7 @@ export function stageLoadout(build: Build, phase: PhaseKey): StageLoadout {
     ? phase === "dlc" ? "Staff of the Great Beyond" : "Demi-Human Queen's Staff + Finger Seal"
     : casterInt ? phase === "early" ? "Demi-Human Queen's Staff" : "Academy Glintstone Staff"
       : casterFaith ? "Finger Seal" : "";
-  const offhand = guard
+  const offhand = build.id === "quality-knight" ? "Beast Crest Heater Shield" : guard
     ? `Heater Shield${guardCatalyst ? ` + ${guardCatalyst}` : ""}`
     : casterInt && casterFaith
       ? phase === "early" ? "Demi-Human Queen's Staff + Finger Seal" : phase === "dlc" ? "Staff of the Great Beyond" : "Academy Glintstone Staff + Finger Seal"

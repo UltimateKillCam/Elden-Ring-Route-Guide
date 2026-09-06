@@ -199,13 +199,20 @@ async function main() {
 `export const WEAPON_UPGRADE_RECORDS: readonly WeaponUpgradeRecord[] = ${JSON.stringify(records, null, 2)};\n` +
 `export const DLC_SOMBER_WEAPONS = ${JSON.stringify(dlcSomber, null, 2)} as const;\n` +
 `${generatedNormalizer}\n` +
-`const SORTED_WEAPON_UPGRADE_RECORDS = [...WEAPON_UPGRADE_RECORDS].sort((a, b) => b.name.length - a.name.length);\n` +
+`const SORTED_WEAPON_UPGRADE_RECORDS = [...WEAPON_UPGRADE_RECORDS].sort((a, b) => b.name.length - a.name.length).map((record) => ({ record, key: normal(record.name) }));\n` +
+`const lookupCache = new Map<string, WeaponUpgradeRecord[]>();\n` +
 `export function findWeaponUpgradeRecords(value: string): WeaponUpgradeRecord[] {\n` +
 `  const source = \` \${normal(value)} \`;\n` +
-`  const matches = SORTED_WEAPON_UPGRADE_RECORDS.filter((entry) => source.includes(\` \${normal(entry.name)} \`));\n` +
-`  return matches\n` +
-`    .filter((entry) => !matches.some((other) => other !== entry && normal(other.name).includes(normal(entry.name))))\n` +
-`    .sort((a, b) => source.indexOf(\` \${normal(a.name)} \`) - source.indexOf(\` \${normal(b.name)} \`));\n` +
+`  const cached = lookupCache.get(source);\n` +
+`  if (cached) return [...cached];\n` +
+`  const matches = SORTED_WEAPON_UPGRADE_RECORDS.filter((entry) => source.includes(\` \${entry.key} \`));\n` +
+`  const result = matches\n` +
+`    .filter((entry) => !matches.some((other) => other !== entry && other.key.includes(entry.key)))\n` +
+`    .sort((a, b) => source.indexOf(\` \${a.key} \`) - source.indexOf(\` \${b.key} \`))\n` +
+`    .map((entry) => entry.record);\n` +
+`  if (lookupCache.size >= 4096) lookupCache.delete(lookupCache.keys().next().value!);\n` +
+`  lookupCache.set(source, result);\n` +
+`  return [...result];\n` +
 `}\n` +
 `export function findWeaponUpgradeRecord(value: string): WeaponUpgradeRecord | undefined {\n` +
 `  return findWeaponUpgradeRecords(value)[0];\n` +

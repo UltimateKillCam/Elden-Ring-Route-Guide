@@ -1,5 +1,5 @@
 export type BuffKind = "incantation" | "sorcery" | "ash" | "weapon-skill";
-export type BuffGroup = "aura" | "body" | "weapon" | "regeneration" | "field" | "shield";
+export type BuffGroup = "aura" | "body" | "weapon" | "regeneration" | "field" | "shield" | "unique";
 
 export type BuildBuff = {
   id: string;
@@ -32,7 +32,7 @@ const spellBuffs: BuildBuff[] = [
     aliases: ["flame grant me strength", "grant me strength"], catalyst: "Sacred Seal", memorySlots: 1, requirements: "15 Faith",
     effect: "Raises physical and fire attack power and stamina recovery for 30 seconds.",
     acquisition: "Ride behind Fort Gael in western Caelid and loot the body between the two Flame Chariots. Stay on Torrent and leave immediately; neither chariot has to be killed.",
-    activation: "Memorize it at a grace and cast it with a Sacred Seal after longer-duration buffs, immediately before the pull.",
+    activation: "Memorize it at a grace and cast it with a Sacred Seal after longer-duration buffs, immediately before the fight.",
     wiki: "https://eldenring.wiki.gg/wiki/Flame%2C_Grant_Me_Strength", castOrder: 90,
   },
   {
@@ -140,11 +140,11 @@ const spellBuffs: BuildBuff[] = [
     wiki: "https://eldenring.wiki.gg/wiki/Terra_Magica", castOrder: 50,
   },
   {
-    id: "unseen-form", name: "Unseen Form", acquisitionItem: "Unseen Form", kind: "sorcery", group: "body",
+    id: "unseen-form", name: "Unseen Form", acquisitionItem: "Unseen Form", kind: "sorcery", group: "unique",
     aliases: ["unseen form"], catalyst: "Glintstone Staff", memorySlots: 1, requirements: "16 Intelligence",
     effect: "Makes the caster harder for enemies to detect for a short time.",
     acquisition: "Solve the Mirage Rise phantom-crests puzzle in western Altus, climb the revealed tower and open the chest at the top.",
-    activation: "Memorize and cast it with a staff before stealth approaches. It is a body buff and will replace another body buff.",
+    activation: "Memorize and cast it with a staff before stealth approaches. It is a unique buff and can remain active alongside a body buff.",
     wiki: "https://eldenring.wiki.gg/wiki/Unseen_Form", castOrder: 90,
   },
 ];
@@ -154,21 +154,23 @@ const skillBuffs: BuildBuff[] = [
   ["cragblade", "Cragblade", "Ash of War: Cragblade", "weapon", ["cragblade"], "Apply it to the listed compatible weapon at a grace and use the skill before attacking; the weapon coating and stance-damage bonus are temporary."],
   ["determination", "Determination", "Ash of War: Determination", "weapon", ["determination"], "Apply it to the listed weapon and activate it immediately before the attack you want to strengthen."],
   ["royal-knights-resolve", "Royal Knight's Resolve", "Ash of War: Royal Knight's Resolve", "weapon", ["royal knight s resolve"], "Apply it to the listed weapon and activate it immediately before the high-damage hit; changing weapons removes the effect."],
-  ["war-cry", "War Cry", "Ash of War: War Cry", "body", ["war cry"], "Apply it at a grace, then activate it before combat to gain its temporary attack bonus and altered heavy attacks."],
-  ["barbaric-roar", "Barbaric Roar", "Ash of War: Barbaric Roar", "body", ["barbaric roar"], "Apply it at a grace, then activate it before combat for its temporary attack bonus and altered heavy-attack chain."],
-  ["braggarts-roar", "Braggart's Roar", "Ash of War: Braggart's Roar", "body", ["braggart s roar"], "Apply it to the compatible weapon and activate it before combat. It is a body buff, so another body buff will replace it."],
+  ["war-cry", "War Cry", "Ash of War: War Cry", "weapon", ["war cry"], "Apply it at a grace, then activate it before combat to gain its temporary attack bonus and altered heavy attacks. It replaces other buffs on that weapon."],
+  ["barbaric-roar", "Barbaric Roar", "Ash of War: Barbaric Roar", "weapon", ["barbaric roar"], "Apply it at a grace, then activate it before combat for its temporary attack bonus and altered heavy-attack chain. It replaces other buffs on that weapon."],
+  ["braggarts-roar", "Braggart's Roar", "Ash of War: Braggart's Roar", "weapon", ["braggart s roar"], "Apply it to the compatible weapon and activate it before combat. This is a weapon buff: it stacks with Flame, Grant Me Strength, but replaces coatings on the same weapon."],
   ["seppuku", "Seppuku", "Ash of War: Seppuku", "weapon", ["seppuku"], "Apply it to the compatible weapon and activate it before combat to add blood loss; repeat separately for each weapon in a dual-wield setup."],
   ["sacred-order", "Sacred Order", "Ash of War: Sacred Order", "weapon", ["sacred order"], "Apply it to the listed compatible weapon and activate it before combat for the temporary holy weapon buff."],
   ["flaming-strike", "Flaming Strike coating", "Ash of War: Flaming Strike", "weapon", ["flaming strike"], "Use the skill, then press the heavy-attack follow-up to coat the weapon in fire; the initial flame alone does not apply the coating."],
   ["chilling-mist", "Chilling Mist coating", "Ash of War: Chilling Mist", "weapon", ["chilling mist"], "Use the skill to create the frost cloud and coat the weapon; the coating is temporary."],
   ["poisonous-mist", "Poisonous Mist coating", "Ash of War: Poisonous Mist", "weapon", ["poisonous mist"], "Use the skill to create the poison cloud and coat the weapon before continuing the attack chain."],
   ["lightning-slash", "Lightning Slash coating", "Ash of War: Lightning Slash", "weapon", ["lightning slash"], "Use the skill to strike and leave the weapon temporarily coated in lightning."],
-  ["endure", "Endure", "Ash of War: Endure", "body", ["endure"], "Apply it at a grace and activate immediately before committing to a close-range trade; its defence and poise window is very short."],
+  ["endure", "Endure", "Ash of War: Endure", "unique", ["endure"], "Apply it at a grace and activate immediately before committing to a close-range trade; its defence and poise window is very short."],
   ["barricade-shield", "Barricade Shield", "Ash of War: Barricade Shield", "shield", ["barricade shield"], "Apply it to the listed shield and activate before blocking a demanding attack string."],
 ] .map(([id, name, acquisitionItem, group, aliases, activation]) => ({
   id, name, acquisitionItem, group, aliases, activation,
   kind: "ash" as const, effect: "Temporary buff supplied by the selected build's weapon skill.",
-  acquisition: `Obtain ${acquisitionItem} at the route card shown for the selected build, then apply it at a Site of Grace or through Smithing Master Hewg.`,
+  acquisition: id === "braggarts-roar"
+    ? "Braggart's Roar comes attached to Iron Ball, dropped only when Blackguard Big Boggart dies. He does not sell the weapon. Keep him alive through Rya's necklace and prawn steps; he then moves to Leyndell's outer moat and sells crab. Only take the weapon if you chose his death branch in the Dung Eater quest. Otherwise skip this pickup and keep your current skill. Remove the Ash from Iron Ball at a grace to apply it to another compatible weapon."
+    : `Obtain ${acquisitionItem} at the route card shown for the selected build, then apply it at a Site of Grace or through Smithing Master Hewg.`,
   wiki: `https://eldenring.wiki.gg/wiki/${String(acquisitionItem).replace(/ /g, "_").replace(/'/g, "%27")}`,
   castOrder: group === "aura" ? 30 : group === "weapon" ? 70 : 90,
 })) as BuildBuff[];
@@ -213,17 +215,34 @@ export function buffSupportItems(loadout: { weapon: string; offhand: string; spe
   return items;
 }
 
-export function buffRoutine(loadout: { spells: string[]; skill: string }) {
-  const buffs = buffsForLoadout(loadout).sort((left, right) => left.castOrder - right.castOrder);
+export function buffRoutine(loadout: { spells: string[]; skill: string }, attributes?: { faith: number; intelligence: number; arcane: number }) {
+  const allBuffs = buffsForLoadout(loadout).sort((left, right) => left.castOrder - right.castOrder);
+  const meetsRequirements = (buff: BuildBuff) => !attributes || [...(buff.requirements || "").matchAll(/(\d+) (Faith|Intelligence|Arcane)/g)].every(([, required, stat]) => attributes[stat.toLowerCase() as keyof typeof attributes] >= Number(required));
+  const unavailable = allBuffs.filter((buff) => !meetsRequirements(buff));
+  const buffs = allBuffs.filter(meetsRequirements);
+  const requirementNote = unavailable.length ? `Not yet castable at these stats: ${unavailable.map((buff) => `${buff.name} requires ${buff.requirements}`).join("; ")}. Keep these out of the casting order until the requirements are met.` : "";
+  if (!buffs.length && unavailable.length) return requirementNote;
   if (!buffs.length) return "No active buff is specified by this sourced stage.";
   const spellBuffsInRoutine = buffs.filter((buff) => buff.memorySlots);
   const catalysts = Array.from(new Set(spellBuffsInRoutine.map((buff) => buff.catalyst).filter(Boolean)));
   const groups = new Map<BuffGroup, BuildBuff[]>();
   buffs.forEach((buff) => groups.set(buff.group, [...(groups.get(buff.group) || []), buff]));
-  const clashes = [...groups.entries()].filter(([group, values]) => ["body", "weapon", "regeneration", "shield"].includes(group) && values.length > 1);
+  const exclusiveGroups: BuffGroup[] = ["aura", "body", "weapon", "regeneration", "shield"];
+  const clashes = [...groups.entries()].filter(([group, values]) => exclusiveGroups.includes(group) && values.length > 1);
+  const emitted = new Set<BuffGroup>();
+  const steps: string[] = [];
+  for (const buff of buffs) {
+    if (exclusiveGroups.includes(buff.group)) {
+      if (emitted.has(buff.group)) continue;
+      emitted.add(buff.group);
+      const choices = groups.get(buff.group)!;
+      steps.push(choices.length > 1 ? `Choose one ${buff.group} buff: ${choices.map((choice) => choice.name).join(" OR ")}${buff.group === "weapon" ? " on the same weapon" : ""}` : buff.name);
+    } else steps.push(buff.name);
+  }
   return [
     spellBuffsInRoutine.length ? `At a grace, memorize ${spellBuffsInRoutine.map((buff) => `${buff.name} (${buff.memorySlots} slot)`).join(", ")}${catalysts.length ? ` and equip ${catalysts.join(" plus ")}` : ""}.` : "",
-    `Use in this order: ${buffs.map((buff, index) => `${index + 1}) ${buff.name}`).join("; ")}.`,
+    `Use in this order: ${steps.map((step, index) => `${index + 1}) ${step}`).join("; ")}.`,
     clashes.length ? `Only one ${clashes.map(([group]) => group).join(" or ")} buff in the same category remains active; use the one appropriate to the encounter instead of casting both.` : "",
+    requirementNote,
   ].filter(Boolean).join(" ");
 }

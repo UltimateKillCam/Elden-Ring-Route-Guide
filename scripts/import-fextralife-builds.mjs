@@ -7,7 +7,7 @@ const outputPath = resolve(root, "app", "wiki-builds.ts");
 const wikiApi = "https://eldenring.wiki.fextralife.com/api.php";
 const sourceCategory = "Build_Guides";
 const userAgent = "TarnishedTogetherRoutePlanner/1.0 (personal build-planner data import)";
-const EXPECTED_BUILD_COUNT = 171;
+const EXPECTED_BUILD_COUNT = 172;
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 const phaseOverrides = new Map([
   ["Knight of Thorns", "dlc"], ["Acolyte", "late"], ["Black Blade Slicer", "late"],
@@ -150,6 +150,7 @@ const rangedBuilds = new Set([
 ]);
 
 const hybridBuilds = new Set([
+  "Idus Knight Starter",
   "Acolyte", "All-Knowing Sage", "Black Blade", "Black Blade Slicer", "Black Flame Spellblade", "Blackflame Apostle", "Blackflame Bushido", "Blasphemous Beastmaster", "Blasphemous Herald", "Blazing Bushido",
   "Blood Dancer", "Blood Dragon", "Carian Cavalier", "Carian Cleaver", "Carian Knight", "Carian Sovereignty", "Carian Spellknight", "Champion of Rot", "Cold-Blooded Raptor", "Crusader",
   "Darkmoon Spellblade", "Death Knight", "Death Mage", "Deathblade", "Dragon Dancer", "Dragon God", "Dragon Knight", "Dragon Priestess", "Dragon Warrior", "Flame Dancer",
@@ -183,7 +184,7 @@ function mechanicFor(value) {
 }
 
 function startingClass(value) {
-  const classes = ["Vagabond", "Warrior", "Hero", "Bandit", "Astrologer", "Prophet", "Samurai", "Prisoner", "Confessor", "Wretch"];
+  const classes = ["Vagabond", "Warrior", "Hero", "Bandit", "Astrologer", "Prophet", "Samurai", "Prisoner", "Confessor", "Wretch", "Idus Knight", "Heavy Knight"];
   return classes.find((candidate) => new RegExp(`\\b${candidate}\\b`, "i").test(value)) || "Not specified";
 }
 
@@ -298,6 +299,7 @@ const fieldFallbacks = new Map([
   ["Level 80/90 Sorcerer Duelist", { weapon: "Azur's Glintstone Staff" }],
 ]);
 const fieldOverrides = new Map([
+  ["Idus Knight Starter", { offhand: "Silver Grooved Shield", shield: "", armor: "Silver Grooved Set", talismans: "Axe Talisman, Curved Sword Talisman, Green Turtle Talisman", skills: "Sacred Blade" }],
   ["All-Knowing Sage", {
     skills: "Night-and-Flame Stance",
     talismans: "Godfrey Icon, Graven-Mass Talisman, Flock's Canvas Talisman, Magic Scorpion Charm",
@@ -355,6 +357,7 @@ const skillFallbacks = new Map([
 ]);
 const legacyPatchBuilds = new Set(["Level 80/90 Sorcerer Duelist"]);
 const playstyleOverrides = new Map([
+  ["Idus Knight Starter", "Requires the Tarnished Pack. Use the Idus Sword and its starting shield for quick sword attacks, guard counters and stance pressure. Impaling Thrust is the starting skill; the source recommends Sacred Blade for a ranged opening and a temporary holy coating. Keep Vigor and Endurance ahead of extra damage investment, and choose a physical affinity while building Strength and Dexterity. The Silver Grooved Shield has No Skill, so the sword skill remains accessible without putting the shield away. The Knight Set is the source's heavier armour alternative once equip load permits it. This route omits Warrior Jar Shard because obtaining it would end Alexander's quest; it does not require killing a friendly NPC. If using another origin, collect the Idus Sword north-west of Liurnia Lake Shore and buy the Silver Grooved equipment from the northern Liurnia merchant after confirming the Tarnished Pack is installed."],
   ["Archer", "This is a true weapon-only archer with no melee fallback. Open normal encounters with the Longbow and Mighty Shot, using the longer draw only while the target is unaware or locked in an animation; once an enemy crosses into short range, swap to the Shortbow so rolling and jumping shots preserve movement. Barrage is reserved for a boss recovery, a large stationary target, or a status-arrow window because holding it in neutral drains FP and stamina while leaving no guard option. Normal arrows handle weak enemies economically, while expensive ammunition should be saved for targets that survive long enough to justify it. Dexterity raises bow damage, Mind buys more skill use, and Vigor and Endurance prevent one missed spacing check from ending the fight. The build succeeds by controlling distance and planning ammunition, not by trading hits."],
   ["Barbarian", "The Zweihander turns War Cry into a charged-attack build: activate the skill before contact, then its temporary weapon buff replaces the normal heavy with a forward-driving charge that can interrupt light enemies and build stance damage quickly. In the field, draw one target at a time, start the charged heavy outside its swing, and use a normal light only when the first impact leaves a safe finish. Against bosses, refresh War Cry before the opener, release one fully charged heavy into a long recovery, and take the critical after a stance break instead of emptying the stamina bar on another swing. Axe Talisman raises fully charged attacks, while high Vigor, Endurance and poise make a deliberate trade survivable without giving up a medium roll. War Cry costs FP only when refreshed, but every transformed heavy consumes enough stamina that one must remain in reserve for defence. Fast or evasive bosses can step around the linear charge, and a missed Zweihander heavy has a long recovery, so the build rewards prediction rather than repeated R2 inputs."],
   ["Dragon Priest", "The Finger Seal is the weapon: this beginner caster does not need a melee armament to complete its combat loop. Catch Flame is the fast, close-range answer for single enemies and punish windows, while Dragonfire is held to sweep a pack or a broad boss hitbox with its cone; release it early if the target turns toward you rather than being locked into the long breath animation. Start a pull from range, let enemies group together, cast Dragonfire across the line, then use Catch Flame on anything that reaches casting distance. Mind supports repeated breaths, Vigor covers the risk of casting close, Faith raises the early fire damage, and Arcane is added only as later dragon incantations require it. The setup spends FP quickly and has no shield or physical fallback, so fire-resistant enemies and aggressive bosses demand shorter casts and more Cerulean charges."],
@@ -427,7 +430,7 @@ export function parseFextralifeBuildPage({ title, wikitext, categories = [] }) {
     playstyle: `${researchedPlaystyle}${legacyPatchBuilds.has(name) ? " The source's obsolete chain-casting note is not used." : ""}`,
     complexity: legacyPatchBuilds.has(name) ? "Published legacy guide" : "Published guide",
     phases,
-    tags: ["fextralife", pvp ? "pvp" : "pve", phase, mechanic.toLowerCase().replace(/\s+/g, "-"), ...(legacyPatchBuilds.has(name) ? ["legacy-source"] : []), ...(memeAnchors.has(anchor) ? ["meme", "cosplay"] : [])],
+    tags: ["fextralife", ...(name === "Idus Knight Starter" ? ["tarnished-pack-required"] : []), pvp ? "pvp" : "pve", phase, mechanic.toLowerCase().replace(/\s+/g, "-"), ...(legacyPatchBuilds.has(name) ? ["legacy-source"] : []), ...(memeAnchors.has(anchor) ? ["meme", "cosplay"] : [])],
     startingClass: startingClass(fields.class || ""),
     mechanic,
     collection: "Fextralife",

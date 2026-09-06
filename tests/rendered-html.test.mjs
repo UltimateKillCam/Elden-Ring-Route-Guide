@@ -38,12 +38,12 @@ test("ships the curated, complete wiki and sourced build catalogues with the ful
   ]);
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.equal((data.match(/^\s*build\(/gm) ?? []).length, 100);
-  assert.equal((wikiBuilds.match(/^\s*"id": "fextra-/gm) ?? []).length, 171);
-  assert.equal((wikiBuilds.match(/^\s*"collection": "Fextralife"/gm) ?? []).length, 171);
+  assert.equal((wikiBuilds.match(/^\s*"id": "fextra-/gm) ?? []).length, 172);
+  assert.equal((wikiBuilds.match(/^\s*"collection": "Fextralife"/gm) ?? []).length, 172);
   assert.equal((sourcedBuilds.match(/^\s*id: "game8-/gm) ?? []).length, 1);
   assert.equal((sourcedBuilds.match(/^\s*id: "mobalytics-/gm) ?? []).length, 4);
   assert.equal((memeBuilds.match(/^\s*id: "meme-/gm) ?? []).length, 6);
-  assert.match(data, /wikiBuilds.*additionalSourcedBuilds.*sourcedMemeBuilds/);
+  assert.match(data, /wikiBuilds.*additionalSourcedBuilds.*communityBuilds.*sourcedMemeBuilds/);
   assert.ok((data.match(/remembrance:\s*true/g) ?? []).length >= 22);
   for (const boss of [
     "Godrick the Grafted",
@@ -97,8 +97,8 @@ test("ships the curated, complete wiki and sourced build catalogues with the ful
   assert.match(sourcedBuilds, /Wing Stance Milady/);
   assert.match(sourcedBuilds, /Finger Seal for buffs only; no shield/);
   assert.doesNotMatch(sourcedBuilds, /Guard counters/);
-  assert.match(data, /build\("quality-knight"[\s\S]*?\["Longsword", "Claymore", "Quality Great .*?", "Milady \+ Wing Stance"\]/);
-  assert.match(data, /build\("colossal-hammer"[\s\S]*?\["Large Club", "Great Club", "Giant-Crusher", "Anvil Hammer"\]/);
+  assert.match(data, /build\("quality-knight"[\s\S]*?\["Claymore", "Claymore", "Claymore", "Claymore"\]/);
+  assert.match(data, /build\("colossal-hammer"[\s\S]*?\["Large Club", "Large Club", "Giant-Crusher", "Giant-Crusher"\]/);
   assert.match(sourcedBuilds, /Taker’s Flames is the engine/);
   assert.match(sourcedBuilds, /Bloodhound’s Fang Finesse/);
   assert.match(page, /className="build-summary"/);
@@ -187,7 +187,7 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /taskAccessBlocked\(nextStep\.task, nextStep\.chapter\.id\)/);
   assert.match(page, /taskKeys\(task, expedition\)\.every\(\(key\) => expedition\.completed\[key\]\)/);
   assert.match(page, /taskSkipBlocked[\s\S]*isAccessRequirementTask/);
-  assert.match(page, /locked=\{Boolean\(accessGate\)\}/);
+  assert.match(page, /locked=\{Boolean\(accessGate\) \|\| \(readOnly && !viewerPlayerId\)\}/);
   assert.match(page, /const editable = !locked/);
   assert.match(page, /Equip only what has been collected/);
   assert.match(page, /Keep the current equipment unchanged/);
@@ -257,7 +257,7 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /Replace with/);
   assert.match(page, /Skip this boss/);
   assert.match(page, /const optional = \/\^\(\?:Optional\|Optionally\|If the optional\)/);
-  assert.match(page, /Optional rune bosses have been removed because this character is already above the chapter target/);
+  assert.match(page, /Optional rune bosses have been removed because everyone meets the chapter target/);
   assert.match(page, /everyRecordedPlayerIsOverTarget/);
   assert.match(page, /No levels recommended; RL/);
   assert.match(page, /SAVE_LIBRARY_KEY/);
@@ -313,8 +313,10 @@ test("every ordered objective resolves to a sourced item or map marker", async (
     readFile(new URL("../app/data.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/map-items.ts", import.meta.url), "utf8"),
   ]);
-  const mapItems = JSON.parse(mapSource.match(/export const mapItems: MapItem\[\] = (\[[\s\S]*?\]);\n\nexport type MapRoutePoint/)[1]);
-  const routePoints = JSON.parse(mapSource.match(/export const mapRoutePoints: MapRoutePoint\[\] = (\[[\s\S]*?\]);\n\nconst clean/)[1]);
+  const readBatches = (name) => [...mapSource.matchAll(new RegExp(`${name}\\.push\\(\\n([\\s\\S]*?)\\n\\);`, "g"))].flatMap((match) => JSON.parse(`[${match[1]}]`));
+  const mapItems = readBatches("mapItems");
+  const routePoints = readBatches("mapRoutePoints");
+  assert.ok(mapItems.length > 1400 && routePoints.length > 1600, "all generated batches must be parsed");
   const aliasBlock = page.match(/const ESSENTIAL_MAP_QUERIES[\s\S]*?\n};/)[0];
   const aliases = Object.fromEntries([...aliasBlock.matchAll(/^\s*"([^"]+)": "([^"]+)",?$/gm)].map((match) => [match[1], match[2]]));
   const clean = (value) => value.toLowerCase().replace(/[+＋]\d+/g, "").replace(/[^a-z0-9' ]/g, " ").replace(/\s+/g, " ").trim();

@@ -1,7 +1,8 @@
 // Generated from the Fextralife interactive-map data. Do not hand edit.
 export type MapItem = { name: string; category: string; description: string; layer: "surface" | "underground" | "ashen" | "shadow"; x: number; y: number; url: string };
 
-export const mapItems: MapItem[] = [
+export const mapItems: MapItem[] = [];
+mapItems.push(
   {
     "name": "Academy Glintstone Staff",
     "category": "Weapons",
@@ -82,6 +83,87 @@ export const mapItems: MapItem[] = [
     "x": 35.199,
     "y": 36.453,
     "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=7702&code=mapA"
+  },
+  {
+    "name": "Ancient Dragon Smithing Stone",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse in front of a statue in in Miquella's Haligtree . Guarded by an axe-wielding Misbegotten.",
+    "layer": "surface",
+    "x": 57.481,
+    "y": 16.705,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4618&code=mapA"
+  },
+  {
+    "name": "Ancient Dragon Smithing Stone",
+    "category": "Upgrade Materials",
+    "description": "Found in a chest, at the top of a tower, no traps or tricks.",
+    "layer": "surface",
+    "x": 58.876,
+    "y": 16.138,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4661&code=mapA"
+  },
+  {
+    "name": "Ancient Dragon Smithing Stone",
+    "category": "Upgrade Materials",
+    "description": "On the waterfall.",
+    "layer": "surface",
+    "x": 59.148,
+    "y": 27.081,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6398&code=mapA"
+  },
+  {
+    "name": "Ancient Dragon Smithing Stone (A) - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Dropped by the Farum Azula Dragon that swoops in to attack as you make your way along the curved platform.",
+    "layer": "surface",
+    "x": 84.765,
+    "y": 50.677,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8612&code=mapA"
+  },
+  {
+    "name": "Ancient Dragon Smithing Stone (B) - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on a floating platform north of the Dragon Temple , guarded by a Beastman . From the north end of the temple, navigate your way through the floating debris to a narrow path laden with dragon statues, at the end of which you will find a spiral staircase on the right. Head up these stairs and then turn towards the south to find a floating pillar adjoining the aforementioned floating platform. Use the pillar to get up to the platform and collect the stone.",
+    "layer": "surface",
+    "x": 84.279,
+    "y": 47.577,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4353&code=mapA"
+  },
+  {
+    "name": "Ancient Dragon Smithing Stone (C) - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Dropped by the stationary Farum Azula Dragon sitting at the back of the plaza southeast of the Dragon Temple Rooftop site of grace. The dragon is constantly raining red lightning around the area.",
+    "layer": "surface",
+    "x": 86.05,
+    "y": 48.267,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8719&code=mapA"
+  },
+  {
+    "name": "Ancient Dragon Smithing Stone (Consecrated Snowfield Boss Drop)",
+    "category": "Upgrade Materials",
+    "description": "Dropped by one of the two mini-boss Night's Cavalry guarding a Consecrated Fields caravan at night, alongside the Night's Cavalry Set",
+    "layer": "surface",
+    "x": 54.397,
+    "y": 30.231,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4413&code=mapA"
+  },
+  {
+    "name": "Ancient Dragon Smithing Stone - 1x (Yelough Anix Tunnel)",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. In the room with the wooden walkways, there is a lower area you can drop down to in the center. Defeat the Alabaster Lord found here and you can loot the stone off of the body in the back.",
+    "layer": "surface",
+    "x": 51.778,
+    "y": 30.737,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4496&code=mapA"
+  },
+  {
+    "name": "Ancient Dragon Smithing Stone - Southeast of the Church of Repose",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found in the skull of a dead giant southeast of the Church of Repose .",
+    "layer": "surface",
+    "x": 61.177,
+    "y": 35.437,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6399&code=mapA"
   },
   {
     "name": "Antspur Rapier",
@@ -2170,7 +2252,9 @@ export const mapItems: MapItem[] = [
     "x": 39.803,
     "y": 76.764,
     "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2505&code=mapA"
-  },
+  }
+);
+mapItems.push(
   {
     "name": "Erdtree's Favor +1",
     "category": "Talismans",
@@ -4420,7 +4504,9 @@ export const mapItems: MapItem[] = [
     "x": 61.51,
     "y": 34.811,
     "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3545&code=mapA"
-  },
+  }
+);
+mapItems.push(
   {
     "name": "Old Lord's Talisman",
     "category": "Talismans",
@@ -5475,6 +5561,1556 @@ export const mapItems: MapItem[] = [
     "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1546&code=mapA"
   },
   {
+    "name": "Smithing Stone (5) - 1x Mt. Gelmir",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on the ground.",
+    "layer": "surface",
+    "x": 27.437,
+    "y": 33.718,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6101&code=mapA"
+  },
+  {
+    "name": "Smithing Stone (5) - 2x Leyndell Royal Capital",
+    "category": "Upgrade Materials",
+    "description": "At the balcony of the fortified Manor, next to the room with the swords on the table. The second can be found inside the fortified Manor, once in the lower level at the back of the armory room.",
+    "layer": "surface",
+    "x": 44.026,
+    "y": 40.964,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3949&code=mapA"
+  },
+  {
+    "name": "Smithing Stone (5) - North Caelid",
+    "category": "Upgrade Materials",
+    "description": "North of Sellia Crystal Tunnel in Caelid . Can be found within a Breakable Statue. The Dragon east of this location can be used to break it.",
+    "layer": "surface",
+    "x": 55.806,
+    "y": 66.724,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8653&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [1]",
+    "category": "Upgrade Materials",
+    "description": "At the side of the bridge, on a body.",
+    "layer": "surface",
+    "x": 42.69,
+    "y": 74.451,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=832&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [1]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Two can be found on a corpse at the Saintsbridge.",
+    "layer": "surface",
+    "x": 42.693,
+    "y": 68.338,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1351&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [1]",
+    "category": "Upgrade Materials",
+    "description": "Held by a corpse sitting against a grave, surrounded by Spirit Jellyfishes and Skeleton Enemies .",
+    "layer": "surface",
+    "x": 35.176,
+    "y": 71.613,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3051&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [1]",
+    "category": "Upgrade Materials",
+    "description": "In a corpse at the water on the corner.",
+    "layer": "surface",
+    "x": 45.25,
+    "y": 84.134,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6056&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [1]",
+    "category": "Upgrade Materials",
+    "description": "Found on a dead body.",
+    "layer": "surface",
+    "x": 40.117,
+    "y": 76.263,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6057&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [1]",
+    "category": "Upgrade Materials",
+    "description": "On a dead body.",
+    "layer": "surface",
+    "x": 44.066,
+    "y": 70.673,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6060&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [1] - 3x Castle Morne",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse in the left side at the back of Castle Morne 's courtyard.",
+    "layer": "surface",
+    "x": 42.003,
+    "y": 88.791,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=479&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [1] - 3x Raya Lucaria Crystal Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. A total of 3 can be found in the Raya Lucaria Crystal Tunnel .",
+    "layer": "surface",
+    "x": 26.339,
+    "y": 49.202,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3455&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [1] - 8x Limgrave Tunnels",
+    "category": "Upgrade Materials",
+    "description": "Approximately x8 found in Limgrave Tunnels (mostly as yellow glowing stones on wall).",
+    "layer": "surface",
+    "x": 40.416,
+    "y": 73.761,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3888&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [1] - 9x Morne Tunnel",
+    "category": "Upgrade Materials",
+    "description": "You can find a couple of these stones within Morne Tunnel .",
+    "layer": "surface",
+    "x": 42.26,
+    "y": 83.231,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3894&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [1] - Bridge of Sacrifice",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on the eastern edge of the Bridge of Sacrifice , near the middle section.",
+    "layer": "surface",
+    "x": 45.653,
+    "y": 79.944,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=487&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [1] - Church of Elleh",
+    "category": "Upgrade Materials",
+    "description": "Found at Church of Elleh on the smithing table.",
+    "layer": "surface",
+    "x": 38.607,
+    "y": 74.655,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1969&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [1] - Fort Haight",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found by looting a corpse on the battlements of Fort Haight .",
+    "layer": "surface",
+    "x": 48.512,
+    "y": 76.385,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=773&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [1] - Highroad Cave",
+    "category": "Upgrade Materials",
+    "description": "Smithing Stone (1) Upgrade Material can be found within Highroad Cave",
+    "layer": "surface",
+    "x": 42.833,
+    "y": 67.386,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3870&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [1] - Stormveil Castle (A)",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse by a staircase leading to a platform with ballistae emplacements.",
+    "layer": "surface",
+    "x": 34.166,
+    "y": 70.837,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=975&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [1] - Stormveil Castle (B)",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. 4 can be found on a corpse in the same room where Nepheli Loux is.",
+    "layer": "surface",
+    "x": 34.163,
+    "y": 69.25,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=963&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [1] - Summonwater Village",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found among the flooded gravestones surrounding Summonwater Village .",
+    "layer": "surface",
+    "x": 46.495,
+    "y": 67.52,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=969&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [1] A",
+    "category": "Upgrade Materials",
+    "description": "A Smithing Stone found on top of a corpse that lays on the ground. Found together with 3 other dead bodies and a rounded group of chairs.",
+    "layer": "surface",
+    "x": 38.02,
+    "y": 71.472,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=758&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [1] B",
+    "category": "Upgrade Materials",
+    "description": "Found together with a Smithing Stone [2] inside a stone statue surrounded by trolls.The creatures can be manipulated into hitting and cracking the sculpture open in order to grab the Stones.",
+    "layer": "surface",
+    "x": 40.263,
+    "y": 70.844,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=764&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [1] C",
+    "category": "Upgrade Materials",
+    "description": "Found over a hanging body, near one of the structures",
+    "layer": "surface",
+    "x": 41.637,
+    "y": 70.477,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1209&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found in a corpse in the middle of the road, near the group of enemies scavenging the broken cart.",
+    "layer": "surface",
+    "x": 44.847,
+    "y": 82.428,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=472&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found in a corpse at the bottom of a cliff. The site is full of Wolves fighting a huge Lesser Runebear .",
+    "layer": "surface",
+    "x": 46.532,
+    "y": 69.22,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=790&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2]",
+    "category": "Upgrade Materials",
+    "description": "On a high rock near the cliff.",
+    "layer": "surface",
+    "x": 36.54,
+    "y": 79.044,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6061&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2]",
+    "category": "Materials",
+    "description": "",
+    "layer": "surface",
+    "x": 21.87,
+    "y": 49.85,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=26852&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] - 1x Bellum Highway East",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Looted off a corpse on the slopes leading to Frenzy-Flaming Tower in eastern Bellum Highway.",
+    "layer": "surface",
+    "x": 29.204,
+    "y": 44.638,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8558&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] - 2x South from Folly on the Lake",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse being eaten by crabs under a large tree, where the poison ground starts after going south from the Folly on the Lake site of grace.",
+    "layer": "surface",
+    "x": 22.495,
+    "y": 60.322,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=938&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] - 2x Under Village of the Albinaurics",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Two can be found on a corpse being eaten by crabs between a wall and a tree in the swamp directly under Village of the Albinaurics",
+    "layer": "surface",
+    "x": 20.36,
+    "y": 61.792,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1336&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] - 3x (Liurnia South Gazebo)",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Three can be looted from a gazebo close to the South-East of Academy Gate Town. Beware of a Giant Lobster ambush.",
+    "layer": "surface",
+    "x": 28.02,
+    "y": 58.514,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6407&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] - 3x Academy Gate Town",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Three can be looted off a corpse. The corpse is resting against a wall in the water near a Giant Crab.",
+    "layer": "surface",
+    "x": 24.175,
+    "y": 55.994,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1303&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] - 3x Caria Manor Entrance",
+    "category": "Upgrade Materials",
+    "description": "Crafting Material. Three can be looted from a corpse next to a round structure on the main path heading into the manor. Beware of Giant Hand ambush.",
+    "layer": "surface",
+    "x": 22.515,
+    "y": 42.584,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8813&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] - 3x Liurnia of the Lakes Gazebo",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Three can be found Inside a gazebo south-west from Temple Quarter.",
+    "layer": "surface",
+    "x": 19.747,
+    "y": 57.535,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=939&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] - 5x Raya Lucaria Crystal Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. A total of 5 can be found in the Raya Lucaria Crystal Tunnel .",
+    "layer": "surface",
+    "x": 26.076,
+    "y": 49.319,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3503&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] - Altus Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. One can be found inside the Altus Tunnel .",
+    "layer": "surface",
+    "x": 36.092,
+    "y": 36.365,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=7713&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] - Highroad Cave",
+    "category": "Upgrade Materials",
+    "description": "Smithing Stone (2) Upgrade Material can be found within Highroad Cave",
+    "layer": "surface",
+    "x": 42.799,
+    "y": 67.633,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3875&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] - Lakeside Crystal Cave",
+    "category": "Upgrade Materials",
+    "description": "Smithing Stone (4) and Smithing Stone (2) are Looted from two corpses on one of the lower levels of the Lakeside Crystal Cave , just before the fog gate.",
+    "layer": "surface",
+    "x": 25.74,
+    "y": 63.586,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=7202&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] - Mistwood Ruins",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found in a chest in the center of the Mistwood Ruins .",
+    "layer": "surface",
+    "x": 45.863,
+    "y": 74.243,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=767&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] - Raya Lucaria Academy",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a gazebo near Giant Flowers on the outskirts of Raya Lucaria Academy.",
+    "layer": "surface",
+    "x": 22.038,
+    "y": 55.228,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6403&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] A - Castle Morne",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. From the main courtyard entrance of Castle Morne, head up the steps on the left side to find the item on a corpse. Beware the skeletal dogs in the area.",
+    "layer": "surface",
+    "x": 42.595,
+    "y": 88.248,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=477&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] A - Stormveil Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on the outside of the castle walls. Reachable by climbing on broken sections nearby.",
+    "layer": "surface",
+    "x": 34.108,
+    "y": 71.365,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=906&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] B",
+    "category": "Upgrade Materials",
+    "description": "Found together with a Smithing Stone [1] inside a stone statue surrounded by trolls.The creatures can be manipulated into hitting and cracking the sculpture open in order to grab the Stones.",
+    "layer": "surface",
+    "x": 40.447,
+    "y": 70.865,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=765&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] B - Castle Morne",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse being chopped up by a Misbegotten.",
+    "layer": "surface",
+    "x": 41.771,
+    "y": 88.391,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=737&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] B - Stormveil Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on an upper platform where Castle Guards are mounted on ballistae.",
+    "layer": "surface",
+    "x": 34.078,
+    "y": 70.639,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=974&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] C",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found inside a gazebo.",
+    "layer": "surface",
+    "x": 23.897,
+    "y": 58.673,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=936&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] C - Castle Morne",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Inside a building known as the Rampart Gaol at the back of the castle. This is the same building where the Whip can be found and is first accessed by walking atop the western walls at the back of the castle from the \"Behind the Castle\" Site of Grace. There is a building to the left with a blue roof. Jump onto this roof and then down to the cliffs below. Follow the cliffs southeast until you return onto a section of the castle with a square opening. Descend into the opening by using the wooden beams below. The stone can be found on a corpse on one of these wooden beams.",
+    "layer": "surface",
+    "x": 41.936,
+    "y": 89.041,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=7008&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] C - Stormveil Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on the rooftops accessible from the top of the very top of the Rampart Tower.",
+    "layer": "surface",
+    "x": 33.477,
+    "y": 70.105,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6062&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] D - Stormveil Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Held by a corpse outside the room where Nepheli Loux is located, passing the wooden barricades to the west and up the stairs on your right.",
+    "layer": "surface",
+    "x": 34.181,
+    "y": 69.031,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3953&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] E - Stormveil Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found behind some explosive barrels on the top level of the castle walls accessed from the Rampart Tower.",
+    "layer": "surface",
+    "x": 33.003,
+    "y": 69.272,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1104&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [2] F - Stormveil Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse sitting on an upper ledge in the corridor leading up to the Secluded Chamber site of grace.",
+    "layer": "surface",
+    "x": 33.797,
+    "y": 68.344,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6063&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [3]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a gravesite near the Tibia Mariner .",
+    "layer": "surface",
+    "x": 31.488,
+    "y": 57.303,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=7030&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [3] - 1x Academy Gate Town",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Looted off a corpse in the middle of the upper road by the Flame Chariot and Raya Lucaria Soldiers that guard the path to Raya Lucaria Academy.",
+    "layer": "surface",
+    "x": 23.555,
+    "y": 55.795,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8058&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [3] - 2x Raya Lucaria Rooftops",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found in Raya Lucaria Academy Rooftops, by jumping from the Tower with the Imbued Sword Key and going around until they can be looted off a corpse overseeing the lift and graveyard.",
+    "layer": "surface",
+    "x": 21.33,
+    "y": 53.525,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8160&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [3] - 3x Eastern Academy Gate Town",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Three can be looted from a corpse sitting on a chair amid a group of Poison Flowers.",
+    "layer": "surface",
+    "x": 28.673,
+    "y": 55.222,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6871&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [3] - 3x Jarburg",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. 3 are found on a corpse on top of the hut that you land on as you descend into the village.",
+    "layer": "surface",
+    "x": 32.292,
+    "y": 56.561,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4267&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [3] - 3x Ruin-Strewn Precipice",
+    "category": "Upgrade Materials",
+    "description": "There are at least 3 Smithing Stones (3) within the caves that go through Ruin-Strewn Precipice",
+    "layer": "surface",
+    "x": 29.332,
+    "y": 40.182,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1706&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [3] - 8x Raya Lucaria Crystal Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. A total of 8 can be found in the Raya Lucaria Crystal Tunnel .",
+    "layer": "surface",
+    "x": 25.847,
+    "y": 49.319,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3502&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [3] - Caria Manor",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found in the cliff graveyard behind the Living Jars.",
+    "layer": "surface",
+    "x": 22.807,
+    "y": 41.758,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1536&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [3] - Laskyar Ruins",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse to the right of the steps to the gazebo in the center of the Laskyar Ruins .",
+    "layer": "surface",
+    "x": 27.931,
+    "y": 62.534,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1506&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [3] - South Liurnia",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found along the south of the waters within Liurnia of the Lakes.",
+    "layer": "surface",
+    "x": 29.938,
+    "y": 60.508,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=14301&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [3] A - Redmane Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade material. Found on a corpse behind the lookout tower outside of Redmane Castle , at ground level.",
+    "layer": "surface",
+    "x": 60.878,
+    "y": 76.27,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6415&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [3] A - Stormveil Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse around the southwestern cliffs. Watch out for the Bladed Talon Eagles roosting in the area.",
+    "layer": "surface",
+    "x": 33.864,
+    "y": 71.887,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=909&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [3] B - Redmane Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on the rooftop of the building in the southeast of Redmane Castle .",
+    "layer": "surface",
+    "x": 62.004,
+    "y": 76.953,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6418&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [4]",
+    "category": "Upgrade Materials",
+    "description": "After defeating the first enhanced Trumpeteer, drop down to the platform below, and enter the room in the back. Beware of the assassin hidden inside.",
+    "layer": "surface",
+    "x": 46.541,
+    "y": 39.807,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2865&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [4]",
+    "category": "Upgrade Materials",
+    "description": "Found on a dead body sitting on a chair by following the main path.",
+    "layer": "surface",
+    "x": 30.684,
+    "y": 54.514,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6409&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [4] - 1x Raya Lucaria Rooftop",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Only accessible by dropping down from the tower with the Full Moon Crossbow .",
+    "layer": "surface",
+    "x": 21.141,
+    "y": 53.72,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8162&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [4] - 3x Southern Aeonia Swamp Bank",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. 3x found on a body sat on a chair on the southern bank of the Swamp of Aeonia .",
+    "layer": "surface",
+    "x": 55.916,
+    "y": 72.043,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3255&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [4] - 8x Gael Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. A total of 8 can be found inside Gael Tunnel : From the Site of Grace, head into the next chamber and down one level on the wooden walkways. Head east to find the stone by the left wall of the tunnel entrance here. Continuing on from the previous stone, head into the eastern tunnel to find a water-logged cavern with several Land Octopi . Check the corner directly to the right as you enter for the second stone. Still in the same water-logged cavern, hug the wall on the right to find the third stone. Back in the first chamber, check under the wooden platform for another stone on the eastern wall. The fifth stone is found further along the same wall as the previous one. Turn towards the west and head through the tunnel to find a ladder leading downwards. The sixth stone is found at this bottom level, to the left just before the next tunnel. In the final cavern just before the boss door, check the wall directly opposite the boss door to find the seventh stone. In the same final cavern, unlock the smaller door in the west and check the back wall to the left of that room for the final stone.",
+    "layer": "surface",
+    "x": 50.231,
+    "y": 67.993,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3764&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [4] - 9x Ruin-Strewn Precipice",
+    "category": "Upgrade Materials",
+    "description": "There are at least 9 Smithing Stones (4) within the cave that goes through Ruin-Strewn Precipice .",
+    "layer": "surface",
+    "x": 29.464,
+    "y": 40.732,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1705&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [4] - Caria Manor",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found in the chapel with the Manor Lower Level site of grace, on a corpse hidden under the altar.",
+    "layer": "surface",
+    "x": 21.52,
+    "y": 41.962,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1525&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [4] - Caria Manor Upper Level",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. One can be looted from a corpse on the higher platform near the archway leading to the large staircase. Accessible by dropping down from the higher area after defeating the Troll Knight.",
+    "layer": "surface",
+    "x": 23.421,
+    "y": 41.302,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8820&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [4] - Forsaken Ruins",
+    "category": "Upgrade Materials",
+    "description": "Looted at the Forsaken Ruins .",
+    "layer": "surface",
+    "x": 50.932,
+    "y": 67.154,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3179&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [4] - Lakeside Crystal Cave",
+    "category": "Upgrade Materials",
+    "description": "Smithing Stone (4) and Smithing Stone (2) are Looted from two corpses on one of the lower levels of the Lakeside Crystal Cave , just before the fog gate.",
+    "layer": "surface",
+    "x": 25.651,
+    "y": 63.602,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=7201&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [4] - Raya Lucaria Academy",
+    "category": "Upgrade Materials",
+    "description": "Looted from a corpse on the balcony behind an illusory wall. From the Schoolhouse Classroom site of Raya Lucaria Academy , go to the hallway, turn left. The illusory wall is in front of the corpse inside the room.",
+    "layer": "surface",
+    "x": 23.006,
+    "y": 54.047,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2260&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [4] - Raya Lucaria Academy",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Looted off a corpse found by dropping down to the right of the door as soon as entering the first graveyard in Raya Lucaria Academy .",
+    "layer": "surface",
+    "x": 21.428,
+    "y": 53.308,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2272&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [4] - Western Liurnia Enemy Camp",
+    "category": "Upgrade Materials",
+    "description": "Upgrade material. Looted from a chest in the higher area of the enemy encampment, protected by a Cuckoo Knight, some soldiers and a Mad Pumpkin Head.",
+    "layer": "surface",
+    "x": 17.766,
+    "y": 50.018,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2053&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [4] A - Redmane Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a pile of corpses to the side of the main road, near the main gate.",
+    "layer": "surface",
+    "x": 61.479,
+    "y": 76.169,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6421&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [4] A - The Shaded Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a body hanging off a ledge inside a wooden structure in the central outer courtyard.",
+    "layer": "surface",
+    "x": 31.826,
+    "y": 32.248,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2830&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [4] A - Volcano Manor",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on the outer parts of the building.",
+    "layer": "surface",
+    "x": 23.539,
+    "y": 35.4,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6865&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [4] B - Redmane Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse in the open space above the building in the center of the castle.",
+    "layer": "surface",
+    "x": 61.788,
+    "y": 76.495,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6420&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [4] B - The Shaded Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a body inside a wooden structure that looks like a stable, pressed against the eastern section of the inner courtyard.",
+    "layer": "surface",
+    "x": 32.256,
+    "y": 31.876,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=7677&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [4] B - Volcano Manor",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse lying on a fallen column in the lava.",
+    "layer": "surface",
+    "x": 26.552,
+    "y": 35.211,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3558&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [4] G",
+    "category": "Upgrade Materials",
+    "description": "Found inside a small chapel, to the left side of the big main road.",
+    "layer": "surface",
+    "x": 45.296,
+    "y": 40.289,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3667&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [4] I",
+    "category": "Upgrade Materials",
+    "description": "Found on a patio, in what seems to be a cemetery district. A skeleton will drop down on you once you approach this item.",
+    "layer": "surface",
+    "x": 45.354,
+    "y": 39.694,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3836&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [5] - 1x Caelid Treasure",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Looted as a treasure in the open field in Caelid.",
+    "layer": "surface",
+    "x": 51.406,
+    "y": 68.14,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4669&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [5] - 1x Castle Sol",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. One found under the wooden platform directly opposite the main gate.",
+    "layer": "surface",
+    "x": 61.736,
+    "y": 23.923,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3763&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [5] - 1x Treasure Leyndell Royal Capital",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse sitting by the cliff looking toward the Erdtree",
+    "layer": "surface",
+    "x": 44.588,
+    "y": 42.731,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6668&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [5] - 1x Yura Questline Reward",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Obtained as a reward by talking to Bloody Finger Hunter Yura at this location after assisting him in defeating Bloody Finger Ravenmount Assassin via a red summon sign.",
+    "layer": "surface",
+    "x": 21.81,
+    "y": 51.218,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8164&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [5] - 5x Sealed Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. A total of 5 can be found inside the Sealed Tunnel : In the hidden chamber past the Site of Grace, drop off the ledge into the lower section and check the alcove in the back for the first stone. In the same chamber, head west to find a chest ( Smithing-Stone Miner's Bell Bearing (2) ). Dispel the illusory wall behind the chest to reveal a lift but ride it. Instead, drop down the ledges on the left to find the second stone. At the bottom of the lift chamber, look to the south and dispel two illusory walls to reveal a large cavern with overgrown roots. Navigate the roots to reach the tunnel in the east and drop down an opening on the right to find the third stone in the back. Beware of the exploding Abnormal Stone Clusters . In the same chamber with the exploders, look for a set of wooden stairs. The fourth stone can be found on a wall next to these stairs. Still in the same chamber, check the wall opposite the stairs. Beware the exploder hidden behind crates and barrels. Hit the wall to reveal a deep pit with roots strewn across. Drop down to the second root and check the ledge in the corner for the final stone.",
+    "layer": "surface",
+    "x": 41.417,
+    "y": 40.875,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2863&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [5] - 6x Altus Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. A total of 6 can be found inside the Altus Tunnel : In the first cavern past the Site of Grace, head through the door on the right to find the first stone in the far wall. Back in the main path, head east into the next cavern. The second stone can be found just past the entry point, to the right. In the same cavern, check under the wooden walkway for the third stone. Still in the same cavern, check next to the overgrown root in the southeast to find the fourth stone. The fifth stone is found in the cavern with the boss door, to the left just as you enter. The final stone is also in the cavern with the boss door, next to a root on the left, closer to the boss door.",
+    "layer": "surface",
+    "x": 36.217,
+    "y": 36.56,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2777&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [5] - 6x Old Altus Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. A total of 6 can be found in the Old Altus Tunnel : The first is found by the wall to the right of the first storage shed you encounter. In the main chamber with the wooden walkways, head to the right and climb the ladder into a smaller cavern with a storage shed. Check the cavity in the wall concealed by explosive barrels to find the second one. Back on the wooden walkways, take the path to the left of the ladder to find the third stone by the wall. The fourth one is in the bottom of the main chamber, by a wall in the east side. In the same area, check the space between the southern shed and the wall for the fifth stone. In the same area, go behind the northern shed and follow the tunnel to a small cavern to find the sixth stone.",
+    "layer": "surface",
+    "x": 30.345,
+    "y": 35.95,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=7452&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [5] - 8x Sellia Crystal Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. A total of 8 can be found inside the Sellia Crystal Tunnel : The first one is found behind the storage shed on the bottom level of the main cavern. The second stone is found on the slope next to the storage shed at the bottom of the main cavern. The third stone is found on the same slope. Continue heading up the slope all the way to the top. The fourth stone is found in the deep indent on the western wall. Jump on top of the central shed in the main cavern and then onto the wooden platform in the east to hop over the barricade blocking a tunnel. Go through the tunnel and pick up the fifth stone on the left. Continuing on from the previous stone, head up the ladder in the next room and head north to find the sixth stone in the cavity in the wall. The seventh stone is found in the same wall cavity. In the same area, climb up the ladder on the side of the shed and continue along the tunnel ahead to find a cavern with a raised wooden platform. Head up to the platform and check the left wall for the final stone.",
+    "layer": "surface",
+    "x": 56.081,
+    "y": 67.599,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2953&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [5] - Ravine-Veiled Village",
+    "category": "Upgrade Materials",
+    "description": "Within Ravine-Veiled Village, near Site of Grace.",
+    "layer": "surface",
+    "x": 28.496,
+    "y": 41.162,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1704&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [5] - Ruin-Strewn Precipice",
+    "category": "Upgrade Materials",
+    "description": "Can be found within the caves that run through the Ruin-Strewn Precipice.",
+    "layer": "surface",
+    "x": 29.369,
+    "y": 41.257,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1707&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [5] - Volcano Manor",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse hanging from a low rooftop (you must drop down from the higher rooftops to reach it).",
+    "layer": "surface",
+    "x": 23.891,
+    "y": 34.698,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6867&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [5] - West from The Shaded Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse leaning against a rock.",
+    "layer": "surface",
+    "x": 29.567,
+    "y": 31.467,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=7351&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [5] - Wyndham Ruins",
+    "category": "Upgrade Materials",
+    "description": "Found on a body in the southern section of",
+    "layer": "surface",
+    "x": 28.618,
+    "y": 37.567,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2800&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [5] A - Raya Lucaria Academy",
+    "category": "Upgrade Materials",
+    "description": "At the lower level accessed descending from the elevator. On a dead body.",
+    "layer": "surface",
+    "x": 22.234,
+    "y": 53.51,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6402&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [5] A - Redmane Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse inside the southern-most building of the castle.",
+    "layer": "surface",
+    "x": 61.476,
+    "y": 77.2,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6417&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [5] A - The Shaded Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse in an alcove in the southern battlements.",
+    "layer": "surface",
+    "x": 31.954,
+    "y": 32.867,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=7676&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [5] B - Raya Lucaria Academy",
+    "category": "Upgrade Materials",
+    "description": "Looted off a corpse at the end of the cut out steps of the Iron ball trap.",
+    "layer": "surface",
+    "x": 23,
+    "y": 53.43,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2281&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [5] B - Redmane Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse at the top of southeast tower of the castle, accessible by climbing ladders inside and on the roof of the southeast building it is attached to.",
+    "layer": "surface",
+    "x": 62.313,
+    "y": 76.947,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6419&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [5] B - The Shaded Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a body between a large dead tree and the southern ramparts.",
+    "layer": "surface",
+    "x": 32.039,
+    "y": 32.666,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2835&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [5] C - The Shaded Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a body in the corner behind the Large Poison Flower, in the northwest of the outer courtyard. You can access this area by getting up on the western ramparts and following it north past the rock barricade.",
+    "layer": "surface",
+    "x": 31.402,
+    "y": 31.686,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2839&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [5] D - The Shaded Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a body in the corner atop the eastern inner walls. You can access this area by climbing a ladder in the eastern side of the inner courtyard.",
+    "layer": "surface",
+    "x": 32.442,
+    "y": 31.821,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2844&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [5] E - The Shaded Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a body being chewed up by a Rotten Stray on the roof of the northeastern building. This can be accessed by crossing the northern ramparts from the northwestern building and then climbing up the stairs in the northeastern building.",
+    "layer": "surface",
+    "x": 32.22,
+    "y": 31.4,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2847&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [6]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on the roof of a small building in Miquella's Haligtree .",
+    "layer": "surface",
+    "x": 57.475,
+    "y": 17.157,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4619&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [6]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on a platform in Miquella's Haligtree filled with scarlet rot zombies.",
+    "layer": "surface",
+    "x": 57.582,
+    "y": 17.337,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4622&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [6] - 3x Hermit's Shack",
+    "category": "Upgrade Materials",
+    "description": "Located in a breakable statue near the Hermit's Shack , Mt. Gelmir . There is a Runebear in the area you can lure to this location to help you break the statue and retrieve its contents.",
+    "layer": "surface",
+    "x": 23.853,
+    "y": 36.984,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=10104&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [6] - 3x Sealed Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. A total of 3 can be found inside the Sealed Tunnel : At the bottom of the lift found halfway through the dungeon, dispel two illusory walls to the south to reveal a large cavern with an Iron Virgin roaming the very bottom level. Lure it to the east end where a statue with a glowing crack can be found. Its attacks can destroy the statue, revealing a set of 3 of the stones.",
+    "layer": "surface",
+    "x": 41.557,
+    "y": 40.988,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=7951&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [6] - 7x Leyndell, Royal Capital",
+    "category": "Upgrade Materials",
+    "description": "There are 7 Smithing Stone (6) to be found: - Can be found on the stairs leading to the lower floor inside Fortified Manor. - Found on a body, at the little patio. - Found on the upper platform. After climbing the ladder, open the door in front of you. Climb the next set of stairs, head to one of the corners of the stairs you just climbed up to find it. - Found near the Omensmirk, on the ground. - Found on the big area, past the Lesser Ulcerated Tree Spirit - Found on a small building past the Fortified Manor, you have to jump around to get there. - Found to the south of the West Capital Rampart site of grace, on an edge, near some poison flowers.",
+    "layer": "surface",
+    "x": 44.347,
+    "y": 41.116,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4111&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [6] - Elphael, Brace of the Haligtree",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse by the wall directly north of the Elphael Inner Wall site of grace.",
+    "layer": "surface",
+    "x": 57.087,
+    "y": 13.721,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=5354&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [6] 5x",
+    "category": "Upgrade Materials",
+    "description": "Dropped by Full-Grown Fallingstar Beast .",
+    "layer": "surface",
+    "x": 25.92,
+    "y": 32.263,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3169&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [6] A - Castle Sol",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on top of the central building in the courtyard, accessible by walking along the top of the outer walls from the northwest.",
+    "layer": "surface",
+    "x": 61.55,
+    "y": 23.758,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8551&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [6] A - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse along the middle of the curved bridge/platform.",
+    "layer": "surface",
+    "x": 84.99,
+    "y": 50.723,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3753&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [6] A - Redmane Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on a ledge in the middle level of the lookout tower outside of Redmane Castle . To reach this item, head for the cliffs to the south of the castle's main gate and then jump onto the tower's roof. There is a ladder you can descend to reach the middle ledge.",
+    "layer": "surface",
+    "x": 60.677,
+    "y": 76.349,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6414&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [6] A - Volcano Manor",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse in the far side of the dining hall in the upper floor of the Volcano Manor .",
+    "layer": "surface",
+    "x": 24.861,
+    "y": 33.81,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3236&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [6] B - Castle Sol",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse in the upper level of a building east of the church.",
+    "layer": "surface",
+    "x": 62.294,
+    "y": 23.77,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3805&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [6] B - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse hanging off a crumbled section of the upper floor of the large building northwest from the Crumbling Beast Grave Depths site of grace. To reach this upper level, head out of the balcony of the next room from the site of grace and jump up onto the red roof right next to it. You can enter the building's upper level from here.",
+    "layer": "surface",
+    "x": 83.47,
+    "y": 50.058,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8615&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [6] B - Redmane Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on the roof of the eastern-most building south of the plaza. This roof can be reached by starting from the eastern gate house building right next to the main entrance. Head up the stairs and then navigate across the ramparts and some wooden bridges among the rooftops.",
+    "layer": "surface",
+    "x": 62.175,
+    "y": 76.062,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6422&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [6] B - Volcano Manor",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on the rooftops of Volcano Manor.",
+    "layer": "surface",
+    "x": 23.97,
+    "y": 34.393,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6868&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [6] C - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. From the Dragon Temple site of grace, take the path on the right to find the rune on a corpse hanging off the edge of the broken passage.",
+    "layer": "surface",
+    "x": 84.157,
+    "y": 48.804,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3959&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [6] C - Redmane Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse inside the chapel to the north of the castle.",
+    "layer": "surface",
+    "x": 61.58,
+    "y": 74.512,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6423&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [6] C - Volcano Manor",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse sitting amongst some tombstone in a tiny island in the lava in the Volcano Manor dungeon.",
+    "layer": "surface",
+    "x": 23.982,
+    "y": 34.573,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4537&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [6] D - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse northeast of the Dragon Temple Rooftop site of grace, in front of a large rotunda building in the rooftop gardens.",
+    "layer": "surface",
+    "x": 85.756,
+    "y": 46.671,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4356&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [6] D - Volcano Manor",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on a rooftop.",
+    "layer": "surface",
+    "x": 24.013,
+    "y": 35.236,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6864&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [6] E - Volcano Manor",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse in the lava-filled cavern of the Volcano Manor .",
+    "layer": "surface",
+    "x": 26.46,
+    "y": 35.452,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3556&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [7]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse in front of a gazebo connecting 3 bridges in Miquella's Haligtree . This area is guarded by two sorcerers.",
+    "layer": "surface",
+    "x": 58.421,
+    "y": 17.639,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4626&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [7] - 3x Castle Sol",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. 3x found on a corpse inside a building full of Rats. This room is accessed by climbing the ladder behind the church and following the path along the outer walls. The building has an opening on the roof that you can jump to.",
+    "layer": "surface",
+    "x": 61.934,
+    "y": 24.286,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3801&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [7] - 3x First Church of Marika",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Three can be obtained from a corpse sitting on a chair atop the cliffs east overlooking the First Church of Marika .",
+    "layer": "surface",
+    "x": 68.578,
+    "y": 28.836,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6209&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [7] - 3x Moonlight Altar",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. 3 more are found in the right-most gazebo by the cliffs in this area.",
+    "layer": "surface",
+    "x": 17.421,
+    "y": 63.339,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4205&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [7] - 3x Moonlight Altar",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. 3 are found in the left-most gazebo by the cliffs in this area.",
+    "layer": "surface",
+    "x": 17.867,
+    "y": 63.87,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4207&code=mapA"
+  }
+);
+mapItems.push(
+  {
+    "name": "Smithing Stone [7] - 3x West Consecrated Snowfield",
+    "category": "Upgrade Materials",
+    "description": "There's a breakable statue with Smithing Stone [7] x3 and Smithing Stone [8] inside. There's a bear uphill to the east that can be used to break it",
+    "layer": "surface",
+    "x": 49.797,
+    "y": 25.281,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8609&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [7] - 5x Sellia Crystal Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. 5 stones are acquired by defeating the Fallingstar Beast at the end of the Sellia Crystal Tunnel .",
+    "layer": "surface",
+    "x": 56.523,
+    "y": 67.703,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2959&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [7] - Elphael, Brace of the Haligtree",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse inside a wine cellar/storage room.",
+    "layer": "surface",
+    "x": 58.421,
+    "y": 15.034,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4819&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [7] - Elphael, Brace of the Haligtree",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse in a large room with many braziers and two Cleanrot Knights.",
+    "layer": "surface",
+    "x": 58.284,
+    "y": 14.239,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4822&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [7] - Guardians' Garrison",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse in the upper ramparts of Guardian's Garrison . A Flame Guardian is protecting it.",
+    "layer": "surface",
+    "x": 63.311,
+    "y": 28.735,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2810&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [7] - Subterranean Shunning-Grounds",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. One found in the Aqueducts section of the Subterranean Shunning-Grounds .",
+    "layer": "surface",
+    "x": 45.808,
+    "y": 38.416,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4600&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [7] - Volcano Manor",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse in the back of the cave in Volcano Manor where you fight the Magma Wyrm",
+    "layer": "surface",
+    "x": 25.108,
+    "y": 35.028,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4540&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [7] A - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a sarcophagus closest to the balcony in the next room after the Crumbling Beast Grave Depths site of grace.",
+    "layer": "surface",
+    "x": 83.504,
+    "y": 50.43,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3914&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [7] B - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse behind a fallen pillar in the northern section past a narrow path laden with dragon statues.",
+    "layer": "surface",
+    "x": 84.444,
+    "y": 47.214,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4284&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [7] C - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on an upper cliff east of the fountain plaza. This is in an upper area accessed after ascending the Dragon Temple Lift northwest of the temple. From the lift, head east and down the stairs past a tree. Climb up the ledges to reach the top of the cliff and collect the stone.",
+    "layer": "surface",
+    "x": 84.728,
+    "y": 48.035,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8705&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [7] D - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse in the second large segment of the upper crumbled section west of the Dragon Temple . To get up here, you need to ascend the Dragon Temple Lift northwest of the temple and then head south from the fountain plaza until you reach the Phantom Tree surrounded by pillars. From here, head west and use the top of another group of pillars to make your way to the start of the upper crumbled section.",
+    "layer": "surface",
+    "x": 83.022,
+    "y": 49.054,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8710&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [7] E - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse near a Phantom Tree amongst several sets of pillar structures up on a hill in the plaza southeast from the Dragon Temple Rooftop site of grace. Beware the Warhawks guarding the area.",
+    "layer": "surface",
+    "x": 86.013,
+    "y": 47.586,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8722&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [7] x2",
+    "category": "Upgrade Materials",
+    "description": "Found on a dead body over a rock near the cliff.",
+    "layer": "surface",
+    "x": 58.733,
+    "y": 67.477,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6427&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [7] x3 - Freezing Lake",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found at the bottom of the western side of the freezing lake, inside a statue with a glowing crack on it. Lure one of the nearby Golems to destroy the statue and collect the item.",
+    "layer": "surface",
+    "x": 64.589,
+    "y": 24.872,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3537&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse inside a building in Miquella's Haligtree . Be careful of the Misbegotten just around the corner.",
+    "layer": "surface",
+    "x": 57.738,
+    "y": 16.663,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4610&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8]",
+    "category": "Upgrade Materials",
+    "description": "Found on a dead body over a rock near the cliff.",
+    "layer": "surface",
+    "x": 58.51,
+    "y": 67.365,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6426&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8] - 3x Consecrated Snowfield",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Looted from a statue close to the Cave of the Forlorn . Lure a Giant Crab or Giant Land Octopus from the area to help you destroy the statue and loot its contents.",
+    "layer": "surface",
+    "x": 57.879,
+    "y": 27.214,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=9836&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8] - 3x Lunar Estate Ruins",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Three can be found in a chest in an underground area concealed by an illusory floor on the eastern side of the ruins. Attack the floor to reveal the path.",
+    "layer": "surface",
+    "x": 23.296,
+    "y": 62.827,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4254&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8] - 3x Moonlight Altar",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. 3 are found in the central gazebo by the cliffs in this area.",
+    "layer": "surface",
+    "x": 17.476,
+    "y": 63.76,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4202&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8] - 4x Consecrated Snowfield",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse laying inside a gazebo connecting 3 bridges in Miquella's Haligtree . This area is guarded by two sorcerers. -Another one can be found on the river, south to the Minor Erdtree. On a statue. Need to be broken by an enemy.",
+    "layer": "surface",
+    "x": 58.577,
+    "y": 17.636,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4628&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8] - Consecrated Snowfields Central Area",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Looted from a body behind the big tree where you get the map piece.",
+    "layer": "surface",
+    "x": 55.23,
+    "y": 26.569,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8732&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8] - Elphael, Brace of the Haligtree",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on a balcony. You can reach this corpse by going into the building on the left and heading up the stairs.",
+    "layer": "surface",
+    "x": 58.403,
+    "y": 14.731,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4825&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8] - Elphael, Brace of the Haligtree",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse under a tree at the bottom level in the north of the city.",
+    "layer": "surface",
+    "x": 57.753,
+    "y": 13.992,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=5306&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8] - Elphael, Brace of the Haligtree",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse in between two ballistae in the north of the city.",
+    "layer": "surface",
+    "x": 57.487,
+    "y": 13.685,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=5308&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8] - Miquella's Haligtree",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found in Miquella's Haligtree , looted from a corpse after two patrolling Oracle Envoy enemies.",
+    "layer": "surface",
+    "x": 57.761,
+    "y": 19.405,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=12359&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8] - Subterranean Shunning-Grounds",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. One found at a dead end tunnel that slopes downwards, inside the central Aqueduct section of the Subterranean Shunning-Grounds beneath the Royal Capital.",
+    "layer": "surface",
+    "x": 46.023,
+    "y": 39.758,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4602&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8] - West Consecrated Snowfield",
+    "category": "Upgrade Materials",
+    "description": "There's a breakable statue with Smithing Stone [7] x3 and Smithing Stone [8] inside. There's a bear uphill to the east that can be used to break it",
+    "layer": "surface",
+    "x": 49.858,
+    "y": 25.113,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8610&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8] - Yelough Anix Ruins",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse resting against a pillar in the northern section of Yelough Anix Ruins .",
+    "layer": "surface",
+    "x": 51.543,
+    "y": 27.896,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4650&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8] - Yelough Anix Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Multiple found in the Yelough Anix Tunnel .",
+    "layer": "surface",
+    "x": 52.037,
+    "y": 30.594,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8603&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8] A - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse sitting at the end of the walkway that you begin on when first visiting the region.",
+    "layer": "surface",
+    "x": 86.77,
+    "y": 50.952,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3687&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8] B - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse along the curved bridge/platform. Before reaching it, a Farum Azula Dragon will swoop in and attack.",
+    "layer": "surface",
+    "x": 84.594,
+    "y": 50.653,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3755&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8] C - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse under a roofed section on the left as you reach the end of the curved platform. Directly opposite the Crumbling Beast Grave Depths site of grace.",
+    "layer": "surface",
+    "x": 84.032,
+    "y": 50.601,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8613&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8] D - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse sitting at the edge of the broken bridge atop the arch ruins, guarded by a Lesser Wormface . This area can be reached by taking the lift in the terrace southwest of the large building next to the Crumbling Beast Grave Depths site of grace and then navigating the slopes and pathways by the cliffs. There is a ladder that you can climb on the back side of the arch to get on top.",
+    "layer": "surface",
+    "x": 83.464,
+    "y": 51.031,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3941&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8] E - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on the eastern edge of the shallow pond infested by Lesser Wormfaces . You can reach this area by taking the lift in the terrace southwest of the large building next to the Crumbling Beast Grave Depths site of grace and then navigating the slopes and pathways by the southern cliffs.",
+    "layer": "surface",
+    "x": 84.182,
+    "y": 51.556,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3937&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8] F - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Found on a corpse at the edge of the large stone platform behind the large building next to the Crumbling Beast Grave Depths site of grace. To reach this platform, head into the terrace southwest of the building and take the lift to the cliffs below. Navigate the floating debris north of the lift. Beware as a Farum Azula Dragon will swoop in and ambush you from behind as you pick up the item.",
+    "layer": "surface",
+    "x": 83.07,
+    "y": 49.661,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8617&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8] G - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. One found on a corpse in front of a sleeping dragon, far south of the fountain plaza. This is in an upper area accessed after ascending the Dragon Temple Lift northwest of the temple.",
+    "layer": "surface",
+    "x": 84.197,
+    "y": 49.121,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4351&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8] H - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse at the edge of the cliffs southeast of the fountain plaza, past a gazebo and a tree. This is in an upper area accessed after ascending the Dragon Temple Lift northwest of the temple.",
+    "layer": "surface",
+    "x": 85.293,
+    "y": 48.502,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4301&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8] I - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse hanging off a ledge in the upper crumbled segment west of the Dragon Temple . To get up here, you will first need to ascend the Dragon Temple Lift northwest of the temple and then head south from the fountain plaza until you reach the Phantom Tree surrounded by pillars. From here, head west and use the top of another group of pillars to make your way to the start of the upper crumbled section. You will need to traverse the massive floating chunks of debris, heading further west. Once you get to the second large chunk, look in the northwest section of it for a series of makeshift stone bridges that will lead you to a gazebo-like structure. Head slightly north from the gazebo to find a corpse holding a Somber Smithing Stone [8] and then drop off the edge onto a small floating platform below to pick up the Smithing Stone [8] .",
+    "layer": "surface",
+    "x": 83.391,
+    "y": 49.405,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8712&code=mapA"
+  },
+  {
+    "name": "Smithing Stone [8] J - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on a floating section of the plaza with the fallen dragon statue, near the Dragon Temple Rooftop site of grace.",
+    "layer": "surface",
+    "x": 85.289,
+    "y": 46.289,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8713&code=mapA"
+  },
+  {
     "name": "Smoldering Shield",
     "category": "Shields",
     "description": "Small Shield. Found on a corpse on the sitting by some tombstones on the same level as the lava in the Volcano Manor dungeon.",
@@ -5500,6 +7136,888 @@ export const mapItems: MapItem[] = [
     "x": 47.987,
     "y": 36.674,
     "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=5955&code=mapA"
+  },
+  {
+    "name": "Somber Ancient Dragon Smithing Stone",
+    "category": "Upgrade Materials",
+    "description": "Dropped by Anastasia, Tarnished-Eater after her third invasion, in the Consecrated Snowfield on the frozen river southwest of Ordina, Liturgical Town .",
+    "layer": "surface",
+    "x": 53.774,
+    "y": 27.054,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=7919&code=mapA"
+  },
+  {
+    "name": "Somber Ancient Dragon Smithing Stone - 1x Elphael, Brace of the Haligtree",
+    "category": "Upgrade Materials",
+    "description": "Located in Elphael, Brace of the Haligtree . Found in a chest hidden between columns near a roof with a corpse carrying an item, after the Prayer Room site of Grace in the Haligtree.",
+    "layer": "surface",
+    "x": 58.008,
+    "y": 14.166,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8299&code=mapA"
+  },
+  {
+    "name": "Somber Ancient Dragon Smithing Stone - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found in a gazebo behind the stationary Farum Azula Dragon sitting at the back of the plaza southeast of the Dragon Temple Rooftop site of grace. The dragon is constantly raining red lightning around the area.",
+    "layer": "surface",
+    "x": 86.199,
+    "y": 48.264,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4357&code=mapA"
+  },
+  {
+    "name": "Somber Ancient Dragon Smithing Stone - Elphael, Brace of the Haligtree",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse in the southern end of the ring walkway in the east.",
+    "layer": "surface",
+    "x": 58.543,
+    "y": 15.556,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4901&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [1]",
+    "category": "Upgrade Materials",
+    "description": "As a drop when defeating a Teardrop Scarab at the top of a ruined building.",
+    "layer": "surface",
+    "x": 40.349,
+    "y": 68.234,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=704&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [1]",
+    "category": "Upgrade Materials",
+    "description": "Found at the edge of the sea.",
+    "layer": "surface",
+    "x": 41.293,
+    "y": 89.793,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6055&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [1]",
+    "category": "Upgrade Materials",
+    "description": "Found on a dead body.",
+    "layer": "surface",
+    "x": 21.614,
+    "y": 58.707,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6405&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [1] - 3x Morne Tunnel",
+    "category": "Upgrade Materials",
+    "description": "You can find a few in Morne Tunnel .",
+    "layer": "surface",
+    "x": 42.47,
+    "y": 83.27,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3895&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [1] - Artist's Shack (Limgrave)",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Southwest of the Artist's Shack in Limgrave . In a bug that looks like a Scarab.",
+    "layer": "surface",
+    "x": 43.438,
+    "y": 71.578,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=14303&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [1] - Church of Dragon Communion",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Obtained by defeating a Teardrop Scarab in the cliffs behind the church.",
+    "layer": "surface",
+    "x": 36,
+    "y": 79.086,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=377&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [1] - Limgrave Tunnels",
+    "category": "Upgrade Materials",
+    "description": "Players can find one at the Limgrave Tunnels. Before taking the second elevator, fall down the edge on the left, and keep falling on the surfaces against the wall. There is a Golden Rune (1) on a platform with a dead body, the next one has a Somber Smithing Stone [1].",
+    "layer": "surface",
+    "x": 40.441,
+    "y": 73.456,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3889&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [1] - Raya Lucaria Crystal Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. One can be found in the Raya Lucaria Crystal Tunnel .",
+    "layer": "surface",
+    "x": 25.676,
+    "y": 49.167,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4102&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [1] - Stormveil Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Dropped by the Lion Guardian east of the castle courtyard.",
+    "layer": "surface",
+    "x": 34.41,
+    "y": 70.172,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1960&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [1] A",
+    "category": "Upgrade Materials",
+    "description": "Located on the field, on a dead body sitting on a chair.",
+    "layer": "surface",
+    "x": 43.075,
+    "y": 74.814,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=702&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [2]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse, fallen with its chair at the beach. Guarded by 4 Spirit Jellyfish .",
+    "layer": "surface",
+    "x": 43.73,
+    "y": 88.724,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=491&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [2]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Dropped by a Teardrop Scarab near the edge of the cliffs.",
+    "layer": "surface",
+    "x": 20.589,
+    "y": 59.708,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1342&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [2] - 1x Blaidd Quest Reward",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Obtained as a reward for completing Forlorn Hound Evergaol with Blaidd, then talking to him outside the Jail.",
+    "layer": "surface",
+    "x": 44.279,
+    "y": 79.614,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=7908&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [2] - 2x Eastern Liurnia of the Lakes Cliffs",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Two can be found on a corpse sitting on a chair by the cliffs to the southeast of Liurnia of the Lakes.",
+    "layer": "surface",
+    "x": 33.235,
+    "y": 63.968,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6408&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [2] - 3x Raya Lucaria Crystal Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. A total of 3 can be found in the Raya Lucaria Crystal Tunnel .",
+    "layer": "surface",
+    "x": 25.621,
+    "y": 48.941,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1611&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [2] - Academy Gate Town",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Dropped by a Teardrop Scarab in the northern ruins of Academy Gate Town.",
+    "layer": "surface",
+    "x": 26.064,
+    "y": 55.182,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8056&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [2] - Gael Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. One can be found inside Gael Tunnel . From the entrance, go to the left of the wooden platform and drop down on to the ledge below. Drop down onto the second ledge ahead and enter the small tunnel to find the stone.",
+    "layer": "surface",
+    "x": 50.325,
+    "y": 68.173,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3766&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [2] - Liurnia Highway North",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. One can be looted from a teardrop scarab that explodes upon defeat.",
+    "layer": "surface",
+    "x": 31.533,
+    "y": 59.274,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8280&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [2] - Teardrop Scarab Liurnia",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Dropped by a Teardrop Scarab found on a small isle on the western side of the lake. This scarab previously dropped Ash of War: Thop's Barrier.",
+    "layer": "surface",
+    "x": 18.428,
+    "y": 54.004,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1959&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [2] - Volcano Manor",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse hanging off of a broken banister in Volcano Manor's dungeon.",
+    "layer": "surface",
+    "x": 25.557,
+    "y": 34.875,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4555&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [3] - 4x Raya Lucaria Crystal Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. A total of 4 can be found in the Raya Lucaria Crystal Tunnel .",
+    "layer": "surface",
+    "x": 25.691,
+    "y": 48.734,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6900&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [3] - Caria Manor",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse at the end of a narrow path along the eastern walls.",
+    "layer": "surface",
+    "x": 23.247,
+    "y": 42.639,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1520&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [3] - Caria Manor",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. One can be looted from a corpse on the manor outer walls, above the entrance to the grounds. This area is only reachable by dropping down from the higher level walkway, right before reaching the lift to the Manor Upper Level site of grace.",
+    "layer": "surface",
+    "x": 22.417,
+    "y": 43.045,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8818&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [3] - Carian Study Hall",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Dropped by a Teardrop Scarab found off the road toward Carian Study Hall . It will be just north of the Study Hall Entrance Site of Grace.",
+    "layer": "surface",
+    "x": 31.233,
+    "y": 54.956,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=10201&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [3] - Western Liurnia of the Lakes",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse sitting on a chair overlooking the cliffs. Beware of enemies that spawn behind you.",
+    "layer": "surface",
+    "x": 18.724,
+    "y": 49.408,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2058&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [3] A - Raya Lucaria Academy",
+    "category": "Upgrade Materials",
+    "description": "Looted off a corpse behind the altar of the Church of the Cuckoo in the academy.",
+    "layer": "surface",
+    "x": 21.08,
+    "y": 53.357,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2151&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [3] B",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse sitting on a chair by the shore.",
+    "layer": "surface",
+    "x": 24.12,
+    "y": 48.489,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1607&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [3] B - Raya Lucaria Academy",
+    "category": "Upgrade Materials",
+    "description": "Looted on the monolith. It can be found past the Graveyard section where you'll see a large rotating lift. It is protected by a Monolith Guardian in Raya Lucaria Academy .",
+    "layer": "surface",
+    "x": 22.676,
+    "y": 53.906,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2209&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [3] F",
+    "category": "Upgrade Materials",
+    "description": "Dropped by a Teadrop Scarab found within the woods.",
+    "layer": "surface",
+    "x": 28.829,
+    "y": 41.867,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1598&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [4]",
+    "category": "Upgrade Materials",
+    "description": "Found on a corpse, or as a drop from the Spider Hand ������near the Road of Iniquity site of grace in������ Mt. Gelmir .",
+    "layer": "surface",
+    "x": 24.455,
+    "y": 33.054,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1343&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [4]",
+    "category": "Upgrade Materials",
+    "description": "Found on a dead body sitting on a chair.",
+    "layer": "surface",
+    "x": 23.32,
+    "y": 44.476,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6400&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [4] - 1x Caelid Scarab Drop",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Dropped by a Teardrop Scarab.",
+    "layer": "surface",
+    "x": 50.758,
+    "y": 67.844,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4667&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [4] - 1x Southern Caelid",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Dropped by a Teardrop Scarab in the southern edges of Caelid .",
+    "layer": "surface",
+    "x": 55.595,
+    "y": 75.458,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=5413&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [4] - 3x Sellia Crystal Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. A total of 3 can be found inside the Sellia Crystal Tunnel : In the main chamber, head up the slope until you are able to jump on the roof of the central storage shed. Jump onto the wooden platform in the east and hop over the barricade blocking the tunnel. Go through the tunnel until you end up in a room with a ladder and wooden walkways above. The stone is found on a body on one of the walkways. Continue to the cavern in the north and climb up the ladder on the side of the shed in front of you. Check the cavity in the wall to the right of the entrance to the next tunnel for the second stone. Continue into the tunnel and check the hollow on the left in the next cavern to find the final stone.",
+    "layer": "surface",
+    "x": 56.27,
+    "y": 67.712,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2954&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [4] - East of the Minor Erdtree (Caelid)",
+    "category": "Upgrade Materials",
+    "description": "Found by the sea past the Minor Erdtree.",
+    "layer": "surface",
+    "x": 51.58,
+    "y": 64.899,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6428&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [4] - Gael Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. One can be found inside Gael Tunnel , in the back of the water-logged cavern crawling with Land Octopi and a single Giant Land Octopus hanging from the ceiling.",
+    "layer": "surface",
+    "x": 50.871,
+    "y": 67.807,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3768&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [4] - Old Altus Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found at the bottom of the main chamber, on a corpse inside the northern storage shed.",
+    "layer": "surface",
+    "x": 30.476,
+    "y": 36.093,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=7455&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [4] - Raya Lucaria Academy",
+    "category": "Upgrade Materials",
+    "description": "Looted off a corpse that can be found in a small room with some small crabs. Located at the rooftops section of Raya Lucaria Academy .",
+    "layer": "surface",
+    "x": 21.074,
+    "y": 53.473,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2274&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [4] - Ruin-Strewn Precipice",
+    "category": "Upgrade Materials",
+    "description": "Can be found in the caves that go through the Ruin-Strewn Precipice.",
+    "layer": "surface",
+    "x": 28.954,
+    "y": 40.161,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1708&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [4] - Sellia Hideaway",
+    "category": "Upgrade Materials",
+    "description": "Looted from a corpse in Sellia Hideaway , in the middle of a small tunnel leading to the top",
+    "layer": "surface",
+    "x": 59.217,
+    "y": 67.449,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=10375&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [4] - West Caelid",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a dead body sitting on a chair.",
+    "layer": "surface",
+    "x": 51.705,
+    "y": 69.672,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6413&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [4] A",
+    "category": "Upgrade Materials",
+    "description": "Found on a body in the swamp next to a Cleanrot Knight",
+    "layer": "surface",
+    "x": 56.337,
+    "y": 71.118,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3241&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [5]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Dropped by Full-Grown Fallingstar Beast .",
+    "layer": "surface",
+    "x": 25.331,
+    "y": 32.684,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3168&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [5]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse hanging off of a ledge in Volcano Manor's dungeon. After going up the cage lift, turn right to find it.",
+    "layer": "surface",
+    "x": 25.096,
+    "y": 35.632,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4529&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [5] - 3x Leyndell, Royal Capital",
+    "category": "Upgrade Materials",
+    "description": "On a side room, you can find this on a body.",
+    "layer": "surface",
+    "x": 45.286,
+    "y": 41.553,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4124&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [5] - Altus Plateau",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Dropped from a Teardrop Scarab surrounded by Wormface enemies in Altus Plateau",
+    "layer": "surface",
+    "x": 34.22,
+    "y": 35.529,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=9814&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [5] - Altus Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. One can be found inside the Altus Tunnel . In the second cavern, head up the wooden platform and look along the walls on the right to find the stone.",
+    "layer": "surface",
+    "x": 36.732,
+    "y": 36.569,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2778&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [5] - Deep Siofra Well Ravine",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a body lying against the cluster of crystals in the ravine south of the Deep Siofra Well . Also accessible by heading north from the Swamp of Aeonia .",
+    "layer": "surface",
+    "x": 54.964,
+    "y": 67.432,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4521&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [5] - Gaol Cave",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. 1x Found as a treasure inside a chest in a cell within Gaol Cave.",
+    "layer": "surface",
+    "x": 51.097,
+    "y": 70.294,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4253&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [5] - Old Altus Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found at the bottom of the main chamber. Head behind the northern storage shed and follow the tunnel to a small cavern where you can find the stone.",
+    "layer": "surface",
+    "x": 30.733,
+    "y": 36.041,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=7454&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [5] - Redmane Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse by the large monument surrounded by chairs in the north of the castle.",
+    "layer": "surface",
+    "x": 62.114,
+    "y": 74.838,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6424&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [5] - Sealed Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. One can be found inside the Sealed Tunnel : At the bottom of the chamber with the lift, dispel two illusory walls to the south to reveal a large cavern with overgrown roots and an Iron Virgin roaming the lower section. Make your way to the lower section of this cavern and check the northwest wall to find the stone.",
+    "layer": "surface",
+    "x": 41.658,
+    "y": 41.116,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3156&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [5] - The Shaded Castle",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a body by the dead tree on the western end of the outer courtyard, next to the western rampart.",
+    "layer": "surface",
+    "x": 31.243,
+    "y": 31.912,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2838&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [5] A - Volcano Manor",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Dropped by a teardrop scarab sitting on a small rooftop.",
+    "layer": "surface",
+    "x": 23.848,
+    "y": 34.525,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6866&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [5] B - Volcano Manor",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Dropped by a Teardrop Scarab rolling on cooled lava in the Volcano Manor dungeon.",
+    "layer": "surface",
+    "x": 25.255,
+    "y": 34.76,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4550&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [6]",
+    "category": "Upgrade Materials",
+    "description": "Found on a body sat on a chair overlooking the edge, there is a wolf sat next to them.",
+    "layer": "surface",
+    "x": 29.714,
+    "y": 33.572,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2314&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [6] - 1x Leyndel Royal Capital",
+    "category": "Upgrade Materials",
+    "description": "Upgrade material. Found behind a statue in a ditch within Leyndell Royal Capital.",
+    "layer": "surface",
+    "x": 47.454,
+    "y": 38.831,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6664&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [6] - 2x Old Altus Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Two are found inside the Old Altus Tunnel : When entering the main chamber with the wooden walkways, head to the right and climb up the ladder to a small cavern. Check to the left of the storage shed to find the stone. You may need to crouch/roll to get into the opening. The second stone is found in the bottom level of the main chamber, behind the southern shed.",
+    "layer": "surface",
+    "x": 30.925,
+    "y": 35.864,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=7453&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [6] - Sellia Crystal Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. One is acquired by defeating the Fallingstar Beast at the end of the Sellia Crystal Tunnel .",
+    "layer": "surface",
+    "x": 56.737,
+    "y": 67.52,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=7909&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [6] A - Volcano Manor",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found in an underground room filled with Basiliks next to the large lava lake",
+    "layer": "surface",
+    "x": 24.907,
+    "y": 34.158,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6862&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [6] B - Volcano Manor",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse slouched over a fountain in the Volcano Manor dungeon surrounded by Burning Slugs .",
+    "layer": "surface",
+    "x": 23.903,
+    "y": 35.486,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4526&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [7] - 1x near Zamor Ruins",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Dropped by a Teardrop Scarab sitting by a tree near Zamor Ruins .",
+    "layer": "surface",
+    "x": 58.306,
+    "y": 34.525,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=7401&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [7] - Consecrated Snowfield",
+    "category": "Upgrade Materials",
+    "description": "Found with a visible Teardrop Scarab atop a rock around Consecrated Snowfield .",
+    "layer": "surface",
+    "x": 56.581,
+    "y": 26.23,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8606&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [7] - Flame Peak",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Drops from a Lesser Spider Hand",
+    "layer": "surface",
+    "x": 64.412,
+    "y": 31.296,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3563&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [7] - Forbidden Lands",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found in the Forbidden Lands on a corpse inside the giant skull on the hill before the encounter with Black Blade Kindred.",
+    "layer": "surface",
+    "x": 55.671,
+    "y": 38.132,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=9101&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [7] - Volcano Manor",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse hanging from the balcony.",
+    "layer": "surface",
+    "x": 24.797,
+    "y": 34.5,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6863&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [7] A - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on a chunk of floating debris, on the eastern edge of the heavily-ruined section between the Tempest-Facing Balcony and the Dragon Temple .",
+    "layer": "surface",
+    "x": 83.507,
+    "y": 49.313,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3948&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [7] B - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse by the cliffs underneath a section of the Great Bridge , accessible by circling around the plaza southeast of the Dragon Temple Rooftop site of grace.",
+    "layer": "surface",
+    "x": 85.292,
+    "y": 48.087,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8725&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [8]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse draped over the balcony of a building in Miquella's Haligtree .",
+    "layer": "surface",
+    "x": 57.585,
+    "y": 16.479,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4612&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [8] (A)- Consecrated Snowfield",
+    "category": "Upgrade Materials",
+    "description": "Found with a visible Teardrop Scarab atop a rock formation west of the Minor Erdtree (Consecrated Snowfield) .",
+    "layer": "surface",
+    "x": 56.377,
+    "y": 25.781,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8608&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [8] - 1x Moonfolk Ruins",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. One found in a chest inside an underground treasure room in the northest section of the ruins. The entrance is concealed by an illusory floor. Hit the floor to reveal the stairs.",
+    "layer": "surface",
+    "x": 20.238,
+    "y": 61.142,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4149&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [8] - Castle Sol",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse siting on a ledge outside Castle Sol .",
+    "layer": "surface",
+    "x": 61.556,
+    "y": 24.512,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=9845&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [8] - Church of the Eclipse Castle Sol",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found in Castle Sol next to the Church of the Eclipse Grace. Going outside the church (to the south) around the church and up the wall till you reach the church roof. You will have to platform onto the broken wall and hug the wall of the church to reach it. It will be on a corpse hanging off the edge. Killing the crossbowmen makes this easier to do.",
+    "layer": "surface",
+    "x": 61.552,
+    "y": 23.626,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=15451&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [8] - Consecrated Snowfield",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Defeat a Teardrop Scarab to obtain it.",
+    "layer": "surface",
+    "x": 56.175,
+    "y": 31.647,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3174&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [8] - Consecrated Snowfield",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. From the top of Albinauric Rise jump south onto some rocks and further up until you are on top of the rocks. It is located next to a large gravestone.",
+    "layer": "surface",
+    "x": 57.656,
+    "y": 28.906,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=9846&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [8] - Dragonbarrow West",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Dropped by a Teardrop Scarab found sitting on a fallen tree in western Dragonbarrow . Warning: This scarab explodes upon death, dealing massive damage!",
+    "layer": "surface",
+    "x": 56.197,
+    "y": 64.816,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2317&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [8] - East of the Church of Repose",
+    "category": "Upgrade Materials",
+    "description": "Dropped from a Teardrop Scarab found at the top of a small mountain. Will vanish if it spots you or you get too close.",
+    "layer": "surface",
+    "x": 62.163,
+    "y": 34.75,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3549&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [8] - Yelough Anix Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Somber Smithing Stones [8] are found throughout the tunnel as little shinny white stones on the wall or at the end of some cavities.",
+    "layer": "surface",
+    "x": 51.707,
+    "y": 30.179,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4495&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [8] A - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse hanging off a ledge in the upper crumbled segment west of the Dragon Temple . To get up here, you will first need to ascend the Dragon Temple Lift northwest of the temple and then head south from the fountain plaza until you reach the Phantom Tree surrounded by pillars. From here, head west and use the top of another group of pillars to make your way to the start of the upper crumbled section. You will need to traverse the massive floating chunks of debris, heading further west. Once you get to the second large chunk, look in the northwest section of it for a series of makeshift stone bridges that will lead you to a gazebo-like structure. Head slightly north from the gazebo to find the corpse that holds the stone, hanging off the right edge.",
+    "layer": "surface",
+    "x": 83.275,
+    "y": 49.359,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8711&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [8] B",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Dropped by a Teardrop Scarab found in the lower valley.",
+    "layer": "surface",
+    "x": 61.053,
+    "y": 28.29,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3514&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [8] B - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on a balcony south of the Dragon Temple Rooftop site of grace. To reach this balcony, you will need to head north from the Great Bridge , through the archway and exit to the balcony on the right.",
+    "layer": "surface",
+    "x": 85.448,
+    "y": 46.86,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4509&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [9]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse inside a small building in Miquella's Haligtree .",
+    "layer": "surface",
+    "x": 57.375,
+    "y": 16.953,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4616&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [9]",
+    "category": "Upgrade Materials",
+    "description": "Consecrated Snowfield : Found on a corpse sitting on a chair overlooking the edge east of the Apostate Derelict .",
+    "layer": "surface",
+    "x": 53.047,
+    "y": 22.354,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=7802&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [9] - Elphael, Brace of the Haligtree",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse inside a room at the northern end of the ring walkway in the east. Guarded by a Crystalian .",
+    "layer": "surface",
+    "x": 58.612,
+    "y": 14.403,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4951&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [9] - Elphael, Brace of the Haligtree",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse in a dark building in the northeast guarded by 3 Crystalians. This building is in the bottom level of the area.",
+    "layer": "surface",
+    "x": 58.049,
+    "y": 14.399,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=5302&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [9] - Farum Greatbridge",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Dropped by a Teardrop Scarab found to the west of Farum Greatbridge.",
+    "layer": "surface",
+    "x": 61.751,
+    "y": 61.118,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=5601&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [9] - West Minor Erdtree (Consecrated Snowfield)",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found with a invisible Teardrop Scarab atop a rock formation west of the Minor Erdtree (Consecrated Snowfield) .",
+    "layer": "surface",
+    "x": 56.764,
+    "y": 25.974,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8607&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [9] - Western Consecrated Snowfield",
+    "category": "Upgrade Materials",
+    "description": "Can be looted on top of a rock formation in Consecrated Snowfield North of the Hidden Path to the Haligtree",
+    "layer": "surface",
+    "x": 55.68,
+    "y": 30.056,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8618&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [9] - Yelough Anix Tunnel",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. On the right, in a cavity where you find the Onyx Lord .",
+    "layer": "surface",
+    "x": 52.062,
+    "y": 30.09,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4638&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [9] A",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse sitting in a chair on the bridge south of Stargazer's Ruins .",
+    "layer": "surface",
+    "x": 61.425,
+    "y": 27.527,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3410&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [9] A - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse under a tree by the cliffside south of the large building next to the Crumbling Beast Grave Depths site of grace. You can reach this area by taking the lift in the terrace southwest of the building.",
+    "layer": "surface",
+    "x": 83.479,
+    "y": 50.781,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3944&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [9] B - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found under a leaning pillar in the heavily-ruined section just before jumping towards the Dragon Temple .",
+    "layer": "surface",
+    "x": 83.577,
+    "y": 48.611,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3955&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [9] C - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found in the southwest at the bottom level of the Dragon Temple accessed by turning around to face west from the Site of Grace and then jumping down the crumbled ledges below. From here, head into the central archway and then turn right to find a crypt with several sarcophagi. Go through the archway in the west to an outdoor area where you can find a corpse holding the stone between two pillars.",
+    "layer": "surface",
+    "x": 84.035,
+    "y": 48.81,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=8702&code=mapA"
+  },
+  {
+    "name": "Somber Smithing Stone [9] D - Crumbling Farum Azula",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on an upper level balcony in the northern section past the Dragon Temple . From the north end of the temple, navigate your way across the floating debris to a narrow path laden with dragon statues, at the end of which you will find a spiral staircase on the right side. Head up these stairs and continue west to a balcony with a sealed Imp Statue barrier and several fallen pillars. The corpse holding the stone can be found behind one of these pillars.",
+    "layer": "surface",
+    "x": 84.099,
+    "y": 47.314,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4285&code=mapA"
   },
   {
     "name": "Spear Talisman",
@@ -6490,7 +9008,9 @@ export const mapItems: MapItem[] = [
     "x": 53.762,
     "y": 67.496,
     "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1163&code=mapB"
-  },
+  }
+);
+mapItems.push(
   {
     "name": "Golden Seed - Ainsel River",
     "category": "Flask Upgrades",
@@ -6753,6 +9273,717 @@ export const mapItems: MapItem[] = [
     "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1761&code=mapB"
   },
   {
+    "name": "Smithing Stone [1] - 3x Uhl Palace Ruins",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on the corpse hanging on the cliff's edge on the higher section of Uhl Palace Ruins, accessed from the secretive tunnel.",
+    "layer": "underground",
+    "x": 27.312,
+    "y": 50.366,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1416&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [1] - Ainsel River Sluice Gate",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on the ground level of the area, on a corpse sitting by a standing pillar. This is under the beam that has Smithing Stone (4)",
+    "layer": "underground",
+    "x": 27.828,
+    "y": 51.34,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1369&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [2]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse dangling from the edge of the upper platform of a ruin in Siofra River .",
+    "layer": "underground",
+    "x": 49.172,
+    "y": 72.604,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1190&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [2]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse slouched at the base of a tree near the large collapsed pillars in Siofra River .",
+    "layer": "underground",
+    "x": 52.55,
+    "y": 71.626,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1317&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [2]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse in a corner at the bottom of a ruin in Nokron, Eternal City .",
+    "layer": "underground",
+    "x": 52.109,
+    "y": 69.598,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1588&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [2] - 3x",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse slumped under a tree in Siofra River",
+    "layer": "underground",
+    "x": 54.492,
+    "y": 71.273,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=12452&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [2] - 3x Ainsel River Downstream",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Three found on one of the corpses in this ant nest.",
+    "layer": "underground",
+    "x": 25.923,
+    "y": 50.851,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1370&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [2] - 3x Siofra River",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Three found on a corpse laying just underneath the ledge an Ancestral Follower is standing on in Siofra River .",
+    "layer": "underground",
+    "x": 54.445,
+    "y": 69.193,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1316&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [3]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse sitting at the top of the stone ruins in Siofra River .",
+    "layer": "underground",
+    "x": 54.634,
+    "y": 70.885,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1318&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [3]",
+    "category": "Upgrade Materials",
+    "description": "Found on a corpse in a mountain of bodies, guarded by giant ants.",
+    "layer": "underground",
+    "x": 29.225,
+    "y": 51.355,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1410&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [3]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse in a dead end of the Ainsel River caves.",
+    "layer": "underground",
+    "x": 29.863,
+    "y": 51.151,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1457&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [3]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on a ledge overlooking the water in Nokron, Eternal City .",
+    "layer": "underground",
+    "x": 47.689,
+    "y": 72.717,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1552&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [3]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found in a room locked behind an imp statue in Nokron, Eternal City .",
+    "layer": "underground",
+    "x": 50.703,
+    "y": 71.622,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1899&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [3] - 2x Siofra River",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse within the second floor of a wooden shack in Siofra River .",
+    "layer": "underground",
+    "x": 53.371,
+    "y": 70.237,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=13201&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [3] - 2x Uhl Palace Ruins",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Two found on a corpse lying on the edge of one of the standing column structures. Can be accessed by climbing up the tipped over pillar next to it.",
+    "layer": "underground",
+    "x": 27.336,
+    "y": 50.003,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1415&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [3] - 3x Uhl Palace Ruins",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Three found on a corpse behind the large stone building, above the Ainsel River Downstream site of grace.",
+    "layer": "underground",
+    "x": 26.521,
+    "y": 50.385,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1464&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [3] - Ainsel River Sluice Gate",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse at the base of the Sluice Gate.",
+    "layer": "underground",
+    "x": 28.508,
+    "y": 51.297,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1459&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [4]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on the ground level in a room in Siofra River with a Giant Poison Flower .",
+    "layer": "underground",
+    "x": 52.72,
+    "y": 69.397,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1160&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [4]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on one of the corpses at the base of the waterfall by the water's edge in Siofra River .",
+    "layer": "underground",
+    "x": 49.202,
+    "y": 71.652,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1203&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [4]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse dangling from the side of the ruins in Siofra River .",
+    "layer": "underground",
+    "x": 48.813,
+    "y": 72.461,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1346&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [4]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse sitting against a ruined wall in northern Uhl Palace Ruins .",
+    "layer": "underground",
+    "x": 29.485,
+    "y": 48.45,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1966&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [4]",
+    "category": "Upgrade Materials",
+    "description": "Found on a corpse in the caves of Ainsel River Main .",
+    "layer": "underground",
+    "x": 23.898,
+    "y": 48.694,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2772&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [4]",
+    "category": "Upgrade Materials",
+    "description": "On a dead body where the Flying Giant Ants are.",
+    "layer": "underground",
+    "x": 45.212,
+    "y": 40.082,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=5109&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [4]",
+    "category": "Upgrade Materials",
+    "description": "Over a couple of gravestones.",
+    "layer": "underground",
+    "x": 43.18,
+    "y": 38.281,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=5211&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [4] - Ainsel River Well Sluice Gate",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Item. Found on a corpse dangling from the top of a tall archway.",
+    "layer": "underground",
+    "x": 27.73,
+    "y": 51.205,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1411&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [5]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse slouched over in a corner in the courtyards of Nokron, Eternal City .",
+    "layer": "underground",
+    "x": 47.16,
+    "y": 73.364,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1539&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [5]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse in a graveyard in Nokron, Eternal City .",
+    "layer": "underground",
+    "x": 49.057,
+    "y": 73.212,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1557&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [5]",
+    "category": "Upgrade Materials",
+    "description": "Found on a corpse on the ruined supporting structures of Nokron, Eternal City . It is located a level below the phantom in the bridge ruin.",
+    "layer": "underground",
+    "x": 51.857,
+    "y": 70.712,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1581&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [5]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse sitting against a column ruin in Nokron, Eternal City .",
+    "layer": "underground",
+    "x": 53.559,
+    "y": 70.239,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1586&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [5]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse sitting by the edge of the water flowing down the Siofra Aqueduct .",
+    "layer": "underground",
+    "x": 53.373,
+    "y": 67.896,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1603&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [5]",
+    "category": "Upgrade Materials",
+    "description": "Found on a corpse in the caves of Ainsel River Main .",
+    "layer": "underground",
+    "x": 23.817,
+    "y": 48.785,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2774&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [5]",
+    "category": "Upgrade Materials",
+    "description": "On the rooftop, jump from the root next to it. Deeproot Depths",
+    "layer": "underground",
+    "x": 43.781,
+    "y": 37.723,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=5256&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [5]",
+    "category": "Upgrade Materials",
+    "description": "Scavenged on the ground in Deeproot Depths",
+    "layer": "underground",
+    "x": 42.878,
+    "y": 35.461,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=9016&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [5] - Grand Cloister",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on the staircase at the end of the main hall.",
+    "layer": "underground",
+    "x": 21.059,
+    "y": 54.689,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=6396&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [6]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse at the side of a building in Nokstella, Eternal City .",
+    "layer": "underground",
+    "x": 25.343,
+    "y": 47.274,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2756&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [6]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse in the corner of the base of a building in Nokstella, Eternal City . Beware of the snail ambush after you pick the item up.",
+    "layer": "underground",
+    "x": 24.909,
+    "y": 47.052,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2764&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [6]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse inside a small cave in the northern section of the blood marsh. Guarded by Albinaurics.",
+    "layer": "underground",
+    "x": 60.141,
+    "y": 69.79,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4620&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [6]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a body lying against the walls",
+    "layer": "underground",
+    "x": 60.305,
+    "y": 71.408,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4805&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [6]",
+    "category": "Upgrade Materials",
+    "description": "On a dead body in a ruined structure next to the waterfalls.",
+    "layer": "underground",
+    "x": 44.862,
+    "y": 39.09,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=5151&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [6]",
+    "category": "Upgrade Materials",
+    "description": "Climb up the root to reach it.",
+    "layer": "underground",
+    "x": 43.98,
+    "y": 37.555,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=5217&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [6]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found up on a tree on the right.",
+    "layer": "underground",
+    "x": 47.964,
+    "y": 40.13,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=9009&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [6]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on the rooftop of the ruins. Deeproot Depths",
+    "layer": "underground",
+    "x": 43.313,
+    "y": 36.751,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=9019&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [6]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a dead corpse inside a ruin. Nokstella, Eternal City",
+    "layer": "underground",
+    "x": 26.472,
+    "y": 47.755,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=9029&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [6] - Grand Cloister",
+    "category": "Upgrade Materials",
+    "description": "Found on a corpse at the bottom of the waterfall in Grand Cloister . A huge grotesque creature will ambush you when you pick up the item.",
+    "layer": "underground",
+    "x": 22.505,
+    "y": 54.089,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3004&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [7]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse in the dry section north of the blood marsh.",
+    "layer": "underground",
+    "x": 59.498,
+    "y": 70.097,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4625&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [7]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse by a cluster of graves along the steps leading to the mausoleum.",
+    "layer": "underground",
+    "x": 58.233,
+    "y": 71.05,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4635&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [7]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade material. Found on the stairs near the whirlpool in Deeproot Depths",
+    "layer": "underground",
+    "x": 44.71,
+    "y": 37.046,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=9013&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [7] - Grand Cloister",
+    "category": "Upgrade Materials",
+    "description": "Found on a corpse at the bottom of the waterfall in Grand Cloister . A huge grotesque creature will ambush you when you pick up the item.",
+    "layer": "underground",
+    "x": 22.389,
+    "y": 54.114,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3005&code=mapB"
+  },
+  {
+    "name": "Smithing Stone [8]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a body laying against one of the tall rock pillars.",
+    "layer": "underground",
+    "x": 59.655,
+    "y": 70.581,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4811&code=mapB"
+  },
+  {
+    "name": "Somber Ancient Dragon Smithing Stone - Mohgwyn Dynasty Mausoleum",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found in a chest at the foot of a statue opposite the lift. Guarded by numerous Albinaurics and a Sanguine Noble .",
+    "layer": "underground",
+    "x": 58.171,
+    "y": 71.546,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4701&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [2]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on a small island opposite to Hallowhorn Grounds .",
+    "layer": "underground",
+    "x": 51.779,
+    "y": 71.552,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1167&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [2]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse slouched over at the top of the ruins in Siofra River .",
+    "layer": "underground",
+    "x": 54.215,
+    "y": 70.618,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1304&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [3] - Ainsel River Downstream",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse sitting at the edge of the cliff overlooking Lake of Rot from Ainsel River side. It is next to some butterflies.",
+    "layer": "underground",
+    "x": 25.032,
+    "y": 51.105,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1401&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [4]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse behind the stone building in Nokron, Eternal City .",
+    "layer": "underground",
+    "x": 48.391,
+    "y": 71.948,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1555&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [5]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found by looting a corpse inside the large stone ruin at the highest level of the Siofra River .",
+    "layer": "underground",
+    "x": 52.046,
+    "y": 69.33,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1312&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [5]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Dropped by a Teardrop Beetle on the bridge in Nokron, Eternal City .",
+    "layer": "underground",
+    "x": 50.606,
+    "y": 72.699,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1567&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [5]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse near the cliffs in Nokron, Eternal City .",
+    "layer": "underground",
+    "x": 49.336,
+    "y": 69.717,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1577&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [6]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Dropped by the spear-wielding Lesser Crucible Knight in Siofra Aqueduct .",
+    "layer": "underground",
+    "x": 53.522,
+    "y": 67.041,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1602&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [6]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse hanging off a ledge in southern Uhl Palace Ruins .",
+    "layer": "underground",
+    "x": 27,
+    "y": 49.747,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2714&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [6]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Dropped by a Teardrop Scarab at the base of some stairs in Nokstella, Eternal City .",
+    "layer": "underground",
+    "x": 24.271,
+    "y": 46.951,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2759&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [6]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Dropped by a Teardrop Scarab chilling in the water in the Lake of Rot .",
+    "layer": "underground",
+    "x": 23.617,
+    "y": 53.718,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=3000&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [6]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Dropped by a Teardrop Scarab behind the ruins",
+    "layer": "underground",
+    "x": 44.938,
+    "y": 37.555,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=5202&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [6]",
+    "category": "Upgrade Materials",
+    "description": "Found in the ruin near the far north edge cliff.",
+    "layer": "underground",
+    "x": 43.654,
+    "y": 35.287,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=5252&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [6]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found inside the Ants Nest in Deeproot Depths",
+    "layer": "underground",
+    "x": 47.138,
+    "y": 38.785,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=9010&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [6]",
+    "category": "Upgrade Materials",
+    "description": "Dropped by a Teardrop Scarab .�� Deeproot Depths",
+    "layer": "underground",
+    "x": 42.395,
+    "y": 36.624,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=9020&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [7]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found in a chest at the back of a room Nokstella, Eternal City protected by Silver Tears .",
+    "layer": "underground",
+    "x": 25.087,
+    "y": 46.832,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2758&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [7]",
+    "category": "Upgrade Materials",
+    "description": "Found on a corpse laying on a ledge in Nokstella, Eternal City overlooking Ainsel River .",
+    "layer": "underground",
+    "x": 24.716,
+    "y": 48.022,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2765&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [7]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse at the edge of a tiny landmass in north-western Lake of Rot .",
+    "layer": "underground",
+    "x": 22.432,
+    "y": 50.745,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2987&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [7]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse lying in a ruin in the Lake of Rot .",
+    "layer": "underground",
+    "x": 24.773,
+    "y": 50.497,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2996&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [7]",
+    "category": "Upgrade Materials",
+    "description": "In a room at the ruins.",
+    "layer": "underground",
+    "x": 43.178,
+    "y": 36.768,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=5219&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [7]",
+    "category": "Upgrade Materials",
+    "description": "In a small cave access from the side next to the Walking Mausoleum. Located on the small cliff right behind the rune bear that gives the Prince of Death's Cyst ��in Deeproot Depths",
+    "layer": "underground",
+    "x": 45.88,
+    "y": 38.177,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=5254&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [7]",
+    "category": "Upgrade Materials",
+    "description": "Found at Nokstella, Eternal City one of the window is open with a chest in it.",
+    "layer": "underground",
+    "x": 25.953,
+    "y": 48.405,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=7913&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [7]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse. Deeproot Depths",
+    "layer": "underground",
+    "x": 42.844,
+    "y": 36.5,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=9018&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [7]",
+    "category": "Upgrade Materials",
+    "description": "Scavenged from a Corpse inside a building at Deeproot Depths .",
+    "layer": "underground",
+    "x": 42.215,
+    "y": 37.566,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=9502&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [7] - Malformed Star",
+    "category": "Upgrade Materials",
+    "description": "Dropped by the Malformed Star in Uhl Palace Ruins .",
+    "layer": "underground",
+    "x": 29.198,
+    "y": 48.065,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=9028&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [8]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse laying on top of a tipped over ruin in the Lake of Rot .",
+    "layer": "underground",
+    "x": 25.342,
+    "y": 53.572,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2989&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [8]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse dangling off of a small island in the Lake of Rot .",
+    "layer": "underground",
+    "x": 23.795,
+    "y": 49.725,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2995&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [9]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a corpse on the raised platform in Lake of Rot where you fight the Lesser Alabaster Lord .",
+    "layer": "underground",
+    "x": 23.173,
+    "y": 52.271,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2999&code=mapB"
+  },
+  {
+    "name": "Somber Smithing Stone [9]",
+    "category": "Upgrade Materials",
+    "description": "Upgrade Material. Found on a body inside the cave on the right down the path from the Palace Approach Ledge-Road Site of Grace",
+    "layer": "underground",
+    "x": 60.5,
+    "y": 70.749,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4809&code=mapB"
+  },
+  {
     "name": "Staff of the Avatar",
     "category": "Weapons",
     "description": "Drops from the Erdtree Avatar you encounter near the Great Waterfall Crest site of grace. To reach the area, you have to defeat the Valiant Gargoyle duo boss then lie down on the coffin at the back",
@@ -6888,6 +10119,15 @@ export const mapItems: MapItem[] = [
     "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=7719&code=mapC"
   },
   {
+    "name": "Somber Ancient Dragon Smithing Stone (Ashen Capital)",
+    "category": "Upgrade Materials",
+    "description": "From the main Leyndell, Capital of Ash Site of Grace , go west, along the dragon. Enter the building past it and climb the ladder. Over the railing to the right is an enemy gargoyle, guarding a corpse with the stone.",
+    "layer": "ashen",
+    "x": 44.533,
+    "y": 40.591,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=7715&code=mapC"
+  },
+  {
     "name": "Staff of the Avatar",
     "category": "Weapons",
     "description": "Staff dropped by a Lesser Erdtree Avatar.",
@@ -6922,6 +10162,78 @@ export const mapItems: MapItem[] = [
     "x": 51.424,
     "y": 65.866,
     "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659373&code=mapD"
+  },
+  {
+    "name": "Ancient Dragon Smithing Stone",
+    "category": "Upgrade Material",
+    "description": "Dropped by the Ancient Dragon Senessax upon defeat.",
+    "layer": "shadow",
+    "x": 60.939,
+    "y": 65.296,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655844&code=mapD"
+  },
+  {
+    "name": "Ancient Dragon Smithing Stone",
+    "category": "Upgrade Material",
+    "description": "After using the second spiritspring, continue heading east and you'll find this on a corpse sitting in a corner.",
+    "layer": "shadow",
+    "x": 62.032,
+    "y": 64.7,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659247&code=mapD"
+  },
+  {
+    "name": "Ancient Dragon Smithing Stone  - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "Ruined Forge Lava Intake. Use the column you have lowered with the lever as a bridge and climb it until the end. Beware of the fire blob, and then at the top, turn right and jump to reach the stairs. Climb them up and interact with a furnace to obtain this item and the Anvil Hammer.",
+    "layer": "shadow",
+    "x": 47.273,
+    "y": 58.344,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655190&code=mapD"
+  },
+  {
+    "name": "Ancient Dragon Smithing Stone - Dragon's Pit",
+    "category": "Upgrade Material",
+    "description": "x1 Ancient Dragon Smithing Stone can be looted inside a treasure chest. The chest is located at the top area of the Suppressing Pillar, just ride the lift to reach it.",
+    "layer": "shadow",
+    "x": 48.219,
+    "y": 60.908,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655552&code=mapD"
+  },
+  {
+    "name": "Ancient Dragon Smithing Stone - Dragon's Pit",
+    "category": "Upgrade Material",
+    "description": "Dropped by the Magma Wyrm mini boss found in Dragon's Pit .The Lesser Magma Wyrm can be found in its lair.",
+    "layer": "shadow",
+    "x": 48.561,
+    "y": 59.772,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=658980&code=mapD"
+  },
+  {
+    "name": "Ancient Dragon Smithing Stone - Ruined Forge of Starfall Past",
+    "category": "Upgrade Material",
+    "description": "The upgrade material is acquired after examining the altar of the Ruined Forge of Starfall Past. The altar is found on the second level. To reach the altar, you must pull the lever to make the iron door rise, and use it as a platform to jump across to the second level where the altar is.",
+    "layer": "shadow",
+    "x": 49.059,
+    "y": 54.358,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=658912&code=mapD"
+  },
+  {
+    "name": "Ancient Dragon Smithing Stone - Taylew's Ruined Forge",
+    "category": "Upgrade Material",
+    "description": "Use the giant platform in the middle, but don't jump to the other side. Climb all the way up and jump to the platform on the left. There are 2 Smithing Golems there. Head to the small balcony at the back of the area, where the second golem lurks and you'll find the item on a corpse.",
+    "layer": "shadow",
+    "x": 47.294,
+    "y": 45.557,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655361&code=mapD"
+  },
+  {
+    "name": "Ancient Dragon Smithing Stone - Taylew's Ruined Forge",
+    "category": "Upgrade Material",
+    "description": "Return to the platform in the middle that you have moved with the lever, and head up. Jump to the left once you are near the top. Take the stairs up in the area, and interact with the furnace to receive an Ancient Dragon Smithing Stone along with the Taylew the Golem Smith Spirit Ashes.",
+    "layer": "shadow",
+    "x": 47.411,
+    "y": 45.63,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655384&code=mapD"
   },
   {
     "name": "Ancient Meteoric Ore Greatsword - Ruined Forge of Starfall Past",
@@ -7948,7 +11260,9 @@ export const mapItems: MapItem[] = [
     "x": 41.856,
     "y": 65.631,
     "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659061&code=mapD"
-  },
+  }
+);
+mapItems.push(
   {
     "name": "Gravebird Bracelets - Ruined Forge Lava Intake",
     "category": "Armor",
@@ -8643,6 +11957,771 @@ export const mapItems: MapItem[] = [
     "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=658965&code=mapD"
   },
   {
+    "name": "Smithing Stone (1) - Dragon's Pit",
+    "category": "Upgrade Material",
+    "description": "x6 Smithing Stone (1) can be looted from a corpse. From the Dragon's Pit site of grace, move forward, drop down to defeat the two enemies, and turn back to find this item at the end of the tunnel below.",
+    "layer": "shadow",
+    "x": 47.453,
+    "y": 60.704,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=658985&code=mapD"
+  },
+  {
+    "name": "Smithing Stone (1) - Taylew's Ruined Forge",
+    "category": "Upgrade Material",
+    "description": "A total of x6 Smithing Stone (1) can be located at Taylew's Ruined Forge . These smithing stones are looted from the ground.",
+    "layer": "shadow",
+    "x": 47.325,
+    "y": 45.169,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659420&code=mapD"
+  },
+  {
+    "name": "Smithing Stone (2)",
+    "category": "Upgrade Material",
+    "description": "x3 Smithing Stone (2). Found on a body just below Suppressing Pillar, guarded by a Gravebird.",
+    "layer": "shadow",
+    "x": 47.893,
+    "y": 61.293,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=658997&code=mapD"
+  },
+  {
+    "name": "Smithing Stone (3) - Belurat Gaol",
+    "category": "Upgrade Material",
+    "description": "x2 Smithing Stone (3) can be looted from a corpse that's sitting on a prison cage in the next area, past the jar labyrinth.",
+    "layer": "shadow",
+    "x": 40.352,
+    "y": 54.81,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659183&code=mapD"
+  },
+  {
+    "name": "Smithing Stone (4) - Dragon's Pit",
+    "category": "Upgrade Material",
+    "description": "x2 Smithing Stone (4) can be looted from a corpse. Make that long jump to reach the bottom-most section of the Dragon's Pit where you'll find the mist leading to a mini-boss fight. Look behind to find the corpse that has the upgrade material.",
+    "layer": "shadow",
+    "x": 48.329,
+    "y": 60.133,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659206&code=mapD"
+  },
+  {
+    "name": "Smithing Stone (4) - Taylew's Ruined Forge",
+    "category": "Upgrade Material",
+    "description": "A total of x12 Smithing Stone 4) can be located at Taylew's Ruined Forge . These smithing stones are looted from the ground. x7 can be looted on the ground. x5 can be looted from a dead body.",
+    "layer": "shadow",
+    "x": 47.23,
+    "y": 45.276,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659421&code=mapD"
+  },
+  {
+    "name": "Smithing Stone (5) - Dragon's Pit",
+    "category": "Upgrade Material",
+    "description": "x2 Smithing Stone (5) can be looted from a corpse. The body is located in the lair of the Lesser Magma Wyrm.",
+    "layer": "shadow",
+    "x": 48.39,
+    "y": 59.837,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659204&code=mapD"
+  },
+  {
+    "name": "Smithing Stone (5) - Taylew's Ruined Forge",
+    "category": "Upgrade Material",
+    "description": "A total of x4 Smithing Stone (5) can be located at Taylew's Ruined Forge . These smithing stones are looted from the ground.",
+    "layer": "shadow",
+    "x": 47.252,
+    "y": 45.404,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659423&code=mapD"
+  },
+  {
+    "name": "Smithing Stone (6) - Belurat Gaol",
+    "category": "Upgrade Material",
+    "description": "x2 Smithing Stone (6) can be looted from a corpse in the jar labyrinth area of the Belurat Gaol.",
+    "layer": "shadow",
+    "x": 40.443,
+    "y": 54.977,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659182&code=mapD"
+  },
+  {
+    "name": "Smithing Stone (6) - Taylew's Ruined Forge",
+    "category": "Upgrade Material",
+    "description": "A total of x6 Smithing Stone (6) can be located at Taylew's Ruined Forge . These smithing stones are looted from the ground.",
+    "layer": "shadow",
+    "x": 47.173,
+    "y": 45.557,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659424&code=mapD"
+  },
+  {
+    "name": "Smithing Stone (8) - Taylew's Ruined Forge",
+    "category": "Upgrade Material",
+    "description": "A total of x3 Smithing Stone (8) can be located at Taylew's Ruined Forge . These smithing stones are looted from the ground.",
+    "layer": "shadow",
+    "x": 47.093,
+    "y": 45.432,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659425&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [1]",
+    "category": "Upgrade Material",
+    "description": "x4 Leave the golden tree area through the Northeastern gate, fight both enemies, and turn to the back side of the room to find the item on the corpse next to a rack of spears and shields.",
+    "layer": "shadow",
+    "x": 48.643,
+    "y": 46.198,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655585&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [1] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "Past the message in Ruined Forge Lava Intake, turn left to reach the room in which you face the golem, you'll find a Smithing Stone [1] on the ground, right next to a Smithing Stone [4].",
+    "layer": "shadow",
+    "x": 47.319,
+    "y": 58.09,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655157&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [1] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "Ruined Forge Lava Intake. Take the first ladder down, and turn left and back, to reach a small area, in which you will find a Smithing Stone [1] alongside a Gas Stone.",
+    "layer": "shadow",
+    "x": 47.212,
+    "y": 58.829,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655163&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [1] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "Ruined Forge Lava Intake. Take the first ladder down. You will the item on the ground in front of you, where you find the second golem.",
+    "layer": "shadow",
+    "x": 47.09,
+    "y": 59.164,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655169&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [1] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "Ruined Forge Lava Intake. Take the first ladder down, and go up the set of stairs on the right, you will find it on the ground.",
+    "layer": "shadow",
+    "x": 46.983,
+    "y": 58.853,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655174&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [1] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "Ruined Forge Lava Intake. Take the first ladder down, past the golem, and after the fire blob turn right. Before reaching the next room, you will find the item on the ground.",
+    "layer": "shadow",
+    "x": 46.794,
+    "y": 59.195,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655181&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [1] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "Ruined Forge Lava Intake. Take the first ladder down, go up the set of stairs on the right, and then use the collapsed column on the left as a makeshift bridge to cross to the other side. Jump to the other side and turn right to find another ladder, climb down, and access the next room. Turn left to find the item on the floor.",
+    "layer": "shadow",
+    "x": 46.605,
+    "y": 58.942,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655184&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [1] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "Ruined Forge Lava Intake. Take the first ladder down, past the golem, and after the fire blob turn right. As soon as you enter the room past the Fire Blob, slightly to the left. You can also drop down to this area from the lever's location. At the end of the hallway, you will find a golem and this item on the ground.",
+    "layer": "shadow",
+    "x": 46.455,
+    "y": 58.804,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655186&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [1] x6",
+    "category": "Upgrade Material",
+    "description": "Midway through the Stairs, turn right and enter the room. Found on the corpse in the middle.",
+    "layer": "shadow",
+    "x": 48.54,
+    "y": 46.454,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655576&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [1] x6",
+    "category": "Upgrade Material",
+    "description": "x6 Upgrade Material looted from a corpse in the small island among the water.",
+    "layer": "shadow",
+    "x": 54.852,
+    "y": 53.839,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655839&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [2] - Belurat Tower Settlement",
+    "category": "Upgrade Material",
+    "description": "Found at the side of a building. Get down the stairs from the shortcut to the well depths area, and stick to the left side killing any Man-Fly that interrupts your way. Head to the two crumbled towers and climb the one that leads to a building that is actually standing. Head there and you will see two smaller ones. Get to the one farther away from your position, and you will find the Smithing Stone [2] on a corpse hanging on the rooftop.",
+    "layer": "shadow",
+    "x": 37.95,
+    "y": 56.204,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=654940&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [2] - Belurat Tower Settlement",
+    "category": "Upgrade Material",
+    "description": "Smithing Stone [2] x3 can be found just across the other rooftop. You will see two more Gravebirds. One will notice you and charge, while the other stays back to guard the item. It's best to handle them one at a time.",
+    "layer": "shadow",
+    "x": 39.357,
+    "y": 55.234,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=654952&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [2] - Bonny Gaol",
+    "category": "Upgrade Material",
+    "description": "x4 Bonny Gaol. After you jump down the hole, head to the area where you fight the rats, and stick to the right side of the wall. You'll eventually find the entrance to the small passageway and find the item on a corpse.",
+    "layer": "shadow",
+    "x": 51.891,
+    "y": 55.64,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655098&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [2] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "x7 Smithing Stone [2] can be found in the room across where you fight your first golem in Ruined Forge Lava Intake. Beware of the fire blob that drops from the ceiling.",
+    "layer": "shadow",
+    "x": 46.907,
+    "y": 58.64,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655160&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [2] - Ruined Forge of Starfall Past",
+    "category": "Upgrade Material",
+    "description": "This upgrade material is found in the Ruined Forge of Starfall Past location. They are looted from the ground.",
+    "layer": "shadow",
+    "x": 49.321,
+    "y": 54.664,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655044&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [2] - Ruined Forge of Starfall Past",
+    "category": "Upgrade Material",
+    "description": "A total of 5 Smithing Stone [2] can be found in the Ruined Forge of Starfall Past location.",
+    "layer": "shadow",
+    "x": 48.821,
+    "y": 54.617,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659286&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [2] x6",
+    "category": "Upgrade Material",
+    "description": "Can be found lying on a corpse by the cliffs. Reach this area by navigating the beach and then taking the slopes up as soon as you see the blue flowers again",
+    "layer": "shadow",
+    "x": 51.174,
+    "y": 68.332,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659002&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [2] x8",
+    "category": "Upgrade Material",
+    "description": "x8 Found on the bridge guarded by a fire knight that connects Shadow Keep courtyard and Storehouse",
+    "layer": "shadow",
+    "x": 49.672,
+    "y": 46.5,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655530&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [2] x8",
+    "category": "Upgrade Material",
+    "description": "x8 Can be found on a corpse in the scarlet rot swamp area of Ancient Ruins of Rauh along with other items. Be wary of multiple enemies in the area.",
+    "layer": "shadow",
+    "x": 38.655,
+    "y": 48.135,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=658908&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [3]",
+    "category": "Upgrade Material",
+    "description": "x5 Smithing Stone [3] can be found in a swamp infested with Gravebirds. There are at least five nesting in a stone building, kill them and you'll find the Smithing Stone on a corpse.",
+    "layer": "shadow",
+    "x": 48.701,
+    "y": 48.209,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655336&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [3]",
+    "category": "Upgrade Material",
+    "description": "2nd Bridge Pillar on the left. Fairly Visible after entering the first broken arch. On one of the long dead bodies.",
+    "layer": "shadow",
+    "x": 47.848,
+    "y": 45.874,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655705&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [3] - Belurat Tower Settlement",
+    "category": "Upgrade Material",
+    "description": "Can be found in the Ulcerated Tree Spirit arena.",
+    "layer": "shadow",
+    "x": 38.402,
+    "y": 56.41,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659048&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [3] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "Ruined Forge Lava Intake. Take the first ladder down. You will the item on the ground in front of you, where you find the second golem.",
+    "layer": "shadow",
+    "x": 47.142,
+    "y": 59.097,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655170&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [3] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "Ruined Forge Lava Intake. Take the first ladder down. You will the item on the ground in front of you, where you find the second golem.",
+    "layer": "shadow",
+    "x": 47.188,
+    "y": 59.161,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655171&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [3] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "Ruined Forge Lava Intake. Take the first ladder down, and go up the set of stairs on the right, you will find it on the ground.",
+    "layer": "shadow",
+    "x": 47.057,
+    "y": 58.841,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655173&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [3] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "Ruined Forge Lava Intake. Take the first ladder down, past the golem. After the fire blob, turn left and you will find a round with a golem sitting. In this room, you will find this item slightly to the right, alongside a Smithing Stone [4].",
+    "layer": "shadow",
+    "x": 46.974,
+    "y": 59.32,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655178&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [3] - Ruined Forge of Starfall Past",
+    "category": "Upgrade Material",
+    "description": "A total of 12 Smithing Stone [3] can be found in the Ruined Forge of Starfall Past location. x5 can be looted from a body near the site of grace. Turn left as you enter the doorway to find the body by the pots. The rest of the upgrade materials are looted from the ground.",
+    "layer": "shadow",
+    "x": 48.833,
+    "y": 54.419,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659287&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [3] x2",
+    "category": "Upgrade Material",
+    "description": "3x Upgrade Material looted from a corpse guarded by several Man-Fly near the site of grace under Bonny Village.",
+    "layer": "shadow",
+    "x": 53.076,
+    "y": 53.231,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655819&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [3] x2",
+    "category": "Upgrade Material",
+    "description": "Temple Town. Upgrade material looted from a corpse hanging from a broken structure outside the main town area.",
+    "layer": "shadow",
+    "x": 42.534,
+    "y": 51.371,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659418&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [3] x3",
+    "category": "Upgrade Material",
+    "description": "3x Found at a corpse, hanging from a cliff. Beware of the 2 dogs guarding the area.",
+    "layer": "shadow",
+    "x": 41.282,
+    "y": 58.67,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655037&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [3] x3",
+    "category": "Upgrade Material",
+    "description": "West of Fog Rift Fort, in the lower area where many Messmer Soldiers are situated. You can find this item on the upper platform on the left. To reach it just pass through the area turn right and climb uphill, and jump to the other side.",
+    "layer": "shadow",
+    "x": 44.752,
+    "y": 52.225,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655300&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [4]",
+    "category": "Upgrade Material",
+    "description": "Drop from a messmer soldier.",
+    "layer": "shadow",
+    "x": 47.588,
+    "y": 61.301,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655016&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [4] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "Past the message in Ruined Forge Lava Intake, turn left to reach the room in which you face the golem, you'll find a Smithing Stone [4] on the ground.",
+    "layer": "shadow",
+    "x": 47.289,
+    "y": 58.167,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655156&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [4] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "Ruined Forge Lava Intake. Take the first ladder down, and turn left and back, to reach a small area, in which you will find a Smithing Stone [4] alongside a Gas Stone.",
+    "layer": "shadow",
+    "x": 47.185,
+    "y": 58.908,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655162&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [4] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "Ruined Forge Lava Intake. Take the first ladder down. You will the item on the ground in front of you, where you find the second golem.",
+    "layer": "shadow",
+    "x": 47.072,
+    "y": 59.103,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655168&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [4] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "Ruined Forge Lava Intake. Take the first ladder down. You will the item on the ground in front of you, where you find the second golem.",
+    "layer": "shadow",
+    "x": 46.941,
+    "y": 59.082,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655176&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [4] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "Ruined Forge Lava Intake. Take the first ladder down, past the golem. After the fire blob, turn left and you will find a round with a golem sitting. In this room, you will find this item slightly to the right, alongside a Smithing Stone [3].",
+    "layer": "shadow",
+    "x": 46.907,
+    "y": 59.299,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655177&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [4] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "Ruined Forge Lava Intake. Take the first ladder down, pass the golem, and after the fire blob turn right. As soon as you enter the room past the Fire Blob, slightly to the left.",
+    "layer": "shadow",
+    "x": 46.504,
+    "y": 58.899,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655182&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [4] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "Ruined Forge Lava Intake. Take the first ladder down, past the golem, and after the fire blob turn right. As soon as you enter the room past the Fire Blob, slightly to the left. You can also drop down to this area from the lever's location. At the end of the hallway, you will find a golem and this item on the ground.",
+    "layer": "shadow",
+    "x": 46.495,
+    "y": 58.728,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655187&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [4] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "Jump across to reach the narrow sides of the platform. You should spot another corpse sitting by the edge of the narrow sides. Loot it to acquire x2 Smithing Stone [4].",
+    "layer": "shadow",
+    "x": 46.806,
+    "y": 59.094,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659054&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [4] x2",
+    "category": "Upgrade Material",
+    "description": "On the long dead corpse. Facing the western side, right before reaching the half-broken archway.",
+    "layer": "shadow",
+    "x": 46.603,
+    "y": 46.116,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655707&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [4] x4",
+    "category": "Upgrade Material",
+    "description": "x4 Upgrade Material South of the Pond Inhabilited by Turtles. There are x2 Bloodfiend and a Dog in a small camp. The item is on a body on the camp, next to the fire.",
+    "layer": "shadow",
+    "x": 41.942,
+    "y": 61.481,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655228&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [4] x4",
+    "category": "Upgrade Material",
+    "description": "Shadow Keep . Once you have lowered the water level, take the lift to the left of the Church District Entrance Site of Grace. Explore the northeastern corner of the area outside the church inside the building, past the Ulcerated Tree Spirit spawn",
+    "layer": "shadow",
+    "x": 51.408,
+    "y": 45.899,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655479&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [5]",
+    "category": "Upgrade Material",
+    "description": "x7 Smithing Stone [5] can be found by climbing down the stairs in the torture room. There is a group of soldiers guarding a few items.",
+    "layer": "shadow",
+    "x": 50.978,
+    "y": 57.095,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655060&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [5]",
+    "category": "Upgrade Material",
+    "description": "x5 From the Main Gate Plaza Site of Grace, turn right and head up the stairs. Take the path on the left and go through the burning boats. Take another left and drop down from the bridge, you'll find a corpse on the ground with this item.",
+    "layer": "shadow",
+    "x": 49.022,
+    "y": 46.133,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659307&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [5] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "x4 Past the message in Ruined Forge Lava Intake, turn left to reach the room in which you face the golem. x4 Smithing Stone [5] can be found on a corpse against the back wall.",
+    "layer": "shadow",
+    "x": 47.295,
+    "y": 57.993,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655158&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [5] - Ruined Forge of Starfall Past",
+    "category": "Upgrade Material",
+    "description": "A total of 3 Smithing Stone [5] can be found in the Ruined Forge of Starfall Past location.",
+    "layer": "shadow",
+    "x": 48.894,
+    "y": 54.712,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659288&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [5] x3",
+    "category": "Upgrade Material",
+    "description": "From the middle area, take the set of stairs to the next floor. Move to the eastern side and on the bridge you'll find this item among the tablets overlooking the area you entered the Storehouse from.",
+    "layer": "shadow",
+    "x": 50.337,
+    "y": 45.688,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655681&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [5] x3",
+    "category": "Upgrade Material",
+    "description": "Upgrade Material. 3x can be looted off a corpse hanging off the edge of the cliff. Accessed by going south and down from the Castle Front site of grace, same area with the Repeating Crossbow",
+    "layer": "shadow",
+    "x": 45.024,
+    "y": 55.485,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659343&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [6]",
+    "category": "Upgrade Material",
+    "description": "x2 As you reach the fifth floor from the outside ladder, turn left and you will find this item on a corpse against a wall.",
+    "layer": "shadow",
+    "x": 50.261,
+    "y": 45.981,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655601&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [6] - Ruined Forge of Starfall Past",
+    "category": "Upgrade Material",
+    "description": "A total of 6 Smithing Stone [6] can be found in the Ruined Forge of Starfall Past location.",
+    "layer": "shadow",
+    "x": 49.013,
+    "y": 54.773,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659289&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [6] x2 - Stone Coffin Fissure",
+    "category": "Upgrade Material",
+    "description": "Can be found on a corpse lying beside a stone coffin",
+    "layer": "shadow",
+    "x": 48.32,
+    "y": 72.177,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659173&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [6] x3",
+    "category": "Upgrade Material",
+    "description": "Cerulean Coast: 3x Can be found on a corpse next to a gravestone pillar guarded by a Demi-human swordsmaster enemy.",
+    "layer": "shadow",
+    "x": 44.982,
+    "y": 65.186,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659079&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [6] x8",
+    "category": "Upgrade Material",
+    "description": "Climb down the stairs in the torture room. There is a group of soldiers guarding a few items. This item is inside the chest on the middle of the jail.",
+    "layer": "shadow",
+    "x": 50.938,
+    "y": 57.022,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655062&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [6] x8",
+    "category": "Upgrade Material",
+    "description": "x8 Can be found on a body outside the Fort.",
+    "layer": "shadow",
+    "x": 51.448,
+    "y": 57.288,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659012&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [7]",
+    "category": "Upgrade Material",
+    "description": "Upgrade material looted from the pond west of Taylew's Ruined Forge. Protected by various Bloodfiends and dogs.",
+    "layer": "shadow",
+    "x": 46.233,
+    "y": 45.767,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655432&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [7] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "x3 Ruined Forge Lava Intake. Take the first ladder down, go up the set of stairs on the right, and then use the collapsed column on the left as a makeshift bridge to cross to the other side. Jump to the other side and turn left, beware of the fire blob that drops from the ceiling, and pick up the item.",
+    "layer": "shadow",
+    "x": 46.883,
+    "y": 59.219,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655183&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [7] x2",
+    "category": "Crafting Material",
+    "description": "Use the spiritpring to jump up then climb the crumbled structure of the building north of Temple Town Ruins.",
+    "layer": "shadow",
+    "x": 42.107,
+    "y": 49.545,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655412&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [7] x2",
+    "category": "Upgrade Material",
+    "description": "From the Ancient Ruins, Grand Stairway Site of Grace, descend the stairs and keep a lookout for a corpse on the right side near the area with the giant Bow Golem. You'll find this on a corpse guarded by two shadow dogs.",
+    "layer": "shadow",
+    "x": 40.801,
+    "y": 50.317,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659195&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [7] x2",
+    "category": "Upgrade Material",
+    "description": "From the Abyssal Woods Site of Grace, head north and you'll find this on a corpse.",
+    "layer": "shadow",
+    "x": 53.134,
+    "y": 56.555,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659301&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [7] x4",
+    "category": "Upgrade Material",
+    "description": "Shadow Keep - accessed from the Church District Side. x4 Take the elevator at the Storehouse, Loft site of grace. Once you are on the upper level, turn left, and turn left again. As soon as you can turn right. Beware of the bat hanging from the ceiling. Reach the other side, and take the ladder up. Turn left and head to the platform with the column in the middle of it to find the item.",
+    "layer": "shadow",
+    "x": 50.111,
+    "y": 45.889,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655506&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [7] x4",
+    "category": "Upgrade Material",
+    "description": "Can be found on a corpse near the area where you fought the Ghostflame Dragon.",
+    "layer": "shadow",
+    "x": 47.008,
+    "y": 67.81,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659128&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [7] x5",
+    "category": "Upgrade Material",
+    "description": "As you reach the fifth floor from the outside ladder, continue heading north and keep an eye out for a corpse on the right side and you'll find this item. Be wary of the Fire Knight roaming around.",
+    "layer": "shadow",
+    "x": 50.7,
+    "y": 45.294,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655686&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [7] x8",
+    "category": "Upgrade Material",
+    "description": "x8. Enter the room behind Black Knight Garrew and loot the chest at the left side.",
+    "layer": "shadow",
+    "x": 45.418,
+    "y": 52.747,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655441&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [8]",
+    "category": "Upgrade Material",
+    "description": "x4 Smithing Stone [8] can be found inside a chest. From the \"Behind the Fort of Reprimand\" site of grace, head north and climb the ladder, you'll immediately see the chest that contains the item. This area is accessed via spiritspring south, or by using breakable items from the fort to jump a wall.",
+    "layer": "shadow",
+    "x": 51.076,
+    "y": 56.683,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655270&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [8]",
+    "category": "Upgrade Material",
+    "description": "x5 Can be found in the west area of the library. Beware of the Fire Knight in the vicinity.",
+    "layer": "shadow",
+    "x": 50.142,
+    "y": 45.651,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655670&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [8]",
+    "category": "Upgrade Material",
+    "description": "Dropped by the Ghost Troll elite enemy upon defeat.",
+    "layer": "shadow",
+    "x": 46.41,
+    "y": 52.017,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655684&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [8]",
+    "category": "Upgrade Material",
+    "description": "x3 Upgrade Material looted from a corpse found on a small balcony in Ruins of Unte. Use this vantage point to activate the nearby Furnace Golem",
+    "layer": "shadow",
+    "x": 51.895,
+    "y": 47.786,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655803&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [8] - Enir-Ilim",
+    "category": "Upgrade Material",
+    "description": "x2 From the Spiral Rise Site of Grace, head up the stairs and exit through the roof. Continue following the path and you'll find this on a corpse on the right side of one of the roofs.",
+    "layer": "shadow",
+    "x": 36.772,
+    "y": 52.957,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=658930&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [8] - Ruined Forge of Starfall Past",
+    "category": "Upgrade Material",
+    "description": "A total of 2 Smithing Stone [8] can be found in the Ruined Forge of Starfall Past location.",
+    "layer": "shadow",
+    "x": 49.446,
+    "y": 54.676,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659379&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [8] x2",
+    "category": "Upgrade Material",
+    "description": "x2 Crafting Material in Shadow keep. Leave the golden tree area through the south gate, and you will see the item on the other side.",
+    "layer": "shadow",
+    "x": 48.683,
+    "y": 46.732,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655581&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [8] x2 - Enir-Ilim",
+    "category": "Upgrade Material",
+    "description": "Found as you navigate the way to the legendary item Euporia. Drop down from the broken section of the ledge, then pick up the nearby item, which is x2 Smithing Stone [8].",
+    "layer": "shadow",
+    "x": 37.822,
+    "y": 53.585,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659398&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [8] x3",
+    "category": "Upgrade Material",
+    "description": "Can be found against the eastern wall of the ships area.",
+    "layer": "shadow",
+    "x": 50.081,
+    "y": 46.957,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655533&code=mapD"
+  },
+  {
+    "name": "Smithing Stone [8] x4",
+    "category": "Upgrade Material",
+    "description": "Rauh Base: Can be found on a corpse between Rauh Base and Temple Town.",
+    "layer": "shadow",
+    "x": 43.834,
+    "y": 49.377,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659337&code=mapD"
+  },
+  {
     "name": "Smithing Talisman - Ruined Forge of Starfall Past",
     "category": "Talismans",
     "description": "The talisman is looted from a corpse. The body is inside a room filled with Fire Blob enemies, on the upper-most level of the Ruined Forge of Starfall Past.",
@@ -8713,6 +12792,474 @@ export const mapItems: MapItem[] = [
     "x": 41.835,
     "y": 60.416,
     "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655010&code=mapD"
+  },
+  {
+    "name": "Somber Ancient Dragon Smithing Stone",
+    "category": "Upgrade Material",
+    "description": "x1 Somber Ancient Dragon Smithing Stone will be dropped by the Ghostflame Dragon boss upon defeat.",
+    "layer": "shadow",
+    "x": 41.463,
+    "y": 54.544,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=654993&code=mapD"
+  },
+  {
+    "name": "Somber Ancient Dragon Smithing Stone",
+    "category": "Upgrade Material",
+    "description": "Dropped by Ghostflame Dragon Boss",
+    "layer": "shadow",
+    "x": 50.054,
+    "y": 54.733,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655046&code=mapD"
+  },
+  {
+    "name": "Somber Ancient Dragon Smithing Stone",
+    "category": "Upgrade Material",
+    "description": "From the Jagged Peak Mountainside Site of Grace, follow the path southwest and use the 2 spiritsprings to get to the elevated areas. Once you make it through the second spiritspring, turn around and drop down the area just below you, follow the path northeast and you'll find this material on a corpse.",
+    "layer": "shadow",
+    "x": 60.601,
+    "y": 64.227,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655385&code=mapD"
+  },
+  {
+    "name": "Somber Ancient Dragon Smithing Stone",
+    "category": "Upgrade Material",
+    "description": "Dropped by the Ghostflame Dragon at Cerulean Coast.",
+    "layer": "shadow",
+    "x": 47.365,
+    "y": 68.162,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655704&code=mapD"
+  },
+  {
+    "name": "Somber Ancient Dragon Smithing Stone",
+    "category": "Upgrade Material",
+    "description": "Dropped by the Ancient Dragon Senessax upon defeat.",
+    "layer": "shadow",
+    "x": 60.97,
+    "y": 65.367,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655845&code=mapD"
+  },
+  {
+    "name": "Somber Ancient Dragon Smithing Stone - Enir-Ilim",
+    "category": "Upgrade Material",
+    "description": "From the altar with an elevator, head outside and go down. Be wary of an enemy lurking in the area. Get past the enemy and you'll find this material on a corpse at the edge of a broken stairs.",
+    "layer": "shadow",
+    "x": 37.496,
+    "y": 52.39,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=658954&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone (2)",
+    "category": "Upgrade Material",
+    "description": "After Black Knight Garrew , go outside. Turn Right and go onto the ramparts. Two soldiers and many explosive barrels are here. There's a body at the end of the rampart with the loot",
+    "layer": "shadow",
+    "x": 44.92,
+    "y": 52.673,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655440&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [1]",
+    "category": "Upgrade Material",
+    "description": "x1 Somber Smithing Stone [1] can be looted off a body. The body is found near the Castle Ensis Site of Grace.",
+    "layer": "shadow",
+    "x": 46.345,
+    "y": 53.113,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655127&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [1]",
+    "category": "Upgrade Material",
+    "description": "x1 Can be lootedd off a body. The body is located to the left of the entrance.",
+    "layer": "shadow",
+    "x": 45.43,
+    "y": 53.485,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=658991&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [1]",
+    "category": "Upgrade Material",
+    "description": "Can be found on a corpse lying down a rock guarded by multiple spider scorpion enemies in Ancient Ruins of Rauh",
+    "layer": "shadow",
+    "x": 39.394,
+    "y": 47.168,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659208&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [1] - Belurat Tower Settlement",
+    "category": "Upgrade Material",
+    "description": "As you enter, go right and walk down the stairs. At the end, is a dead-end and a body hanging by the edge of the broken stairs. Loot the body to find x1 Somber Smithing Stone [1]",
+    "layer": "shadow",
+    "x": 38.628,
+    "y": 54.475,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659051&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [2]",
+    "category": "Upgrade Material",
+    "description": "x1 Somber Smithing Stone [2] can be looted off a corpse. The body is found lying on the roof of the chapel buildings. Accessed by dropping down the side of a bridge and climbing up a ladder after exiting the chapel",
+    "layer": "shadow",
+    "x": 46.178,
+    "y": 54.562,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655145&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [2]",
+    "category": "Upgrade Material",
+    "description": "Right under the last archway of this side of the bridge.",
+    "layer": "shadow",
+    "x": 45.803,
+    "y": 46.219,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655712&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [2] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "Ruined Forge Lava Intake. Take the first ladder down, and turn right, behind the set of stairs, there is a corpse on the ground with this item.",
+    "layer": "shadow",
+    "x": 46.98,
+    "y": 58.96,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655172&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [3]",
+    "category": "Upgrade Material",
+    "description": "Can be looted off a corpse. The body is on a roof, go outside the armory room and check behind it.",
+    "layer": "shadow",
+    "x": 46.058,
+    "y": 53.79,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655118&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [3]",
+    "category": "Upgrade Material",
+    "description": "Temple Town Ruins . From the entrance through the gap in the wall, head north past the enemies and at the end of the hallway turn left, to find it on a body",
+    "layer": "shadow",
+    "x": 42.116,
+    "y": 51.248,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655427&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [3] - Belurat Tower Settlement",
+    "category": "Upgrade Material",
+    "description": "From the first fountain, take the stairs and turn right to find a second one. Four shadow enemies are praying, between them, you can find a Somber Smithing Stone [3].",
+    "layer": "shadow",
+    "x": 38.878,
+    "y": 55.527,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=654895&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [3] - Taylew's Ruined Forge",
+    "category": "Upgrade Material",
+    "description": "Climb the ladder, and two fire blobs will drop from the ceiling. Defeat them, turn back and you will see a smithing golem with another fire blob. Jump across and defeat them, you will find this item on a dead body.",
+    "layer": "shadow",
+    "x": 47.649,
+    "y": 45.142,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655368&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [4]",
+    "category": "Upgrade Material",
+    "description": "x1 Somber Smithing Stone [4] can be looted off a corpse. The body can be found sitting on the balcony of the Castle Lord's Chamber.",
+    "layer": "shadow",
+    "x": 47.789,
+    "y": 53.766,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655152&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [4]",
+    "category": "Upgrade Material",
+    "description": "Looted from a corpse in the underground cave that connects to the western island. The cave can be accessed from a slope along the shore nearby",
+    "layer": "shadow",
+    "x": 44.29,
+    "y": 67.059,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655784&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [4]",
+    "category": "Upgrade Material",
+    "description": "Ellac River (from Ellac River Cave downstream) Can be found on a corpse beside a pillar surrounded by Gravebird statues. At least 2 of those are enemies.",
+    "layer": "shadow",
+    "x": 45.873,
+    "y": 59.024,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659091&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [4]",
+    "category": "Upgrade Material",
+    "description": "1x can be looted from the corpse hanging from the broken bridge in Prospect Town, by the courtyard with a group of enemies.",
+    "layer": "shadow",
+    "x": 40.254,
+    "y": 61.729,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659095&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [4] - Belurat Tower Settlement",
+    "category": "Upgrade Material",
+    "description": "From the Small Private Altar Site of Grace, in the next room turn left to head to the bridge. Kill the enemy, and then turn right at the end of the way. Drop down the rooftops, head to the left and you will see a Somber Smithing Stone [4] in the distance. Move towards it by jumping from roof to roof to reach it.",
+    "layer": "shadow",
+    "x": 39.095,
+    "y": 55.92,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=654901&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [5]",
+    "category": "Upgrade Material",
+    "description": "x1 Somber Smithing Stone [5] can be looted off a corpse. The body can be found lying on the floor of a watchpoint of the bridge. The area is guarded by soldiers and hounds.",
+    "layer": "shadow",
+    "x": 47.075,
+    "y": 54.736,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655149&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [5]",
+    "category": "Upgrade Material",
+    "description": "Shadow Keep . Looted from a corpse in the room directly under the lever to drain the water. From the Sunken Chapel Site of Grace. Take the western exit and turn left as you exit the building, you will come across an opening, enter to find the item.",
+    "layer": "shadow",
+    "x": 50.676,
+    "y": 46.979,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655481&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [5]",
+    "category": "Upgrade Material",
+    "description": "Shadow Keep . By a tree in the area in which you find the Urcerated Tree Spirit.",
+    "layer": "shadow",
+    "x": 51.39,
+    "y": 46.713,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655491&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [5] - Enir-Ilim",
+    "category": "Upgrade Material",
+    "description": "From the First Rise Site of Grace head up the stairs and once you reach the broken staircase, you'll find this material on a corpse on the left side.",
+    "layer": "shadow",
+    "x": 38.313,
+    "y": 52.805,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=658929&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [5] - Enir-Ilim",
+    "category": "Upgrade Material",
+    "description": "Follow the ledge to the other direction going down, and you'll be at a broken section of the ledge. Drop down it, and you will land near a hostile Shadow Undead. Kill it, then pick up x1 Somber Smithing Stone [5] nearby.",
+    "layer": "shadow",
+    "x": 37.779,
+    "y": 53.967,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659401&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [6]",
+    "category": "Upgrade Material",
+    "description": "x1 Somber Smithing Stone [6] can be looted off a corpse. The body is found on a broken watchtower that is guarded by a Page enemy.",
+    "layer": "shadow",
+    "x": 46.776,
+    "y": 53.815,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655134&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [6]",
+    "category": "Upgrade Material",
+    "description": "x1 Somber Smithing Stone [6] can be looted off a corpse. The body can be found lying on the floor of a watchpoint of the bridge. The area is guarded by soldiers and hounds.",
+    "layer": "shadow",
+    "x": 46.971,
+    "y": 54.776,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655148&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [6]",
+    "category": "Upgrade Material",
+    "description": "x1 Somber Smithing Stone [6] can be looted off a corpse. The body is found inside the perfumer armory tent.",
+    "layer": "shadow",
+    "x": 49.431,
+    "y": 48.987,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655551&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [6]",
+    "category": "Upgrade Material",
+    "description": "Found on a corpse on some higher up debris by a door, In the area filled with Spider-Scorpions.",
+    "layer": "shadow",
+    "x": 42.561,
+    "y": 46.536,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655640&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [6]",
+    "category": "Upgrade Material",
+    "description": "Ellac River: Can be found on a corpse guarded by a large lobster enemy near a waterfall.",
+    "layer": "shadow",
+    "x": 46.065,
+    "y": 58.398,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659090&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [6] - Enir-Ilim",
+    "category": "Upgrade Material",
+    "description": "Continue following the path and once you reach the inside of the castle again, head down stairs and you'll find this item on a corpse.",
+    "layer": "shadow",
+    "x": 36.833,
+    "y": 52.826,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=658934&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [6] - Ruined Forge Lava Intake",
+    "category": "Upgrade Material",
+    "description": "Ruined Forge Lava Intake. Take the first ladder down, past the golem. After the fire blob, turn left and you will find a round with a golem sitting. In this room, you will find this item near the back wall, alongside the Gas Stone.",
+    "layer": "shadow",
+    "x": 46.977,
+    "y": 59.167,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655180&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [7]",
+    "category": "Upgrade Material",
+    "description": "A Scarab can be found northeast of the Ancient Ruins Base Site of Grace. Between a group of Messmer Soldiers and Demi-Humans. Drops Somber Smithing Stone [7].",
+    "layer": "shadow",
+    "x": 47.609,
+    "y": 46.487,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655338&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [7]",
+    "category": "Upgrade Material",
+    "description": "Upgrade Material looted from a corpse along the riverbed under the waterfall.",
+    "layer": "shadow",
+    "x": 51.645,
+    "y": 50.821,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655827&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [7] - Ruined Forge of Starfall Past",
+    "category": "Upgrade Material",
+    "description": "x1 Somber Smithing Stone [7] can be found in the Ruined Forge of Starfall Past location. Loot from a corpse at a dead end after opening the first gate",
+    "layer": "shadow",
+    "x": 49.852,
+    "y": 55.22,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659291&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [8]",
+    "category": "Upgrade Material",
+    "description": "Shadow Keep - accessed from the Church District Side. From the gear in which you found Wrath from Afar, jump towards the next platform and head to the ladder on the left. Climb it up. Once at the top, take the wooden beam on your left all the way to the end, deal with the bat, and use the nearby ladder to descend. The item can be found on a corpse right around the corner.",
+    "layer": "shadow",
+    "x": 50.27,
+    "y": 45.355,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655508&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [8]",
+    "category": "Upgrade Material",
+    "description": "Upgrade Material dropped by a Teardrop Scarab in the riverbed in the lower area of this zone.",
+    "layer": "shadow",
+    "x": 53.767,
+    "y": 52.784,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659163&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [8]",
+    "category": "Upgrade Material",
+    "description": "Then, use the elevator to go down to the lower level. As you go down, face the southwest direction so you are ready for the Bloodfiend waiting here. Then, follow the path behind it where a group of Bloodfiends is gathered. This can be difficult since you are outnumbered, but if you have a magic build, you can use Adula's Moonblade to effectively take out the group. After fighting them, you can pick up Somber Smithing Stone [8] from the corpse behind the group.",
+    "layer": "shadow",
+    "x": 44.865,
+    "y": 47.208,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659223&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [8]",
+    "category": "Upgrade Material",
+    "description": "Can be found on a corpse sitting on the edge of the platform down by the water. To access this area, use the ladder on the eastern side of the bridge with the burning boats.",
+    "layer": "shadow",
+    "x": 49.522,
+    "y": 46.46,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659309&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [8] - Ruined Forge of Starfall Past",
+    "category": "Upgrade Material",
+    "description": "x3 Somber Smithing Stone [8] can be found in the Ruined Forge of Starfall Past location.",
+    "layer": "shadow",
+    "x": 49.547,
+    "y": 54.795,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659292&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [8] - Ruined Forge of Starfall Past",
+    "category": "Upgrade Material",
+    "description": "1x is dropped by a Teardrop Scarab found clinging to the outside pillars of the Forge of Starfall Past.",
+    "layer": "shadow",
+    "x": 48.656,
+    "y": 54.985,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659377&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [8] - Ruined Forge of Starfall Past",
+    "category": "Upgrade Material",
+    "description": "Looted from a Teardrop Scarab clinging to a pillar in this area. It will run towards many Misbegotten so be prepared for a fight.",
+    "layer": "shadow",
+    "x": 49.016,
+    "y": 54.258,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659378&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [8] - Taylew's Ruined Forge",
+    "category": "Upgrade Material",
+    "description": "Jump from the opening left to the Lever twice, and continue down the stairs. You'll find the item on a corpse on the right side of the room.",
+    "layer": "shadow",
+    "x": 47.499,
+    "y": 45.163,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655373&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [9]",
+    "category": "Upgrade Material",
+    "description": "Shadow Keep . Take the lift from the Church District up to the Specimen Storehouse, and turn right as you exit it.",
+    "layer": "shadow",
+    "x": 50.691,
+    "y": 45.7,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655498&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [9]",
+    "category": "Upgrade Material",
+    "description": "Looted from a corpse in the room Behind Salza, Sage of the Fire Knights.",
+    "layer": "shadow",
+    "x": 44.991,
+    "y": 46.365,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655627&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [9]",
+    "category": "Upgrade Material",
+    "description": "On top of the branch from where the enemy is casting spells at you.",
+    "layer": "shadow",
+    "x": 42.536,
+    "y": 46.399,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655635&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [9]",
+    "category": "Upgrade Material",
+    "description": "Dropped by the nonrespawning troll guarding the main bridge entrance of Castle Ensis",
+    "layer": "shadow",
+    "x": 45.689,
+    "y": 53.596,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659347&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [9] - Enir-Ilim",
+    "category": "Upgrade Material",
+    "description": "Upgrade Material found in Enir-Ilim, right next to the Site of Grace and directly next to where the Tarnished will spawn when they teleport into the location from Church of the Bud",
+    "layer": "shadow",
+    "x": 38.052,
+    "y": 51.987,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655812&code=mapD"
+  },
+  {
+    "name": "Somber Smithing Stone [9] - Taylew's Ruined Forge",
+    "category": "Upgrade Material",
+    "description": "Can be found by killing a teardrop scarab. The scarab is located at the edge of the roof just outside Taylew's Ruined Forge.",
+    "layer": "shadow",
+    "x": 47.728,
+    "y": 45.285,
+    "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659338&code=mapD"
   },
   {
     "name": "Spelldrake Talisman +3",
@@ -8965,7 +13512,9 @@ export const mapItems: MapItem[] = [
     "x": 43.648,
     "y": 47.208,
     "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659199&code=mapD"
-  },
+  }
+);
+mapItems.push(
   {
     "name": "Verdigris Greatshield - Enir-Ilim",
     "category": "Shields",
@@ -9047,12 +13596,12 @@ export const mapItems: MapItem[] = [
     "y": 45.685,
     "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655507&code=mapD"
   }
-];
+);
 
 export type MapRoutePoint = MapItem;
 
-// @ts-expect-error TypeScript cannot represent the union inferred for this generated 1,700+ entry literal.
-export const mapRoutePoints: MapRoutePoint[] = [
+export const mapRoutePoints: MapRoutePoint[] = [];
+mapRoutePoints.push(
   {
     "name": "1st Turtle Testu's Rise",
     "category": "Locations",
@@ -11302,7 +15851,9 @@ export const mapRoutePoints: MapRoutePoint[] = [
     "x": 46.397,
     "y": 68.201,
     "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=1547&code=mapA"
-  },
+  }
+);
+mapRoutePoints.push(
   {
     "name": "Deathroot - Wyndham Ruins",
     "category": "Key",
@@ -13552,7 +18103,9 @@ export const mapRoutePoints: MapRoutePoint[] = [
     "x": 22.301,
     "y": 53.067,
     "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=2267&code=mapA"
-  },
+  }
+);
+mapRoutePoints.push(
   {
     "name": "Golden Seed - Seethewater River",
     "category": "Flask Upgrades",
@@ -15802,7 +20355,9 @@ export const mapRoutePoints: MapRoutePoint[] = [
     "x": 44.982,
     "y": 84.1,
     "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=475&code=mapA"
-  },
+  }
+);
+mapRoutePoints.push(
   {
     "name": "Nomadic Merchant East Limgrave",
     "category": "NPC",
@@ -18052,7 +22607,9 @@ export const mapRoutePoints: MapRoutePoint[] = [
     "x": 32.306,
     "y": 40.988,
     "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=5769&code=mapA"
-  },
+  }
+);
+mapRoutePoints.push(
   {
     "name": "Stonesword Key - Altus Plateau (B)",
     "category": "Key",
@@ -20302,7 +24859,9 @@ export const mapRoutePoints: MapRoutePoint[] = [
     "x": 57.713,
     "y": 71.36,
     "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=4613&code=mapB"
-  },
+  }
+);
+mapRoutePoints.push(
   {
     "name": "Night's Sacred Ground",
     "category": "Locations",
@@ -22552,7 +27111,9 @@ export const mapRoutePoints: MapRoutePoint[] = [
     "x": 42.4,
     "y": 62.714,
     "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=655237&code=mapD"
-  },
+  }
+);
+mapRoutePoints.push(
   {
     "name": "Greater Potentate's Cookbook [6]",
     "category": "Key",
@@ -24407,35 +28968,26 @@ export const mapRoutePoints: MapRoutePoint[] = [
     "y": 51.622,
     "url": "https://eldenring.wiki.fextralife.com/Interactive+Map?id=659493&code=mapD"
   }
-];
-
-const clean = (value: string) => value.toLowerCase().replace(/＋/g, "+").replace(/[^a-z0-9+' ]/g, " ").replace(/\s+/g, " ").trim();
-
-const cleanImportedDescription = (value: string) => value
-  .replace(/\uFFFD+/g, " ")
-  .replace(/\s+([,.;:])/g, "$1")
-  .replace(/\s+/g, " ")
-  .trim();
-const cleanMapItem = <T extends MapItem | MapRoutePoint>(item: T): T => (
-  item.description.includes("\uFFFD") ? { ...item, description: cleanImportedDescription(item.description) } as T : item
 );
 
-const searchableMapItems = mapItems
-  .map((item) => ({ item, name: clean(item.name) }))
-  .filter(({ name }) => name.length > 3);
+const clean = (value: string) => value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[’‘]/g, "'").replace(/＋/g, "+").replace(/[^a-z0-9+ ]/g, " ").replace(/\s+/g, " ").trim();
+
+const cleanImportedDescription = (value: string) => value.replace(/\uFFFD+/g, " ").replace(/\s+([,.;:])/g, "$1").replace(/\s+/g, " ").trim();
+const cleanMapItem = <T extends MapItem>(item: T): T => item.description.includes("\uFFFD") ? { ...item, description: cleanImportedDescription(item.description) } : item;
+const searchableMapItems = mapItems.map((item) => ({ item, name: clean(item.name) })).filter(({ name }) => name.length > 3);
 const searchableRoutePoints = mapRoutePoints.map((point) => ({ point, name: clean(point.name) }));
 const mapItemSearchCache = new Map<string, MapItem[]>();
 const routePointSearchCache = new Map<string, MapRoutePoint | undefined>();
 
 export function findMapItems(value: string, preferredLayer?: MapItem["layer"], categoryPattern?: RegExp) {
   const query = clean(value);
-  const cacheKey = `${query}\u0000${preferredLayer ?? ""}\u0000${categoryPattern?.source ?? ""}\u0000${categoryPattern?.flags ?? ""}`;
+  const cacheKey = [query, preferredLayer, categoryPattern?.source, categoryPattern?.flags].join("\u0000");
   const cached = mapItemSearchCache.get(cacheKey);
-  if (cached) return cached;
+  if (cached) return cached.slice();
   const candidates = searchableMapItems
     .filter(({ item }) => !categoryPattern || categoryPattern.test(item.category))
     .filter(({ name }) => name.length > 3 && (query.includes(name) || name.includes(query)))
-    .sort((a, b) => Number(b.name === query) - Number(a.name === query) || Number(b.item.layer === preferredLayer) - Number(a.item.layer === preferredLayer) || b.name.length - a.name.length);
+    .sort((a, b) => Number(b.name === query) - Number(a.name === query) || b.name.length - a.name.length || Number(b.item.layer === preferredLayer) - Number(a.item.layer === preferredLayer));
   const chosen: MapItem[] = [];
   const occupied: Array<[number, number]> = [];
   const names = new Set<string>();
@@ -24449,7 +29001,7 @@ export function findMapItems(value: string, preferredLayer?: MapItem["layer"], c
     if (start >= 0) occupied.push([start, end]);
   }
   mapItemSearchCache.set(cacheKey, chosen);
-  return chosen;
+  return chosen.slice();
 }
 
 export function findMapItem(value: string, preferredLayer?: MapItem["layer"]) {
@@ -24459,7 +29011,7 @@ export function findMapItem(value: string, preferredLayer?: MapItem["layer"]) {
 export function findMapRoutePoint(value: string, preferredLayer?: MapItem["layer"]) {
   const query = clean(value);
   if (query.length < 3) return undefined;
-  const cacheKey = `${query}\u0000${preferredLayer ?? ""}`;
+  const cacheKey = [query, preferredLayer].join("\u0000");
   if (routePointSearchCache.has(cacheKey)) return routePointSearchCache.get(cacheKey);
   const categoryPriority = (category: string) => /locations/i.test(category) ? 0 : /grace/i.test(category) ? 1 : /boss/i.test(category) ? 2 : /npc/i.test(category) ? 3 : 4;
   const ranked = searchableRoutePoints
