@@ -3,6 +3,7 @@ import test, { after } from "node:test";
 import { createServer } from "vite";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { readFile } from "node:fs/promises";
 
 let server;
 let loaded;
@@ -11,7 +12,7 @@ async function components() {
     server = await createServer({ configFile: false, server: { middlewareMode: true }, appType: "custom", plugins: [{
       name: "test-route-components",
       transform(code, id) {
-        if (id.replaceAll("\\", "/").endsWith("/app/page.tsx")) return `${code}\nexport { RouteView, CodexView, tasksForChapter, equipmentTimeline, defaultPlayerStartingClass, buildForPlayer, WeaponRoutePreview, RuneCheckpointPanel, progressionTasksForChapter, runeSupportPlan, affordableLevelAndUpgrade, missingTaskPrerequisites, MapPanel };`;
+        if (id.replaceAll("\\", "/").endsWith("/app/page.tsx")) return `${code}\nexport { Setup, RouteView, CodexView, tasksForChapter, equipmentTimeline, defaultPlayerStartingClass, buildForPlayer, WeaponRoutePreview, RuneCheckpointPanel, progressionTasksForChapter, runeSupportPlan, affordableLevelAndUpgrade, missingTaskPrerequisites, MapPanel };`;
       },
     }] });
     return server.ssrLoadModule("/app/page.tsx");
@@ -22,6 +23,46 @@ after(async () => { await server?.close(); });
 const task = (id, label, extras = {}) => ({ id, label, detail: `Instructions for ${label}`, kind: "objective", scope: "Shared session", perPlayer: false, ...extras });
 const expedition = { schema: 1, name: "Test run", mode: "seamless", players: [{ id: "player-1", name: "Sam", buildId: "colossal-hammer", color: "#d8ad62" }, { id: "player-2", name: "Aaron", buildId: "quality-knight", color: "#7db6a8" }], hostId: "player-1", createdAt: "2026-09-06", completed: {} };
 const props = { expedition, activeId: "liurnia-south", tasksByChapter: { "first-steps": [task("old", "Earlier unfinished task")], "liurnia-south": [task("scenic", "Meet Patches at Scenic Isle", { mapQuery: "Scenic Isle" })] }, runeSupport: {}, setExpedition() {}, setActiveId() {} };
+
+test("the working route keeps the map beside the next step and exposes mobile navigation and filters", async () => {
+  const { RouteView } = await components();
+  const html = renderToStaticMarkup(createElement(RouteView, props));
+  assert.match(html, /class="route-focus-grid"/);
+  assert.ok(html.indexOf('id="route-map"') < html.indexOf('id="chapter-checkpoint"'));
+  assert.match(html, /class="chapter-select"/);
+  assert.match(html, /aria-label="Chapter progress"/);
+  assert.match(html, /Find a step/);
+  assert.match(html, /Sam \+ shared steps/);
+  assert.match(html, /View Sam&#x27;s build: Colossal Hammer/);
+  assert.doesNotMatch(html, /class="company-panel"/);
+});
+
+test("build descriptions remain complete in setup and the library, with no CSS clipping", async () => {
+  const { Setup, CodexView } = await components();
+  const { selectableBuilds } = await server.ssrLoadModule("/app/data.ts");
+  const catalogue = renderToStaticMarkup(createElement(CodexView, {}));
+  const setup = renderToStaticMarkup(createElement(Setup, { onCreate() {}, imported() {} }));
+  for (const build of selectableBuilds.slice(0, 24)) {
+    const text = renderToStaticMarkup(createElement("p", null, build.playstyle)).slice(3, -4);
+    assert.ok(catalogue.includes(text), `Library lost description: ${build.name}`);
+    assert.ok(setup.includes(text), `Setup lost description: ${build.name}`);
+  }
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.doesNotMatch(css, /(?:-webkit-)?line-clamp\s*:\s*\d/);
+  assert.match(css, /\.build-summary\s*\{[^}]*overflow: visible/);
+  assert.match(css, /\.setup-playstyle\s*\{[^}]*overflow: visible/);
+});
+
+test("checkpoint character selection defaults to the joined player and renders just one form", async () => {
+  const { RuneCheckpointPanel } = await components();
+  const { chapters } = await server.ssrLoadModule("/app/data.ts");
+  const html = renderToStaticMarkup(createElement(RuneCheckpointPanel, { chapter: chapters[0], expedition, support: {}, setExpedition() {}, viewerPlayerId: "player-2" }));
+  assert.match(html, /aria-label="Checkpoint character"/);
+  assert.match(html, /aria-pressed="true"[^>]*><strong>Aaron/);
+  assert.match(html, /aria-label="Aaron VIG"/);
+  assert.doesNotMatch(html, /aria-label="Sam VIG"/);
+  assert.match(html, /at the start of the chapter, before levelling or upgrading/);
+});
 
 test("rendered objective and map both refer to the displayed chapter rather than an earlier incomplete chapter", async () => {
   const { RouteView } = await components();

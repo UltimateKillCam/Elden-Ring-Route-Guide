@@ -260,3 +260,23 @@ and public-session integration tests, not a second physical PC playthrough.
   on the Linux runner. A project-owned post-transform now prefixes those injected
   URLs before bundling, preserving preload/SSR/hydration consistency without changing
   local development or third-party URLs. The dependency itself was not edited.
+
+## Reading and navigation refresh — 7 September 2026
+
+- Removed the build-description line clamp in setup and the library. Descriptions
+  now expand naturally and wrap; cards no longer obscure text with the facts row.
+- Paired the current instruction and map on wide screens, replaced the redundant
+  third column with an expandable party summary and direct build-detail buttons.
+- Added a mobile chapter selector, accessible progress bar, checklist search and
+  player filters. Filters affect display only, never quest gates or the next step.
+- Simplified checkpoints to one selectable character at a time. Permissions still
+  limit guests to their own character. All players remain in funding calculations.
+- Renamed navigation to Route / Selected builds / Build library / Run settings;
+  returning to Route no longer resets to First Steps. Keyboard focus and mobile
+  touch targets have been improved. Advanced library filters remain available in
+  a disclosure, with a clear-filters action.
+- Map rendering is memoized during checklist searches; search input is deferred.
+  Existing reduced-motion support remains. No external UI dependencies were added.
+- Regression coverage checks full descriptions, filter semantics, map placement,
+  checkpoint selection, and existing route/permission behavior. No browser visual
+  or interaction test was requested; validation uses rendering and automated tests.

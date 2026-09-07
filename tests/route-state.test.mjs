@@ -1,10 +1,26 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { cataloguePage, changeLevelPace, checklistDone, checklistProgress, matchesSearch, nextChapterTask, normalizeSearch, routePlanningKey } from "../app/route-state.ts";
+import { cataloguePage, changeLevelPace, checklistDone, checklistProgress, matchesSearch, matchesRouteTask, nextChapterTask, normalizeSearch, routePlanningKey } from "../app/route-state.ts";
 import { buffRoutine, buffForPickup } from "../app/buffs.ts";
 import { validateRunImport } from "../app/save-validation.ts";
 
 const run = { players: [{ id: "player-1" }, { id: "player-2" }], completed: {} };
+
+test("checklist filtering keeps shared tasks and never changes route progress", () => {
+  const own = { id: "sam", label: "Radagon’s Soreseal", detail: "Fort Faroth", playerId: "player-1", perPlayer: false };
+  const other = { ...own, id: "aaron", playerId: "player-2" };
+  const shared = { id: "shared", label: "Rest", detail: "Church of Elleh", perPlayer: false };
+  const everyone = { ...shared, id: "all", perPlayer: true };
+  const all = [own, other, shared, everyone];
+  assert.equal(matchesRouteTask(own, "soreseal radagons", "player-1"), true);
+  assert.equal(matchesRouteTask(other, "faroth", "player-1"), false);
+  assert.equal(matchesRouteTask(shared, "elleh", "player-1"), true);
+  assert.equal(matchesRouteTask(everyone, "", "player-2"), true);
+  assert.equal(all.filter((entry) => matchesRouteTask(entry, "", "")).length, 4);
+  all.filter((entry) => matchesRouteTask(entry, "church", "player-2"));
+  assert.equal(nextChapterTask(all, run).task, own);
+  assert.deepEqual(run.completed, {});
+});
 
 test("next step is selected from the displayed chapter, including partially completed party pickups", () => {
   const tasks = [{ id: "here-one", perPlayer: false }, { id: "here-two", perPlayer: true }];

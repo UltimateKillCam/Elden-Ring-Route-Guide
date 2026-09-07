@@ -1,6 +1,6 @@
 "use client";
 
-import { Component, useCallback, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from "react";
+import { Component, memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from "react";
 import { builds, catalogueNumber, selectableBuilds, chapters, itemGuides, recommendStartingClass, sources, stageLoadout, type Build, type Chapter, type PhaseKey } from "./data";
 import { findMapItem, findMapItems, findMapRoutePoint, type MapItem } from "./map-items";
 import { routeLoadout, isRoutedWeapon, compatibleTalismans, weaponTransitions, sameWeaponUpgradeTrack } from "./build-routing";
@@ -28,7 +28,7 @@ import { findWeaponUpgradeRecords, weaponUpgradePath } from "./weapon-upgrades";
 import { QUEST_STEP_GUIDES } from "./quest-route";
 import { isAccessRequirementTask, missingAccessRequirements } from "./access-graph";
 import { buffForPickup, buffRoutine, buffSupportItems, buffsForLoadout } from "./buffs";
-import { cataloguePage, changeLevelPace, checklistDone, checklistKeys, checklistProgress, matchesSearch, nextChapterTask, normalizeSearch, routePlanningKey, skipRuneBoss } from "./route-state";
+import { cataloguePage, changeLevelPace, checklistDone, checklistKeys, checklistProgress, matchesSearch, matchesRouteTask, nextChapterTask, normalizeSearch, routePlanningKey, skipRuneBoss } from "./route-state";
 import { validateRunImport } from "./save-validation";
 import { CheckpointInput } from "./checkpoint-input";
 import { MATERIAL_SOURCES, suppliedUpgradeTarget, allocateUpgradeMaterials, type MaterialAllocation, type MaterialUsage } from "./upgrade-materials";
@@ -1690,6 +1690,8 @@ function MapPanel({ chapter, expedition, chapterTasks, tasksByChapter, onSelect,
   );
 }
 
+const MemoMapPanel = memo(MapPanel);
+
 function BossMapThumbnail({ boss }: { boss: OptionalRuneBoss }) {
   const marker = findMapRoutePoint(boss.mapQuery || `${boss.name} ${boss.location}`, boss.mapLayer ?? "surface");
   const layer = marker?.layer || "surface";
@@ -1730,6 +1732,8 @@ function RuneCheckpointPanel({
   viewerPlayerId?: string;
   onViewerUpdate?: (kind: "completed" | "runes" | "levels" | "stats" | "weapons", key: string, value: boolean | number | Partial<AttributeBlock>) => void;
 }) {
+  const [checkpointPlayer, setCheckpointPlayer] = useState(viewerPlayerId || expedition.players[0]?.id || "");
+  const displayedPlayer = expedition.players.some((player) => player.id === checkpointPlayer) ? checkpointPlayer : expedition.players[0]?.id;
   const economy = CHAPTER_ECONOMY_BY_ID[chapter.id];
   if (!economy) return null;
   const chapterIndex = chapters.indexOf(chapter);
@@ -1814,10 +1818,11 @@ function RuneCheckpointPanel({
   });
 
   return <section className="rune-checkpoint">
-    <header><div><p className="eyebrow">Start-of-chapter checkpoint</p><h3>Fill this in before spending anything</h3><p><strong>Complete this once when you arrive in the chapter, before levelling or reinforcing a weapon.</strong> Rune level, attributes and the same active weapon&apos;s reinforcement level carry forward from the latest earlier checkpoint, so only change values that have increased. Enter held runes again because that balance does not carry forward. These values drive the chapter&apos;s level, weapon and optional-boss recommendations; do not wait until the end of the chapter. <a href="https://eldenring.wiki.gg/wiki/Recommended_Level_by_Location" target="_blank" rel="noreferrer">Level basis ↗</a></p></div>{!viewerPlayerId && !everyPlayerIsOverTarget && expedition.runeBossSelections?.[chapter.id] && <button type="button" disabled={locked} onClick={resetBosses}>Restore recommended bosses</button>}</header>
-    <p className="checkpoint-help">Press Enter or leave a field to save it. Escape cancels an edit. Use base stats with stat-boosting equipment and Great Rune effects removed.</p>
-    <div className="rune-balance-grid">
-      {expedition.players.map((player) => {
+    <header><div><p className="eyebrow">Before you spend</p><h3>Update your character</h3><p>Fill this in <strong>at the start of the chapter, before levelling or upgrading.</strong> Stats and weapon level carry forward; enter your held runes again. The plan adjusts to what you can afford. <a href="https://eldenring.wiki.gg/wiki/Recommended_Level_by_Location" target="_blank" rel="noreferrer">Level basis ↗</a></p></div>{!viewerPlayerId && !everyPlayerIsOverTarget && expedition.runeBossSelections?.[chapter.id] && <button type="button" disabled={locked} onClick={resetBosses}>Restore recommended bosses</button>}</header>
+    <p className="checkpoint-help">Use base stats without equipment or Great Rune boosts. Enter or leave a field to save; Escape cancels.</p>
+    {expedition.players.length > 1 && <div className="checkpoint-players" role="group" aria-label="Checkpoint character">{expedition.players.map((player) => <button type="button" key={player.id} aria-pressed={displayedPlayer === player.id} onClick={() => setCheckpointPlayer(player.id)} style={{ "--player": player.color } as React.CSSProperties}><strong>{player.name}</strong><span>{expedition.checkpointRunes?.[`${chapter.id}:${player.id}`] === undefined ? "Runes not entered" : `${formatRunes(expedition.checkpointRunes[`${chapter.id}:${player.id}`])} runes`}</span></button>)}</div>}
+    <div className="rune-balance-grid checkpoint-single">
+      {expedition.players.filter((player) => player.id === displayedPlayer).map((player) => {
         const build = buildForPlayer(player);
         const loadout = routeLoadout(build, chapter);
         const pathResult = weaponUpgradePath(loadout.weapon);
@@ -1903,6 +1908,10 @@ function RuneCheckpointPanel({
 function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, activeId, setActiveId, readOnly = false, viewerPlayerId, onViewerUpdate }: { expedition: Expedition; setExpedition: React.Dispatch<React.SetStateAction<Expedition | null>>; tasksByChapter: Record<string, Task[]>; runeSupport: Record<string, RuneSupportChapter>; activeId: string; setActiveId: (id: string) => void; readOnly?: boolean; viewerPlayerId?: string; onViewerUpdate?: (kind: "completed" | "runes" | "levels" | "stats" | "weapons", key: string, value: boolean | number | Partial<AttributeBlock>) => void }) {
   const [hideFinished, setHideFinished] = useState(false);
   const [checkpointOpen, setCheckpointOpen] = useState(false);
+  const [stepQuery, setStepQuery] = useState("");
+  const deferredStepQuery = useDeferredValue(stepQuery);
+  const [stepPlayer, setStepPlayer] = useState("");
+  const [previewBuild, setPreviewBuild] = useState<Build | null>(null);
   const [inspected, setInspected] = useState<{ taskId: string; nextId?: string } | null>(null);
   const chapter = chapters.find((candidate) => candidate.id === activeId) || chapters[0];
   const tasks = tasksByChapter[chapter.id] ?? [];
@@ -1912,14 +1921,21 @@ function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, act
   const nextStep = chapterNext ? { chapter, ...chapterNext } : null;
   const routeNext = nextIncompleteTask(expedition, tasksByChapter);
   const selectedTask = inspected?.nextId === chapterNext?.task.id ? tasks.find((task) => task.id === inspected?.taskId) : undefined;
-  const taskByLabel = new Map(Object.values(tasksByChapter).flat().map((task) => [task.label, task]));
+  const allTasks = useMemo(() => Object.values(tasksByChapter).flat(), [tasksByChapter]);
+  const taskByLabel = useMemo(() => new Map(allTasks.map((task) => [task.label, task])), [allTasks]);
   const taskForLabel = (label: string) => taskByLabel.get(label);
   const accessGates = new Map(chapters.map((candidate) => [candidate.id, missingAccessRequirements(candidate.id, (label) => {
     const task = taskForLabel(label);
     return Boolean(task && taskKeys(task, expedition).every((key) => expedition.completed[key]));
   })]));
   const accessGate = accessGates.get(chapter.id);
-  const allTasks = Object.values(tasksByChapter).flat();
+  const visibleTasks = tasks.filter((task) => !(hideFinished && taskDone(task, expedition)) && matchesRouteTask(task, deferredStepQuery, stepPlayer));
+  const resetStepFilters = () => { setStepQuery(""); setStepPlayer(""); setHideFinished(false); };
+  const showRequirement = (taskId: string, chapterId: string) => {
+    resetStepFilters();
+    setActiveId(chapterId);
+    requestAnimationFrame(() => document.getElementById(`task-${taskId}`)?.focus());
+  };
   const taskAccessBlocked = (task: Task, chapterId = chapter.id) => Boolean(accessGates.get(chapterId) && !isAccessRequirementTask(chapterId, task.label)) || missingTaskPrerequisites(task, allTasks, expedition).length > 0;
   const taskSkipBlocked = (task: Task, chapterId = chapter.id) => taskAccessBlocked(task, chapterId) || isAccessRequirementTask(chapterId, task.label);
   const accessBlocked = Boolean(nextStep && taskAccessBlocked(nextStep.task, nextStep.chapter.id));
@@ -2003,21 +2019,25 @@ function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, act
       </aside>
 
       <section className="route-main">
+        <label className="chapter-select"><span>Chapter</span><select value={chapter.id} onChange={(event) => setActiveId(event.target.value)}>{(["Base game", "Shadow of the Erdtree"] as const).map((act) => <optgroup label={act} key={act}>{chapters.filter((candidate) => candidate.act === act).map((candidate) => <option key={candidate.id} value={candidate.id}>{chapters.indexOf(candidate) + 1}. {candidate.title}{accessGates.get(candidate.id) ? " · Locked" : ""}</option>)}</optgroup>)}</select></label>
         <div className="chapter-hero">
           <div>
             <p className="eyebrow">Chapter {chapterIndex + 1} · {chapter.act}</p>
             <h2>{chapter.title}</h2>
             <p>{chapter.summary}</p>
           </div>
-          <div className="readiness-seal"><span>{completedTasks}/{tasks.length}</span><small>objectives</small></div>
+          <div className="chapter-progress"><span><strong>{completedTasks}</strong> / {tasks.length} steps</span><progress value={completedTasks} max={Math.max(tasks.length, 1)} aria-label="Chapter progress" /></div>
         </div>
 
+        <nav className="route-tools" aria-label="Chapter tools"><a href="#current-step">Next step</a><a href="#ordered-stops">Checklist</a><a href="#chapter-checkpoint" onClick={() => setCheckpointOpen(true)}>Levels &amp; runes</a>{routeNext && routeNext.chapter.id !== chapter.id && <button type="button" onClick={() => setActiveId(routeNext.chapter.id)}>Resume unfinished chapter →</button>}</nav>
+        <div className="route-focus-grid" id="current-step">
         {nextStep ? (
           <section className="next-step-panel" aria-label="Current objective">
-            <div className="next-step-number"><span>Step</span><strong>{String(nextStep.index + 1).padStart(2, "0")}</strong></div>
+            <div className="next-step-number"><span>Up next</span><strong>{String(nextStep.index + 1).padStart(2, "0")}</strong><span>of {tasks.length}</span></div>
             <div className="next-step-copy">
               <p>{nextStep.chapter.region} · from {nextStep.chapter.grace}</p>
               <h3>{nextStep.task.label}</h3>
+              <div className="objective-owner">{nextStep.task.scope || "Shared session"}{(nextStep.task.optional || nextStep.task.runeBossId) && <span>Optional</span>}</div>
               <span>{nextStep.task.detail}</span>
               {missingTaskPrerequisites(nextStep.task, allTasks, expedition).length > 0 && <small>First complete: {missingTaskPrerequisites(nextStep.task, allTasks, expedition).map((requirement) => requirement.label).join("; ")}.</small>}
               <small>Target {nextStep.chapter.level} · {nextStep.chapter.upgrade}{nextStep.task.scope ? ` · ${nextStep.task.scope}` : ""}</small>
@@ -2032,7 +2052,11 @@ function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, act
           </section>
         ) : <section className="next-step-panel route-finished"><div><p>{routeNext ? "Chapter finished" : "Route finished"}</p><h3>{routeNext ? "All steps here are complete or skipped." : "All route steps are complete or skipped."}</h3></div>{routeNext && <button type="button" onClick={() => setActiveId(routeNext.chapter.id)}>Go to next unfinished chapter</button>}</section>}
 
-        <nav className="route-tools" aria-label="Chapter tools"><a href="#ordered-stops">Steps</a><a href="#route-map">Map</a><a href="#chapter-checkpoint" onClick={() => setCheckpointOpen(true)}>Levels &amp; runes</a>{routeNext && routeNext.chapter.id !== chapter.id && <button type="button" onClick={() => setActiveId(routeNext.chapter.id)}>Return to first unfinished chapter</button>}</nav>
+        <div className="objective-map">
+          {selectedTask && selectedTask.id !== chapterNext?.task.id && <div className="map-preview-notice"><span>Previewing: {selectedTask.label}</span><button type="button" onClick={() => setInspected(null)}>Follow next step</button></div>}
+          <MemoMapPanel chapter={chapter} expedition={expedition} chapterTasks={tasks} tasksByChapter={tasksByChapter} onSelect={setActiveId} selectedTask={selectedTask} />
+        </div>
+        </div>
 
         <div className="balance-bar">
           <div><span>Rune level</span><strong>{chapter.level}</strong></div>
@@ -2046,24 +2070,25 @@ function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, act
         {accessGate && <div className="access-lock"><strong>Finish these prerequisites</strong><span>You can browse this chapter, but its later steps cannot be checked off yet.</span><ul className="access-requirements">{accessGate.requirements.map((label) => {
           const requirement = taskForLabel(label);
           const destination = chapters.find((candidate) => tasksByChapter[candidate.id]?.some((task) => task.id === requirement?.id));
-          return <li key={label}>{requirement && destination ? <button type="button" onClick={() => {
-            setActiveId(destination.id);
-            requestAnimationFrame(() => document.getElementById(`task-${requirement.id}`)?.focus());
-          }}>{label}<small>{destination.title} · Open this step</small></button> : <span>{label}</span>}</li>;
+          return <li key={label}>{requirement && destination ? <button type="button" onClick={() => showRequirement(requirement.id, destination.id)}>{label}<small>{destination.title} · Open this step</small></button> : <span>{label}</span>}</li>;
         })}</ul><a href={accessGate.evidence} target="_blank" rel="noreferrer">Access reference ↗</a></div>}
 
         <details id="chapter-checkpoint" className="checkpoint-disclosure" open={checkpointOpen} onToggle={(event) => setCheckpointOpen(event.currentTarget.open)}><summary><strong>Start-of-chapter checkpoint</strong><span>Update current stats, weapon level and held runes before spending.</span></summary>{checkpointOpen && <RuneCheckpointPanel key={`${chapter.id}:${expedition.saveId || expedition.createdAt}`} chapter={chapter} expedition={expedition} support={runeSupport} setExpedition={setExpedition} locked={Boolean(accessGate) || (readOnly && !viewerPlayerId)} viewerPlayerId={viewerPlayerId} onViewerUpdate={onViewerUpdate} />}</details>
 
-        {selectedTask && selectedTask.id !== chapterNext?.task.id && <div className="map-preview-notice"><span>Previewing: {selectedTask.label}</span><button type="button" onClick={() => setInspected(null)}>Follow next step</button></div>}
-        <MapPanel chapter={chapter} expedition={expedition} chapterTasks={tasks} tasksByChapter={tasksByChapter} onSelect={setActiveId} selectedTask={selectedTask} />
+        <details className="route-party"><summary>Your {expedition.players.length === 1 ? "build" : "party"}<span>{expedition.players.map((player) => player.name).join(" · ")}</span></summary><div className="route-party-grid">{expedition.players.map((player) => {
+          const selected = buildForPlayer(player);
+          return <button type="button" key={player.id} style={{ "--player": player.color } as React.CSSProperties} onClick={() => setPreviewBuild(selected)} aria-label={`View ${player.name}'s build: ${selected.name}`}><i>{player.name.slice(0, 1).toUpperCase()}</i><span><strong>{player.name}</strong><small>{selected.name}</small><small>{routeLoadout(selected, chapter).weapon}</small></span><b aria-hidden="true">↗</b></button>;
+        })}</div><p>{expedition.mode === "solo" ? "Solo: every pickup belongs to this character." : expedition.mode === "standard" ? "Standard co-op: rotate hosts and check off each player's world-state steps." : "Seamless co-op: shared progression, with separate checkboxes for individual pickups."}</p></details>
 
-        <div id="ordered-stops" className="objectives-heading"><div><p className="eyebrow">Ordered stops</p><h3>Chapter steps</h3></div><label className="hide-finished"><input type="checkbox" checked={hideFinished} onChange={(event) => setHideFinished(event.target.checked)} />Hide finished ({completedTasks})</label><span>{Math.round((completedTasks / Math.max(tasks.length, 1)) * 100)}% resolved</span></div>
+        <div id="ordered-stops" className="objectives-heading"><div><h3>Chapter checklist</h3><p>In route order · {tasks.length - completedTasks} remaining</p></div><a href="#current-step">Back to next step ↑</a></div>
+        <div className="checklist-tools"><label className="step-search"><span>Find a step</span><input type="search" value={stepQuery} onChange={(event) => setStepQuery(event.target.value)} placeholder="Item, boss or location…" /></label>{expedition.players.length > 1 && <label><span>Show steps for</span><select value={stepPlayer} onChange={(event) => setStepPlayer(event.target.value)}><option value="">Everyone</option>{expedition.players.map((player) => <option value={player.id} key={player.id}>{player.name} + shared steps</option>)}</select></label>}<label className="hide-finished"><input type="checkbox" checked={hideFinished} onChange={(event) => setHideFinished(event.target.checked)} />Hide finished ({completedTasks})</label><span className="filtered-count" role="status">{visibleTasks.length} of {tasks.length}</span></div>
+        {visibleTasks.length === 0 && <div className="empty-results"><strong>{completedTasks === tasks.length && hideFinished ? "This chapter is finished." : "No steps match these filters."}</strong><button type="button" onClick={resetStepFilters}>Show all steps</button></div>}
         <div className="task-list">
           {tasks.map((task, index) => {
             const owner = task.playerId ? expedition.players.find((player) => player.id === task.playerId) : undefined;
             const done = taskDone(task, expedition);
             const skipped = Boolean(expedition.completed[`${task.id}:skipped`]);
-            if (hideFinished && done) return null;
+            if (!visibleTasks.includes(task)) return null;
             const taskBlocked = taskAccessBlocked(task);
             const mapItem = task.mapMarker ?? (task.item ? findMapItem(task.item, mapLayerForObjective(chapter, task.label)) : undefined);
             return (
@@ -2074,21 +2099,21 @@ function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, act
                   <h4>{task.label}</h4>
                   <p>{task.detail}</p>
                   {task.runeBossId && !done && !readOnly && <p className="rune-skip-note">Skipping removes this fight&apos;s reward from the budget and recalculates the recommended levels and upgrades.</p>}
-                  {missingTaskPrerequisites(task, allTasks, expedition).length > 0 && <div className="material-prerequisites"><strong>First complete:</strong>{missingTaskPrerequisites(task, allTasks, expedition).map((requirement, requiredIndex) => <span key={`${requirement.id}-${requiredIndex}`}>{requirement.id ? <a href={`#task-${requirement.id}`} onClick={() => { const target = chapters.find((candidate) => tasksByChapter[candidate.id]?.some((entry) => entry.id === requirement.id)); if (target) setActiveId(target.id); }}>{requirement.label}</a> : requirement.label}</span>)}</div>}
+                  {missingTaskPrerequisites(task, allTasks, expedition).length > 0 && <div className="material-prerequisites"><strong>First complete:</strong>{missingTaskPrerequisites(task, allTasks, expedition).map((requirement, requiredIndex) => <span key={`${requirement.id}-${requiredIndex}`}>{requirement.id ? <a href={`#task-${requirement.id}`} onClick={(event) => { const target = chapters.find((candidate) => tasksByChapter[candidate.id]?.some((entry) => entry.id === requirement.id)); if (target) { event.preventDefault(); showRequirement(requirement.id!, target.id); } }}>{requirement.label}</a> : requirement.label}</span>)}</div>}
                   <a className="show-task-map" href="#route-map" onClick={() => setInspected({ taskId: task.id, nextId: chapterNext?.task.id })}>Show on map</a>
                   {(task.item || task.sourceUrl) && <div className="task-links"><a href={task.sourceUrl || wikiUrl(task.item!)} target="_blank" rel="noreferrer">{task.material ? "Material source" : task.runeBossId ? "Encounter guide" : "Item reference"} ↗</a>{mapItem && <a href={mapItem.url} target="_blank" rel="noreferrer">Exact Fextralife marker ↗</a>}<a href={mapItem?.layer === "shadow" || (!mapItem && chapter.act === "Shadow of the Erdtree") ? "https://mapgenie.io/elden-ring/maps/the-shadow-realm" : "https://mapgenie.io/elden-ring/maps/the-lands-between"} target="_blank" rel="noreferrer">Search on MapGenie ↗</a></div>}
                   {task.perPlayer ? (
                     <div className="player-checks">
                       {expedition.players.map((player) => {
                         const key = `${task.id}:${player.id}`;
-                        return <button type="button" disabled={taskBlocked || (readOnly && viewerPlayerId !== player.id)} key={key} className={expedition.completed[key] ? "checked" : ""} onClick={() => toggle(key, task)} style={{ "--player": player.color } as React.CSSProperties}><i>{expedition.completed[key] ? "✓" : ""}</i>{player.name}</button>;
+                        return <button type="button" disabled={taskBlocked || (readOnly && viewerPlayerId !== player.id)} key={key} aria-pressed={Boolean(expedition.completed[key])} aria-label={`${player.name}: ${task.label}`} className={expedition.completed[key] ? "checked" : ""} onClick={() => toggle(key, task)} style={{ "--player": player.color } as React.CSSProperties}><i>{expedition.completed[key] ? "✓" : ""}</i>{player.name}</button>;
                       })}
                       {task.optional && !readOnly && <button type="button" disabled={taskSkipBlocked(task)} onClick={() => toggleSkipped(task)}>{skipped ? "Restore item" : "Skip item"}</button>}
                       {task.runeBossId && !done && !readOnly && <button type="button" disabled={Boolean(accessGate)} onClick={() => skipFundingFight(task)}>Skip rune boss</button>}
                     </div>
                   ) : (!readOnly || task.playerId === viewerPlayerId) ? (
                     <div className="task-actions">
-                      {!skipped && <button type="button" className="complete-button" disabled={taskBlocked} onClick={() => toggle(task.id, task)}><i>{done ? "✓" : ""}</i>{done ? "Completed" : "Mark complete"}</button>}
+                      {!skipped && <button type="button" className="complete-button" aria-pressed={done} disabled={taskBlocked} onClick={() => toggle(task.id, task)}><i>{done ? "✓" : ""}</i>{done ? "Completed" : "Mark complete"}</button>}
                       {task.optional && !readOnly && <button type="button" className="complete-button skip-button" disabled={taskSkipBlocked(task)} onClick={() => toggleSkipped(task)}><i>{skipped ? "↶" : "—"}</i>{skipped ? "Restore item" : "Skip item"}</button>}
                       {task.runeBossId && !done && !readOnly && <button type="button" className="complete-button skip-button" disabled={Boolean(accessGate)} onClick={() => skipFundingFight(task)}>Skip rune boss</button>}
                     </div>
@@ -2104,15 +2129,7 @@ function RouteView({ expedition, setExpedition, tasksByChapter, runeSupport, act
         </div>
       </section>
 
-      <aside className="company-panel">
-        <p className="eyebrow">Your company</p>
-        {expedition.players.map((player) => {
-          const selected = buildForPlayer(player);
-          const loadout = routeLoadout(selected, chapter);
-          return <div className="company-member" key={player.id} style={{ "--player": player.color } as React.CSSProperties}><span>{player.name.slice(0, 1).toUpperCase()}</span><div><strong>{player.name}</strong><small>{selected.name}</small><p>{loadout.weapon}</p></div></div>;
-        })}
-        <div className="mode-note"><strong>{expedition.mode === "solo" ? "Solo route" : expedition.mode === "standard" ? "Standard co-op rules" : "Seamless rules"}</strong><p>{expedition.mode === "solo" ? "Boss rewards use the full solo payout and every pickup belongs to this character." : expedition.mode === "standard" ? "World-state steps are tracked for every player. Rotate hosts and tick each copy." : "The route follows host progression. Individual pickups remain assigned separately."}</p></div>
-      </aside>
+      {previewBuild && <FullBuildDetails build={previewBuild} onClose={() => setPreviewBuild(null)} />}
     </div>
   );
 }
@@ -2149,12 +2166,16 @@ function CodexView({ expedition, catalogueOnly = false }: { expedition?: Expedit
   const buildResults = useBuildResults(query, filter, collection, mechanic, fextraCategory, sort);
   const filtered = buildResults.items;
 
+  const activeFilterCount = Number(collection !== "All sources") + Number(fextraCategory !== "All Fextralife groups") + Number(mechanic !== "All focuses");
+  const resetFilters = () => { setQuery(""); setFilter("All builds"); setCollection("All sources"); setMechanic("All focuses"); setFextraCategory("All Fextralife groups"); setSort("Catalogue order"); };
+
   return (
     <section className="codex-page">
-      <div className="page-heading"><div><p className="eyebrow">{selectableBuilds.length} source-audited builds</p><h2>{catalogueOnly ? "Build catalogue" : "Build codex"}</h2><p>{catalogueOnly ? "Compare every selectable build before the run controller assigns them. Search includes weapons, off-hands, skills, armour, talismans and spells." : "Compare sourced builds and their chapter-by-chapter weapon paths. Open a loadout for equipment, stats and sources."}</p></div><div className="codex-count"><strong>{buildResults.total}</strong><span>matching builds</span></div></div>
-      <div className="codex-tools extended"><label><span>Search</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Frost, bow, faith…" /></label><label><span>Source category</span><select value={collection} onChange={(event) => setCollection(event.target.value)}>{COLLECTION_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Fextralife group</span><select value={fextraCategory} onChange={(event) => setFextraCategory(event.target.value)}>{FEXTRA_CATEGORY_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Build type</span><select value={filter} onChange={(event) => setFilter(event.target.value)}>{ATTRIBUTE_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Combat focus</span><select value={mechanic} onChange={(event) => setMechanic(event.target.value)}>{MECHANIC_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Sort by</span><select value={sort} onChange={(event) => setSort(event.target.value)}>{SORT_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select></label></div>
+      <div className="page-heading"><div><p className="eyebrow">Find your build</p><h2>Build library</h2><p>Search by weapon, spell or playstyle. Each build includes its equipment path and sources.{catalogueOnly ? " Choose here before joining your group." : ""}</p></div><div className="codex-count"><strong>{buildResults.total}</strong><span>matching builds</span></div></div>
+      <div className="codex-tools library-search"><label><span>Search builds &amp; equipment</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Milady, bleed, Golden Vow…" /></label><label><span>Build type</span><select value={filter} onChange={(event) => setFilter(event.target.value)}>{ATTRIBUTE_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Sort by</span><select value={sort} onChange={(event) => setSort(event.target.value)}>{SORT_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select></label></div>
+      <div className="library-filter-row"><details className="library-filters"><summary>More filters{activeFilterCount ? ` · ${activeFilterCount} active` : ""}</summary><div className="codex-tools"><label><span>Source category</span><select value={collection} onChange={(event) => setCollection(event.target.value)}>{COLLECTION_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Fextralife group</span><select value={fextraCategory} onChange={(event) => setFextraCategory(event.target.value)}>{FEXTRA_CATEGORY_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Combat focus</span><select value={mechanic} onChange={(event) => setMechanic(event.target.value)}>{MECHANIC_FILTERS.map((option) => <option key={option}>{option}</option>)}</select></label></div></details>{(query || filter !== "All builds" || activeFilterCount > 0) && <button type="button" onClick={resetFilters}>Clear filters</button>}</div>
       <CataloguePagination {...buildResults} />
-      {buildResults.total === 0 && <p className="empty-results" role="status">No builds match these filters. Try a weapon name or choose All builds and All sources.</p>}
+      {buildResults.total === 0 && <div className="empty-results" role="status"><strong>No builds match these filters.</strong><button type="button" onClick={resetFilters}>Clear filters</button></div>}
       <div className="build-grid">
         {filtered.map((candidate) => {
           const owners = expedition?.players.filter((player) => player.buildId === candidate.id) || [];
@@ -2182,7 +2203,7 @@ function ReadOnlyBuildCatalogue({ lanAvailable }: { lanAvailable: boolean }) {
     <main className="app-shell catalogue-shell">
       <header className="catalogue-header">
         <div><strong>Tarnished Together</strong><span>Build catalogue</span></div>
-        <div><b>Read-only</b>{lanAvailable && <button type="button" onClick={() => { window.location.href = "/?follow=1"; }}>Follow the live route</button>}</div>
+        <div><b>Read-only</b>{lanAvailable && <button type="button" onClick={() => { window.location.href = "?follow=1"; }}>Follow the live route</button>}</div>
       </header>
       <CodexView catalogueOnly />
     </main>
@@ -2608,6 +2629,11 @@ function Home() {
   };
 
   const notify = (message: string) => { setToast(message); window.setTimeout(() => setToast(""), 2600); };
+  const navigateView = (next: typeof view) => {
+    setView(next);
+    window.scrollTo({ top: 0, behavior: "instant" });
+    requestAnimationFrame(() => document.getElementById("app-content")?.focus({ preventScroll: true }));
+  };
   const openSave = (id: string) => {
     const selected = saveLibrary.saves[id];
     if (!selected) return;
@@ -2755,8 +2781,8 @@ function Home() {
   }}>Download recovery backup</button><label className="plain-import">Import a valid exported run<input type="file" accept="application/json" onChange={handleImport} /></label><p>The recovery backup keeps the original data for repair; it is not a normal run export.</p>{toast && <p role="status">{toast}</p>}</div></main>;
   if (catalogueOnly) return <ReadOnlyBuildCatalogue lanAvailable={lanMode !== "none"} />;
   if (sessionChannel === "public" && publicSession?.role === "follower" && !publicSession.token && publicSnapshot) return <PublicJoinSetup snapshot={publicSnapshot} error={publicSessionError} onJoin={(choice) => { void joinPublicRoom(choice); }} onBack={leavePublicSession} />;
-  if (joinRequired) return <main className="join-screen"><form onSubmit={joinLanRun}><strong>Tarnished Together</strong><h1>Join a run</h1><p>Enter the six-digit code shown on the host. You only need to do this once on this computer.</p><label>Join code<input inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={joinCode} onChange={(event) => setJoinCode(event.target.value.replace(/\D/g, "").slice(0, 6))} autoFocus /></label>{joinError && <span role="alert">{joinError}</span>}<button type="submit" disabled={joinCode.length !== 6}>Join route</button><button type="button" className="secondary" onClick={() => { window.location.href = "/?catalog=1"; }}>Browse builds without joining</button></form></main>;
-  if (!expedition && lanMode === "follower") return <main className="follower-waiting"><strong>Tarnished Together</strong><h1>Waiting for the host</h1><p>The route will appear here after the host creates or restores an expedition.</p><button type="button" onClick={() => { window.location.href = "/?catalog=1"; }}>Browse all builds while you wait</button><span>Follower view · refreshes automatically</span></main>;
+  if (joinRequired) return <main className="join-screen"><form onSubmit={joinLanRun}><strong>Tarnished Together</strong><h1>Join a run</h1><p>Enter the six-digit code shown on the host. You only need to do this once on this computer.</p><label>Join code<input inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={joinCode} onChange={(event) => setJoinCode(event.target.value.replace(/\D/g, "").slice(0, 6))} autoFocus /></label>{joinError && <span role="alert">{joinError}</span>}<button type="submit" disabled={joinCode.length !== 6}>Join route</button><button type="button" className="secondary" onClick={() => { window.location.href = "?catalog=1"; }}>Browse builds without joining</button></form></main>;
+  if (!expedition && lanMode === "follower") return <main className="follower-waiting"><strong>Tarnished Together</strong><h1>Waiting for the host</h1><p>The route will appear here after the host creates or restores an expedition.</p><button type="button" onClick={() => { window.location.href = "?catalog=1"; }}>Browse all builds while you wait</button><span>Follower view · refreshes automatically</span></main>;
   if (!expedition) return <Setup onCreate={(created) => { setExpedition(created); notify("Route created"); }} imported={handleImport} initialMode={publicSession?.role === "controller" ? publicSnapshot?.mode : undefined} initialPlayerCount={publicSession?.role === "controller" ? publicSnapshot?.playerCount : undefined} publicCode={publicSession?.role === "controller" ? publicSession.code : undefined} publicBusy={publicSessionBusy} publicError={publicSessionError} onCoopSettings={PUBLIC_SESSION_API ? configurePublicSession : undefined} onJoinCode={PUBLIC_SESSION_API && publicSession?.role !== "controller" ? (code) => { void openPublicJoin(code); } : undefined} />;
 
   const readOnly = lanMode === "follower";
@@ -2764,18 +2790,21 @@ function Home() {
 
   return (
     <main className={`app-shell ${readOnly ? "follower-mode" : ""}`}>
+      <a className="skip-to-content" href="#app-content">Skip to content</a>
       <header className="topbar">
-        <button type="button" className="brand" onClick={() => { setView("route"); selectRouteChapter(chapters[0].id); }}><span>✦</span><strong>Tarnished <em>Together</em></strong></button>
-        <nav aria-label="Primary"><button type="button" className={view === "route" ? "active" : ""} onClick={() => setView("route")}>Route</button><button type="button" className={view === "selected" ? "active" : ""} onClick={() => setView("selected")}>Selected builds</button>{readOnly && <button type="button" onClick={() => { window.location.href = "/?catalog=1"; }}>Build catalogue</button>}{!readOnly && <><button type="button" className={view === "codex" ? "active" : ""} onClick={() => setView("codex")}>Build codex</button><button type="button" className={view === "party" ? "active" : ""} onClick={() => setView("party")}>Company</button></>}</nav>
+        <button type="button" className="brand" aria-label="Return to current route" onClick={() => navigateView("route")}><span aria-hidden="true">✦</span><strong>Tarnished <em>Together</em></strong></button>
+        <nav aria-label="Primary"><button type="button" aria-current={view === "route" ? "page" : undefined} className={view === "route" ? "active" : ""} onClick={() => navigateView("route")}>Route</button><button type="button" aria-current={view === "selected" ? "page" : undefined} className={view === "selected" ? "active" : ""} onClick={() => navigateView("selected")}>Selected builds</button>{readOnly && <button type="button" onClick={() => { window.location.href = "?catalog=1"; }}>Build library</button>}{!readOnly && <><button type="button" aria-current={view === "codex" ? "page" : undefined} className={view === "codex" ? "active" : ""} onClick={() => navigateView("codex")}>Build library</button><button type="button" aria-current={view === "party" ? "page" : undefined} className={view === "party" ? "active" : ""} onClick={() => navigateView("party")}>Run settings</button></>}</nav>
         <div className="top-progress"><span><i style={{ width: `${progress}%` }} /></span><strong>{progress}%</strong>{readOnly ? <b className="lan-badge">{expedition.players.find((player) => player.id === viewerPlayerId)?.name}</b> : <select className="save-switcher" aria-label="Current saved run" value={activeSaveId || expedition.saveId || ""} onChange={(event) => openSave(event.target.value)}>{Object.values(saveLibrary.saves).map((save) => <option value={save.saveId} key={save.saveId}>{save.name}</option>)}</select>}</div>
       </header>
       {!readOnly && sessionChannel === "public" && publicSession?.code && <div className="lan-share-strip public"><span>Other players open the GitHub Pages app</span><span>Online join code <b>{publicSession.code}</b></span><span>They choose their own build and starting class</span></div>}
       {!readOnly && sessionChannel === "lan" && lanInfo && <div className="lan-share-strip"><span>Other players open <strong>{lanInfo.address}</strong></span><span>Join code <b>{lanInfo.joinCode}</b></span>{lanInfo.players.map((player) => <span key={player.id}>{player.name} code <b>{player.code}</b></span>)}</div>}
       {readOnly && <div className="follow-controls"><label><input type="checkbox" checked={followHost} onChange={(event) => { followHostRef.current = event.target.checked; setFollowHost(event.target.checked); if (event.target.checked && expedition.activeChapterId) { setActiveId(expedition.activeChapterId); setView("route"); } }} />Follow host’s chapter</label><span>{followHost ? "Progress updates automatically." : "Browsing independently. Progress still updates."}</span></div>}
+      <div id="app-content" className="app-content" tabIndex={-1}>
       {view === "route" && <RouteView key={`${expedition.saveId || expedition.createdAt}:${activeId}`} expedition={expedition} setExpedition={setExpedition} tasksByChapter={routeModel.tasksByChapter} runeSupport={routeModel.runeSupport} activeId={activeId} setActiveId={selectRouteChapter} readOnly={readOnly} viewerPlayerId={viewerPlayerId} onViewerUpdate={viewerUpdate} />}
       {view === "selected" && <SelectedBuildsView expedition={expedition} viewerPlayerId={readOnly ? viewerPlayerId : undefined} />}
       {!readOnly && view === "codex" && <CodexView expedition={expedition} />}
       {!readOnly && view === "party" && <PartyView expedition={expedition} progress={progress} setExpedition={setExpedition} saveLibrary={saveLibrary} activeSaveId={activeSaveId} onSelectSave={openSave} onNewSave={newRun} onDuplicateSave={duplicateRun} onDeleteSave={deleteRun} onExport={handleExport} onImport={handleImport} />}
+      </div>
       {toast && <div className="toast" role="status">{toast}</div>}
     </main>
   );

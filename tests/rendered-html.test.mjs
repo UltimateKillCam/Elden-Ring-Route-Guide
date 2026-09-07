@@ -103,7 +103,8 @@ test("ships the curated, complete wiki and sourced build catalogues with the ful
   assert.match(sourcedBuilds, /Bloodhound’s Fang Finesse/);
   assert.match(page, /className="build-summary"/);
   assert.match(page, /className="drawer-playstyle"/);
-  assert.match(styles, /\.build-summary[\s\S]*?-webkit-line-clamp:\s*4/);
+  assert.match(styles, /\.build-summary\s*\{[^}]*overflow: visible/);
+  assert.doesNotMatch(styles, /(?:-webkit-)?line-clamp\s*:\s*\d/);
 });
 
 test("uses plain product copy and the revised social card", async () => {
@@ -131,7 +132,8 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /Complete and continue/);
   assert.match(page, /Updates from the host/);
   assert.match(page, /catalogueOnly/);
-  assert.match(page, /Compare every selectable build before the run controller assigns them/);
+  assert.match(page, /Search by weapon, spell or playstyle/);
+  assert.match(page, /Choose here before joining your group/);
   assert.match(page, /\["All builds", "Strength", "Dexterity", "Intelligence", "Faith", "Arcane", "Melee", "Ranged"\]/);
   assert.doesNotMatch(page, /Party role|All roles/);
   assert.match(server, /Only the controller can change expedition settings/);
@@ -219,8 +221,7 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /Rune top-up:/);
   assert.match(page, /only recommends a fully funded level/);
   assert.match(page, /Start-of-chapter checkpoint/);
-  assert.match(page, /before levelling or reinforcing a weapon/);
-  assert.match(page, /do not wait until the end of the chapter/);
+  assert.match(page, /at the start of the chapter, before levelling or upgrading/);
   assert.match(page, /Selected builds/);
   assert.match(page, /this page only shows chosen builds/);
   assert.match(page, /EquipmentTimeline/);
@@ -237,8 +238,7 @@ test("includes a read-only LAN follower and Elden Ring build filters", async () 
   assert.match(page, /carriedCheckpointNumber/);
   assert.match(page, /carriedCheckpointStats/);
   assert.match(page, /carriedWeaponCheckpoint/);
-  assert.match(page, /only change values that have increased/);
-  assert.match(page, /held runes again because that balance does not carry forward/);
+  assert.match(page, /Stats and weapon level carry forward; enter your held runes again/);
   assert.match(page, /statScheduleText/);
   assert.match(page, /Apply them exactly as follows/);
   assert.match(page, /Chapter target/);

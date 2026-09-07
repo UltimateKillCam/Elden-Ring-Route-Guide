@@ -49,6 +49,12 @@ export function matchesSearch(index: string, query: string) {
   return normalizeSearch(query).split(/\s+/).every((word) => index.includes(word));
 }
 
+/** Filters only the visible list. Route order, gating and the next step stay intact. */
+export function matchesRouteTask(task: { label: string; detail: string; scope?: string; playerId?: string; perPlayer: boolean }, query: string, playerId: string) {
+  const forPlayer = !playerId || task.perPlayer || !task.playerId || task.playerId === playerId;
+  return forPlayer && matchesSearch(normalizeSearch(`${task.label} ${task.detail} ${task.scope ?? ""}`), query);
+}
+
 export function cataloguePage<T>(items: T[], requestedPage: number, pageSize = 24) {
   const pages = Math.max(1, Math.ceil(items.length / pageSize));
   const page = Math.max(0, Math.min(pages - 1, requestedPage));
